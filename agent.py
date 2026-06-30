@@ -2,11 +2,10 @@
 agent.py
 粤见非遗智能体核心逻辑。
 
-职责边界：
-1. app.py 负责页面、交互、场景化输入。
-2. prompts.py 负责任务级 Prompt 模板。
-3. rag.py 负责本地知识库检索。
-4. agent.py 只负责配置读取、Prompt 组装和模型调用。
+本版优化：
+1. 默认 max_tokens 从 1800 降到 1200，减少等待时间。
+2. RAG 检索从 top_k=6 降到 top_k=4，并限制 max_total_chars=2800。
+3. 新增 ask_agent_stream，用于 Streamlit 流式输出。
 """
 
 from __future__ import annotations
@@ -27,10 +26,12 @@ from prompts import (
     SYSTEM_PROMPT,
     TASK_PROMPTS,
     FALLBACK_PROMPT,
-    WEB_OUTPUT_RULES,
 )
 
 
+# =========================================================
+# 环境变量读取
+# =========================================================
 load_dotenv()
 
 
@@ -54,36 +55,43 @@ def get_config_value(key: str, default: str = "") -> str:
     return default
 
 
-def get_client() -> OpenAI:
+def get_client(
+    api_key: str | None = None,
+    base_url: str | None = None,
+) -> OpenAI:
     """
     创建 OpenAI 兼容客户端。
-    """
-    api_key = get_config_value("OPENAI_API_KEY")
-    base_url = get_config_value(
-        "OPENAI_BASE_URL",
-        "https://dashscope.aliyuncs.com/compatible-mode/v1",
-    )
 
-    if not api_key:
-        raise RuntimeError(
-            "未检测到模型 API Key。请在本地 .env 或 Streamlit Secrets 中配置 OPENAI_API_KEY。"
-        )
+    本版本为“用户侧模型接入版”：
+    - 使用用户在页面中填写的 API Key
+    - 不读取公开部署环境中的默认模型 Key
+    - 生成请求通过用户侧模型服务完成
+    """
+    final_api_key = (api_key or "").strip()
+    final_base_url = (base_url or "").strip() or "https://dashscope.aliyuncs.com/compatible-mode/v1"
+
+    if not final_api_key:
+        raise RuntimeError("请先在左侧「模型接入」中填写 API Key 后再生成。")
 
     return OpenAI(
-        api_key=api_key,
-        base_url=base_url,
+        api_key=final_api_key,
+        base_url=final_base_url,
     )
 
 
-def get_model_name() -> str:
+def get_model_name(model_name: str | None = None) -> str:
     """
     获取模型名称。
-    默认使用 qwen-turbo，优先保证网页体验速度。
-    需要更高质量时，可在 .env 中改成 qwen-plus。
+
+    本版本不读取 .env / Secrets 中的 MODEL_NAME。
+    如果页面未传入模型名称，则默认使用 qwen-turbo。
     """
-    return get_config_value("MODEL_NAME", "qwen-turbo")
+    return (model_name or "").strip() or "qwen-turbo"
 
 
+# =========================================================
+# 任务类型识别
+# =========================================================
 def detect_task_type(user_input: str) -> str:
     """
     根据用户输入识别任务类型。
@@ -106,7 +114,7 @@ def detect_task_type(user_input: str) -> str:
 
     study_keywords = [
         "研学", "任务卡", "学习目标", "观察任务", "采访问题", "报告", "提纲",
-        "课堂", "学生", "作业", "调研", "记录表",
+        "课堂", "学生", "作业", "调研",
     ]
 
     route_keywords = [
@@ -136,6 +144,9 @@ def detect_task_type(user_input: str) -> str:
     return "qa"
 
 
+# =========================================================
+# Prompt 构造
+# =========================================================
 def build_user_prompt(
     user_input: str,
     task_type: str,
@@ -161,14 +172,12 @@ def build_user_prompt(
 【广东非遗知识库检索结果】
 {context if context.strip() else "未检索到高度相关资料。请基于通用广东非遗知识谨慎回答，并提醒用户以官方信息为准。"}
 
-【通用生成要求】
+【生成要求】
 1. 回答必须围绕广东、岭南文化、广东非遗或城市文化体验展开。
 2. 不要泛泛而谈，要尽量给出可执行、可落地的方案。
 3. 涉及开放时间、票价、活动、交通、预约等实时信息时，必须提醒用户以官方平台为准。
 4. 如果资料不足，不要编造具体事实，可以给出“建议核验”的提示。
 5. 语言要清晰、实用、有广东文化味道，但不要过度堆砌辞藻。
-
-{WEB_OUTPUT_RULES}
 """.strip()
 
 
@@ -178,6 +187,7 @@ def build_messages(user_input: str) -> list[dict[str, str]]:
     """
     task_type = detect_task_type(user_input)
 
+    # 提速核心修改：top_k 从 6 改为 4，max_total_chars 从 4200 改为 2800
     context = retrieve_context(
         user_input,
         top_k=4,
@@ -200,24 +210,31 @@ def build_messages(user_input: str) -> list[dict[str, str]]:
     ]
 
 
+# =========================================================
+# 普通非流式输出
+# =========================================================
 def ask_agent(
     user_input: str,
     temperature: float = 0.62,
     max_tokens: int = 1200,
+    api_key: str | None = None,
+    base_url: str | None = None,
+    model_name: str | None = None,
 ) -> str:
     """
     普通生成入口。
+    max_tokens 已从 1800 降为 1200，用于提速。
     """
     if not user_input or not user_input.strip():
         return "请先输入你的需求，例如：我第一次来广州，有一天时间，想体验岭南非遗文化。"
 
-    client = get_client()
-    model_name = get_model_name()
+    client = get_client(api_key=api_key, base_url=base_url)
+    final_model_name = get_model_name(model_name)
     messages = build_messages(user_input)
 
     try:
         response = client.chat.completions.create(
-            model=model_name,
+            model=final_model_name,
             messages=messages,
             temperature=temperature,
             max_tokens=max_tokens,
@@ -237,25 +254,32 @@ def ask_agent(
         )
 
 
+# =========================================================
+# 流式输出
+# =========================================================
 def ask_agent_stream(
     user_input: str,
     temperature: float = 0.62,
     max_tokens: int = 1200,
+    api_key: str | None = None,
+    base_url: str | None = None,
+    model_name: str | None = None,
 ) -> Generator[str, None, None]:
     """
     流式生成入口。
+    app.py 中会逐块读取这个生成器，实现像 ChatGPT 一样边生成边显示。
     """
     if not user_input or not user_input.strip():
         yield "请先输入你的需求，例如：我第一次来广州，有一天时间，想体验岭南非遗文化。"
         return
 
-    client = get_client()
-    model_name = get_model_name()
+    client = get_client(api_key=api_key, base_url=base_url)
+    final_model_name = get_model_name(model_name)
     messages = build_messages(user_input)
 
     try:
         stream = client.chat.completions.create(
-            model=model_name,
+            model=final_model_name,
             messages=messages,
             temperature=temperature,
             max_tokens=max_tokens,
@@ -278,6 +302,9 @@ def ask_agent_stream(
         )
 
 
+# =========================================================
+# 本地测试
+# =========================================================
 if __name__ == "__main__":
     demo = "我第一次来广州，有一天时间，想体验岭南非遗文化，最好适合拍照和写研学记录。"
     for part in ask_agent_stream(demo):

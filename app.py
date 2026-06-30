@@ -346,6 +346,33 @@ def show_pending_toast() -> None:
         st.session_state.toast_icon = "🦁"
 
 
+
+def get_runtime_api_config() -> dict:
+    """
+    获取当前会话使用的模型配置。
+
+    本版本为“仅用户自填 API Key 版”：
+    - 使用用户在页面中填写的 API Key
+    - 不读取公开部署环境中的默认模型 Key
+    - 生成请求通过用户侧模型服务完成
+    """
+    api_key = st.session_state.get("user_api_key", "").strip()
+    base_url = st.session_state.get(
+        "user_base_url",
+        "https://dashscope.aliyuncs.com/compatible-mode/v1",
+    ).strip()
+    model_name = st.session_state.get("user_model_name", "qwen-turbo").strip()
+
+    if not api_key:
+        raise RuntimeError("请先在左侧「模型接入」中填写 API Key 后再生成。")
+
+    return {
+        "api_key": api_key,
+        "base_url": base_url or "https://dashscope.aliyuncs.com/compatible-mode/v1",
+        "model_name": model_name or "qwen-turbo",
+    }
+
+
 def generate_answer(final_input: str, temperature: float, action_label: str) -> str:
     placeholder = st.empty()
 
@@ -398,7 +425,7 @@ def generate_answer(final_input: str, temperature: float, action_label: str) -> 
                     st.write(step)
                     time.sleep(0.12)
 
-                for chunk in ask_agent_stream(final_input, temperature=temperature):
+                for chunk in ask_agent_stream(final_input, temperature=temperature, **get_runtime_api_config()):
                     full_answer += chunk
                     placeholder.markdown(sanitize_model_output(full_answer) + "▌")
 
@@ -418,7 +445,7 @@ def generate_answer(final_input: str, temperature: float, action_label: str) -> 
                 st.write(step)
                 time.sleep(0.08)
 
-            answer = ask_agent(final_input, temperature=temperature)
+            answer = ask_agent(final_input, temperature=temperature, **get_runtime_api_config())
             status.update(label="方案已生成", state="complete", expanded=False)
 
         answer = sanitize_model_output(answer)
@@ -1047,6 +1074,9 @@ DEFAULTS = {
     "recent_plans": [],
     "toast_message": "",
     "toast_icon": "🦁",
+    "user_api_key": "",
+    "user_base_url": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+    "user_model_name": "qwen-turbo",
 }
 
 for key, value in DEFAULTS.items():
@@ -1113,6 +1143,65 @@ with st.sidebar:
             step=0.05,
             help="数值越高，文字更活泼；数值越低，方案更稳妥。",
         )
+
+    st.divider()
+
+    with st.expander("模型接入", expanded=True):
+        st.caption("请配置 OpenAI 兼容模型服务。API Key 仅用于当前会话调用，不会写入项目文件。")
+
+        st.text_input(
+            "API Key",
+            type="password",
+            key="user_api_key",
+            placeholder="请输入 API Key",
+            help="密钥仅用于当前会话中的模型调用，不会写入代码文件或公开仓库。",
+        )
+
+        provider = st.selectbox(
+            "接口服务",
+            ["阿里云百炼 Qwen", "DeepSeek", "自定义 OpenAI 兼容接口"],
+            index=0,
+        )
+
+        default_base_url = {
+            "阿里云百炼 Qwen": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+            "DeepSeek": "https://api.deepseek.com",
+            "自定义 OpenAI 兼容接口": st.session_state.get(
+                "user_base_url",
+                "https://dashscope.aliyuncs.com/compatible-mode/v1",
+            ),
+        }[provider]
+
+        st.text_input(
+            "Base URL",
+            key="user_base_url",
+            value=default_base_url,
+        )
+
+        model_options = {
+            "阿里云百炼 Qwen": ["qwen-turbo", "qwen-plus", "qwen-max"],
+            "DeepSeek": ["deepseek-chat"],
+            "自定义 OpenAI 兼容接口": [
+                st.session_state.get("user_model_name", "qwen-turbo")
+            ],
+        }[provider]
+
+        selected_model = st.selectbox(
+            "模型名称",
+            model_options,
+            index=0,
+        )
+
+        if provider == "自定义 OpenAI 兼容接口":
+            st.text_input(
+                "自定义模型名称",
+                key="user_model_name",
+                value=selected_model,
+            )
+        else:
+            st.session_state.user_model_name = selected_model
+
+        st.info("已启用用户侧模型接入：本次生成将通过你填写的接口配置完成。", icon="🔐")
 
     st.divider()
 
