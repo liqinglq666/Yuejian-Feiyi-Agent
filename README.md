@@ -28,13 +28,14 @@
 
 ## 在线体验
 
-> 项目支持本地运行与 Streamlit Cloud 在线部署。  
-> 当前 README 已预留在线 Demo 位置，部署完成后将下面链接替换为你的真实访问地址即可。
+> 项目已部署至 Streamlit Cloud，可通过以下地址在线访问。
 
 ```text
-在线 Demo：部署后填写，例如 https://yuejian-feiyi.streamlit.app/
+在线 Demo：https://yuejian-feiyi-agent.streamlit.app/
 代码仓库：https://github.com/liqinglq666/Yuejian-Feiyi-Agent
 ```
+
+[点击访问在线 Demo](https://yuejian-feiyi-agent.streamlit.app/)
 
 ### 体验说明
 
