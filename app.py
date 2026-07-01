@@ -373,6 +373,42 @@ def get_runtime_api_config() -> dict:
     }
 
 
+def get_runtime_api_error() -> str:
+    """生成前检查模型接入配置，避免无 API Key 时误触发生成流程。"""
+    api_key = st.session_state.get("user_api_key", "").strip()
+    base_url = st.session_state.get("user_base_url", "").strip()
+    model_name = st.session_state.get("user_model_name", "").strip()
+
+    if not api_key:
+        return "请先在左侧「模型接入」中填写 API Key，再生成内容。"
+
+    if not base_url:
+        return "请确认模型接口地址 Base URL。"
+
+    if not re.match(r"^https?://", base_url):
+        return "Base URL 应以 http:// 或 https:// 开头，请检查后再生成。"
+
+    if not model_name:
+        return "请先选择或填写模型名称。"
+
+    return ""
+
+
+def can_start_generation(user_text: str | None = None) -> bool:
+    """统一拦截所有生成类按钮，保证失败前置，不把错误当作已生成方案。"""
+    if user_text is not None and not user_text.strip():
+        st.warning("请先输入你的需求。")
+        return False
+
+    error = get_runtime_api_error()
+    if error:
+        st.warning(error)
+        st.info("提示：如果使用阿里云百炼 Qwen，Base URL 通常为 https://dashscope.aliyuncs.com/compatible-mode/v1，模型名称可选 qwen-turbo。", icon="🔐")
+        return False
+
+    return True
+
+
 def generate_answer(final_input: str, temperature: float, action_label: str) -> str:
     placeholder = st.empty()
 
@@ -455,10 +491,10 @@ def generate_answer(final_input: str, temperature: float, action_label: str) -> 
     except Exception as exc:
         error_text = (
             f"生成失败：{exc}\n\n"
-            "请检查 `.env`、API Key、OPENAI_BASE_URL、MODEL_NAME 和网络连接。"
+            "请检查左侧「模型接入」中的 API Key、Base URL、模型名称和网络连接。"
         )
         placeholder.error(error_text)
-        return error_text
+        return ""
 
 
 def render_request_summary(raw_input: str) -> None:
@@ -482,6 +518,11 @@ def render_request_summary(raw_input: str) -> None:
 
 
 def queue_generation(prompt: str, temperature: float, action_label: str = "正在生成你的非遗方案…") -> None:
+    error = get_runtime_api_error()
+    if error:
+        st.warning(error)
+        return
+
     st.session_state.pending_input = prompt
     st.session_state.pending_temperature = temperature
     st.session_state.pending_generate = True
@@ -1077,6 +1118,8 @@ DEFAULTS = {
     "user_api_key": "",
     "user_base_url": "https://dashscope.aliyuncs.com/compatible-mode/v1",
     "user_model_name": "qwen-turbo",
+    "provider": "阿里云百炼 Qwen",
+    "last_provider": "阿里云百炼 Qwen",
 }
 
 for key, value in DEFAULTS.items():
@@ -1157,51 +1200,63 @@ with st.sidebar:
             help="密钥仅用于当前会话中的模型调用，不会写入代码文件或公开仓库。",
         )
 
+        provider_options = ["阿里云百炼 Qwen", "DeepSeek", "自定义 OpenAI 兼容接口"]
         provider = st.selectbox(
             "接口服务",
-            ["阿里云百炼 Qwen", "DeepSeek", "自定义 OpenAI 兼容接口"],
-            index=0,
+            provider_options,
+            index=provider_options.index(st.session_state.get("provider", "阿里云百炼 Qwen"))
+            if st.session_state.get("provider", "阿里云百炼 Qwen") in provider_options else 0,
+            key="provider",
         )
 
-        default_base_url = {
-            "阿里云百炼 Qwen": "https://dashscope.aliyuncs.com/compatible-mode/v1",
-            "DeepSeek": "https://api.deepseek.com",
-            "自定义 OpenAI 兼容接口": st.session_state.get(
-                "user_base_url",
-                "https://dashscope.aliyuncs.com/compatible-mode/v1",
-            ),
-        }[provider]
+        provider_defaults = {
+            "阿里云百炼 Qwen": {
+                "base_url": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+                "models": ["qwen-turbo", "qwen-plus", "qwen-max"],
+            },
+            "DeepSeek": {
+                "base_url": "https://api.deepseek.com",
+                "models": ["deepseek-chat"],
+            },
+        }
+
+        # 切换模型服务时，自动同步 Base URL 和默认模型，避免 UI 显示 Qwen 但实际还在用 DeepSeek 地址。
+        if provider != "自定义 OpenAI 兼容接口" and st.session_state.get("last_provider") != provider:
+            st.session_state.user_base_url = provider_defaults[provider]["base_url"]
+            st.session_state.user_model_name = provider_defaults[provider]["models"][0]
+            st.session_state.last_provider = provider
+
+        if provider == "自定义 OpenAI 兼容接口" and st.session_state.get("last_provider") != provider:
+            st.session_state.last_provider = provider
 
         st.text_input(
-            "Base URL",
+            "接口地址（Base URL）",
             key="user_base_url",
-            value=default_base_url,
-        )
-
-        model_options = {
-            "阿里云百炼 Qwen": ["qwen-turbo", "qwen-plus", "qwen-max"],
-            "DeepSeek": ["deepseek-chat"],
-            "自定义 OpenAI 兼容接口": [
-                st.session_state.get("user_model_name", "qwen-turbo")
-            ],
-        }[provider]
-
-        selected_model = st.selectbox(
-            "模型名称",
-            model_options,
-            index=0,
+            help="这是模型服务的接口地址，不是在线 Demo 网页地址。选择阿里云百炼或 DeepSeek 时会自动填入。",
+            disabled=provider != "自定义 OpenAI 兼容接口",
         )
 
         if provider == "自定义 OpenAI 兼容接口":
             st.text_input(
-                "自定义模型名称",
+                "模型名称",
                 key="user_model_name",
-                value=selected_model,
+                placeholder="例如：qwen-turbo / deepseek-chat",
             )
         else:
+            model_options = provider_defaults[provider]["models"]
+            current_model = st.session_state.get("user_model_name", model_options[0])
+            selected_model = st.selectbox(
+                "模型名称",
+                model_options,
+                index=model_options.index(current_model) if current_model in model_options else 0,
+            )
             st.session_state.user_model_name = selected_model
 
-        st.info("已启用用户侧模型接入：本次生成将通过你填写的接口配置完成。", icon="🔐")
+        api_ready = not bool(get_runtime_api_error())
+        if api_ready:
+            st.success("模型接入已就绪，可以生成内容。", icon="✅")
+        else:
+            st.info("填写 API Key 后即可开始生成。", icon="🔐")
 
     st.divider()
 
@@ -1209,6 +1264,8 @@ with st.sidebar:
         st.session_state.messages = []
         st.session_state.last_answer = ""
         st.session_state.pending_generate = False
+        st.session_state.pending_input = ""
+        st.session_state.pending_action_label = "正在生成你的非遗方案…"
         set_toast("已清空当前方案，可以重新开始", "🧹")
         st.rerun()
 
@@ -1408,9 +1465,7 @@ with left:
             use_container_width=True,
             disabled=st.session_state.pending_generate,
         ):
-            if not user_input.strip():
-                st.warning("请先输入你的需求。")
-            else:
+            if can_start_generation(user_input):
                 set_toast("已收到需求，正在生成方案…", "🦁")
                 queue_generation(final_input, temperature, "正在生成你的非遗方案…")
 
@@ -1496,6 +1551,13 @@ with result_left:
 
         st.markdown("</div>", unsafe_allow_html=True)
 
+        if not answer.strip():
+            st.session_state.pending_generate = False
+            st.session_state.pending_input = ""
+            st.session_state.pending_action_label = "正在生成你的非遗方案…"
+            st.error("本次没有生成成功，已停止保存。请检查模型接入配置后重试。")
+            st.stop()
+
         title = guess_plan_title(final_pending_input, st.session_state.selected_scene)
 
         st.session_state.messages = [
@@ -1542,44 +1604,49 @@ with result_right:
 
         if st.session_state.last_answer:
             if st.button("压缩成半天", use_container_width=True, disabled=st.session_state.pending_generate):
-                set_toast("正在压缩成半天路线…", "🧭")
-                queue_generation(
-                    make_followup_prompt("把方案压缩成半天路线，保留最值得去的节点。"),
-                    temperature,
-                    "正在压缩成半天路线…",
-                )
+                if can_start_generation(None):
+                    set_toast("正在压缩成半天路线…", "🧭")
+                    queue_generation(
+                        make_followup_prompt("把方案压缩成半天路线，保留最值得去的节点。"),
+                        temperature,
+                        "正在压缩成半天路线…",
+                    )
 
             if st.button("更适合亲子", use_container_width=True, disabled=st.session_state.pending_generate):
-                set_toast("正在改成亲子友好版…", "👨‍👩‍👧")
-                queue_generation(
-                    make_followup_prompt("把方案改得更适合亲子家庭，增加孩子能参与的互动任务，节奏轻松。"),
-                    temperature,
-                    "正在改成亲子友好版…",
-                )
+                if can_start_generation(None):
+                    set_toast("正在改成亲子友好版…", "👨‍👩‍👧")
+                    queue_generation(
+                        make_followup_prompt("把方案改得更适合亲子家庭，增加孩子能参与的互动任务，节奏轻松。"),
+                        temperature,
+                        "正在改成亲子友好版…",
+                    )
 
             if st.button("生成小红书文案", use_container_width=True, disabled=st.session_state.pending_generate):
-                set_toast("正在生成小红书文案…", "📕")
-                queue_generation(
-                    make_followup_prompt("基于方案生成一篇小红书文案，包含标题、正文、配图建议和标签。"),
-                    temperature,
-                    "正在生成小红书文案…",
-                )
+                if can_start_generation(None):
+                    set_toast("正在生成小红书文案…", "📕")
+                    queue_generation(
+                        make_followup_prompt("基于方案生成一篇小红书文案，包含标题、正文、配图建议和标签。"),
+                        temperature,
+                        "正在生成小红书文案…",
+                    )
 
             if st.button("生成短视频脚本", use_container_width=True, disabled=st.session_state.pending_generate):
-                set_toast("正在生成短视频脚本…", "🎬")
-                queue_generation(
-                    make_followup_prompt("基于方案生成一条 60 秒短视频脚本，包含分镜、旁白、字幕和拍摄建议。"),
-                    temperature,
-                    "正在生成短视频脚本…",
-                )
+                if can_start_generation(None):
+                    set_toast("正在生成短视频脚本…", "🎬")
+                    queue_generation(
+                        make_followup_prompt("基于方案生成一条 60 秒短视频脚本，包含分镜、旁白、字幕和拍摄建议。"),
+                        temperature,
+                        "正在生成短视频脚本…",
+                    )
 
             if st.button("加研学记录表", use_container_width=True, disabled=st.session_state.pending_generate):
-                set_toast("正在补充研学记录表…", "📚")
-                queue_generation(
-                    make_followup_prompt("为方案补充研学记录表、观察任务和采访问题。"),
-                    temperature,
-                    "正在补充研学记录表…",
-                )
+                if can_start_generation(None):
+                    set_toast("正在补充研学记录表…", "📚")
+                    queue_generation(
+                        make_followup_prompt("为方案补充研学记录表、观察任务和采访问题。"),
+                        temperature,
+                        "正在补充研学记录表…",
+                    )
         else:
             st.caption("生成方案后，可以在这里快速改成不同版本。")
 
