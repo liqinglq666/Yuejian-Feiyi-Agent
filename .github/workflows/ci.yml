@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [main, "refactor/**"]
+    branches: [main, "refactor/**", "fix/**", "feat/**"]
   pull_request:
 
 permissions:
@@ -10,12 +10,17 @@ permissions:
 
 jobs:
   test:
+    name: test (Python ${{ matrix.python-version }})
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.14"]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version: ${{ matrix.python-version }}
           cache: pip
       - name: Install dependencies
         run: python -m pip install -r requirements-dev.txt
@@ -29,7 +34,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: pytest-report
+          name: pytest-report-${{ matrix.python-version }}
           path: pytest-report.xml
           if-no-files-found: warn
           retention-days: 7

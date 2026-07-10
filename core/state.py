@@ -4,6 +4,7 @@ from collections.abc import MutableMapping
 from copy import deepcopy
 from datetime import datetime
 from typing import Any
+from uuid import uuid4
 
 from core.models import TaskRequest, TaskType
 
@@ -30,6 +31,7 @@ DEFAULT_STATE: dict[str, Any] = {
     "current_sources": "",
     "revision_history": [],
     "recent_plans": [],
+    "active_plan_id": None,
     "toast_message": "",
     "toast_icon": "🦁",
 }
@@ -89,12 +91,21 @@ def complete_initial_generation(
     answer: str,
     sources_markdown: str,
 ) -> None:
+    plan_id = uuid4().hex
+    state["active_plan_id"] = plan_id
     state["root_request"] = request.to_dict()
     state["current_answer"] = answer
     state["current_sources"] = sources_markdown
     state["revision_history"] = []
     state["pending_job"] = None
-    _add_recent_plan(state, request, answer)
+    _upsert_recent_plan(
+        state,
+        plan_id=plan_id,
+        request=request,
+        answer=answer,
+        sources=sources_markdown,
+        revision_history=[],
+    )
 
 
 def complete_revision(
@@ -122,14 +133,50 @@ def complete_revision(
             "created_at": datetime.now().isoformat(timespec="seconds"),
         }
     )
-    state["revision_history"] = history[-10:]
+    history = history[-10:]
+    plan_id = str(state.get("active_plan_id") or uuid4().hex)
+
+    state["active_plan_id"] = plan_id
+    state["revision_history"] = history
     state["root_request"] = revised_request.to_dict()
     state["current_answer"] = answer
     state["current_sources"] = sources_markdown
     state["pending_job"] = None
     state["custom_revision"] = ""
     state["pending_form_sync"] = _form_values_for_request(revised_request)
-    _replace_latest_recent_plan(state, revised_request, answer)
+    _upsert_recent_plan(
+        state,
+        plan_id=plan_id,
+        request=revised_request,
+        answer=answer,
+        sources=sources_markdown,
+        revision_history=history,
+    )
+
+
+def load_recent_plan(state: MutableMapping[str, Any], item: dict[str, Any]) -> TaskRequest:
+    request = TaskRequest.from_dict(dict(item["request"]))
+    plan_id = str(item.get("plan_id") or uuid4().hex)
+
+    recent = list(state.get("recent_plans", []))
+    for entry in recent:
+        if entry is item or (
+            not entry.get("plan_id")
+            and entry.get("answer") == item.get("answer")
+            and entry.get("request") == item.get("request")
+        ):
+            entry["plan_id"] = plan_id
+            break
+
+    state["recent_plans"] = recent
+    state["active_plan_id"] = plan_id
+    state["root_request"] = request.to_dict()
+    state["current_answer"] = str(item.get("answer", ""))
+    state["current_sources"] = str(item.get("sources", ""))
+    state["revision_history"] = deepcopy(item.get("revision_history") or [])
+    state["pending_job"] = None
+    state["pending_form_sync"] = _form_values_for_request(request)
+    return request
 
 
 def clear_current_plan(state: MutableMapping[str, Any]) -> None:
@@ -140,16 +187,19 @@ def clear_current_plan(state: MutableMapping[str, Any]) -> None:
     state["current_sources"] = ""
     state["revision_history"] = []
     state["custom_revision"] = ""
+    state["active_plan_id"] = None
 
 
 def start_new_plan(state: MutableMapping[str, Any]) -> None:
     clear_current_plan(state)
     state["selected_scene"] = DEFAULT_STATE["selected_scene"]
+    state["last_scene"] = DEFAULT_STATE["last_scene"]
     state["user_input"] = ""
     state["selected_city"] = DEFAULT_STATE["selected_city"]
     state["selected_duration"] = DEFAULT_STATE["selected_duration"]
     state["selected_identity"] = DEFAULT_STATE["selected_identity"]
     state["selected_interests"] = []
+    state["output_style"] = DEFAULT_STATE["output_style"]
 
 
 def set_toast(state: MutableMapping[str, Any], message: str, icon: str = "🦁") -> None:
@@ -161,6 +211,7 @@ def _form_values_for_request(request: TaskRequest) -> dict[str, Any]:
     return {
         "selected_scene": request.scene,
         "last_scene": request.scene,
+        "user_input": request.raw_request,
         "selected_city": request.city,
         "selected_duration": request.duration,
         "selected_identity": request.identity,
@@ -169,39 +220,30 @@ def _form_values_for_request(request: TaskRequest) -> dict[str, Any]:
     }
 
 
-def _add_recent_plan(
+def _upsert_recent_plan(
     state: MutableMapping[str, Any],
+    *,
+    plan_id: str,
     request: TaskRequest,
     answer: str,
+    sources: str,
+    revision_history: list[dict[str, Any]],
 ) -> None:
-    title = _guess_title(request)
-    item = {
-        "title": title,
-        "request": request.to_dict(),
-        "answer": answer,
-        "time": datetime.now().strftime("%H:%M"),
-    }
-    recent = [entry for entry in state.get("recent_plans", []) if entry.get("answer") != answer]
-    recent.insert(0, item)
-    state["recent_plans"] = recent[:3]
-
-
-def _replace_latest_recent_plan(
-    state: MutableMapping[str, Any],
-    request: TaskRequest,
-    answer: str,
-) -> None:
-    recent = list(state.get("recent_plans", []))
     updated = {
+        "plan_id": plan_id,
         "title": _guess_title(request),
         "request": request.to_dict(),
         "answer": answer,
+        "sources": sources,
+        "revision_history": deepcopy(revision_history),
         "time": datetime.now().strftime("%H:%M"),
     }
-    if recent:
-        recent[0] = updated
-    else:
-        recent.append(updated)
+    recent = [
+        entry
+        for entry in state.get("recent_plans", [])
+        if str(entry.get("plan_id", "")) != plan_id
+    ]
+    recent.insert(0, updated)
     state["recent_plans"] = recent[:3]
 
 

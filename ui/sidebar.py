@@ -5,8 +5,7 @@ import html
 import streamlit as st
 
 from core.config import PROVIDER_PRESETS, build_model_config
-from core.models import TaskRequest
-from core.state import set_toast, start_new_plan
+from core.state import load_recent_plan, set_toast, start_new_plan
 from services.llm import ModelGatewayError, test_connection
 
 
@@ -81,19 +80,7 @@ def _render_recent_plans() -> None:
             unsafe_allow_html=True,
         )
         if st.button("打开方案", key=f"load_recent_{index}", use_container_width=True):
-            request = TaskRequest.from_dict(item["request"])
-            st.session_state.root_request = request.to_dict()
-            st.session_state.current_answer = item.get("answer", "")
-            st.session_state.current_sources = ""
-            st.session_state.revision_history = []
-            st.session_state.pending_job = None
-            st.session_state.selected_scene = request.scene
-            st.session_state.user_input = request.raw_request
-            st.session_state.selected_city = request.city
-            st.session_state.selected_duration = request.duration
-            st.session_state.selected_identity = request.identity
-            st.session_state.selected_interests = list(request.interests)
-            st.session_state.output_style = request.output_style
+            load_recent_plan(st.session_state, item)
             set_toast(st.session_state, f"已载入：{title}", "📌")
             st.rerun()
 
