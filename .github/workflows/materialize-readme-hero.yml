@@ -5,7 +5,7 @@ on:
     branches:
       - fix/readme-hero-binary
     paths:
-      - assets/readme_hero_lingnan.jpg.b64
+      - assets/.readme_hero_ready
 
 permissions:
   contents: write
@@ -17,19 +17,26 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Restore JPEG from Base64
+      - name: Restore WebP from Base64 parts
         run: |
           python - <<'PY'
           import base64
+          import shutil
           from pathlib import Path
 
-          source = Path("assets/readme_hero_lingnan.jpg.b64")
-          target = Path("assets/readme_hero_lingnan.jpg")
-          data = base64.b64decode(source.read_text(encoding="ascii").strip(), validate=True)
-          if not data.startswith(b"\xff\xd8\xff"):
-              raise SystemExit("Decoded file is not a JPEG")
+          part_dir = Path("assets/.readme_hero_parts")
+          marker = Path("assets/.readme_hero_ready")
+          target = Path("assets/readme_hero_lingnan.webp")
+          parts = sorted(part_dir.glob("part-*"))
+          if not parts:
+              raise SystemExit("No image parts found")
+          encoded = "".join(part.read_text(encoding="ascii").strip() for part in parts)
+          data = base64.b64decode(encoded, validate=True)
+          if data[:4] != b"RIFF" or data[8:12] != b"WEBP":
+              raise SystemExit("Decoded file is not a WebP image")
           target.write_bytes(data)
-          source.unlink()
+          shutil.rmtree(part_dir)
+          marker.unlink()
           print(f"Wrote {target} ({len(data)} bytes)")
           PY
 
@@ -37,6 +44,6 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add assets/readme_hero_lingnan.jpg assets/readme_hero_lingnan.jpg.b64
+          git add -A assets
           git commit -m "docs: 放入 README 顶图"
           git push
