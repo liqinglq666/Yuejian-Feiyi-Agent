@@ -3,8 +3,12 @@
 > 面向广东文旅导览、研学教育与文化传播的 AI Agent。系统将结构化用户需求、广东非遗知识检索和任务型生成流程组合起来，输出可出发、可学习、可发布的文化体验方案。
 
 <p align="center">
-  <img src="assets/hero_feiyi.png" alt="粤见非遗 Banner" width="100%">
+  <a href="https://yuejian-feiyi-agent.streamlit.app/">
+    <img src="assets/hero_lingnan_agent.webp" alt="粤见非遗｜广东非遗体验工作台" width="100%">
+  </a>
 </p>
+
+<p align="center"><strong>点击上方图片，直接打开粤见非遗在线网页</strong></p>
 
 <p align="center">
   <img src="https://img.shields.io/badge/Agent-Structured_Routing-12B8B2?style=for-the-badge" />
