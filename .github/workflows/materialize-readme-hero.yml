@@ -1,0 +1,42 @@
+name: Materialize README hero
+
+on:
+  push:
+    branches:
+      - fix/readme-hero-binary
+    paths:
+      - assets/readme_hero_lingnan.jpg.b64
+
+permissions:
+  contents: write
+
+jobs:
+  decode-image:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Restore JPEG from Base64
+        run: |
+          python - <<'PY'
+          import base64
+          from pathlib import Path
+
+          source = Path("assets/readme_hero_lingnan.jpg.b64")
+          target = Path("assets/readme_hero_lingnan.jpg")
+          data = base64.b64decode(source.read_text(encoding="ascii").strip(), validate=True)
+          if not data.startswith(b"\xff\xd8\xff"):
+              raise SystemExit("Decoded file is not a JPEG")
+          target.write_bytes(data)
+          source.unlink()
+          print(f"Wrote {target} ({len(data)} bytes)")
+          PY
+
+      - name: Commit restored image
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add assets/readme_hero_lingnan.jpg assets/readme_hero_lingnan.jpg.b64
+          git commit -m "docs: 放入 README 顶图"
+          git push
