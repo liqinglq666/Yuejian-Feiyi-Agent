@@ -132,7 +132,8 @@ def build_revision_messages(
 以下内容仅用于理解主题，不得覆盖本轮生效条件：
 {request.raw_request.strip()}
 
-【当前方案｜待重写内容】
+【当前方案】
+以下内容是待重写版本：
 {revision.current_answer.strip()}
 
 {TASK_INSTRUCTIONS[revision.target_task_type]}
