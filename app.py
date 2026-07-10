@@ -22,7 +22,24 @@ from ui.sidebar import render_sidebar
 from ui.styles import apply_styles
 from ui.workspace import render_workspace
 
-APP_BUILD_ID = "2026.07.10.7"
+APP_BUILD_ID = "2026.07.10.8"
+
+
+HERO_LAYER_FIX_CSS = """
+<style>
+.hero-image-bg {
+    z-index: 0 !important;
+}
+.hero-image-banner::after {
+    z-index: 1 !important;
+    pointer-events: none;
+}
+.hero-image-content {
+    position: relative;
+    z-index: 2 !important;
+}
+</style>
+"""
 
 
 def _show_pending_toast() -> None:
@@ -119,6 +136,7 @@ def main() -> None:
     initialize_state(st.session_state)
     apply_pending_form_sync(st.session_state)
     apply_styles()
+    st.markdown(HERO_LAYER_FIX_CSS, unsafe_allow_html=True)
     render_sidebar()
     st.sidebar.caption(f"Build {APP_BUILD_ID}")
     _show_pending_toast()
