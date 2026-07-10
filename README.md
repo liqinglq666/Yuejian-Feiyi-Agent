@@ -2,7 +2,11 @@
 
 > 面向广东文旅导览、研学教育与文化传播的 AI Agent。系统将结构化用户需求、广东非遗知识检索和任务型生成流程组合起来，输出可出发、可学习、可发布的文化体验方案。
 
-[![粤见非遗｜广东非遗体验工作台](https://raw.githubusercontent.com/liqinglq666/Yuejian-Feiyi-Agent/main/assets/hero_lingnan_agent.webp)](https://yuejian-feiyi-agent.streamlit.app/)
+<p align="center">
+  <a href="https://yuejian-feiyi-agent.streamlit.app/">
+    <img src="https://raw.githubusercontent.com/liqinglq666/Yuejian-Feiyi-Agent/main/assets/hero_lingnan_agent.webp?v=20260710" alt="粤见非遗｜广东非遗体验工作台" width="100%">
+  </a>
+</p>
 
 <p align="center"><strong>点击上方图片，直接打开粤见非遗在线网页</strong></p>
 
