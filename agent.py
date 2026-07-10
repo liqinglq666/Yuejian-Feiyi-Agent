@@ -1,45 +1,28 @@
-"""
-agent.py
-粤见非遗智能体核心逻辑。
-
-本版优化：
-1. 默认 max_tokens 从 1800 降到 1200，减少等待时间。
-2. RAG 检索从 top_k=6 降到 top_k=4，并限制 max_total_chars=2800。
-3. 新增 ask_agent_stream，用于 Streamlit 流式输出。
-"""
-
 from __future__ import annotations
 
+import ipaddress
+import logging
 import os
+import socket
 from typing import Generator
+from urllib.parse import urlparse
 
 from dotenv import load_dotenv
 from openai import OpenAI
 
 try:
     import streamlit as st
-except Exception:
+except ImportError:
     st = None
 
-from rag import retrieve_context
-from prompts import (
-    SYSTEM_PROMPT,
-    TASK_PROMPTS,
-    FALLBACK_PROMPT,
-)
+from prompts import FALLBACK_PROMPT, SYSTEM_PROMPT, TASK_PROMPTS
+from rag import KnowledgeBaseError, retrieve_context
 
-
-# =========================================================
-# 环境变量读取
-# =========================================================
+logger = logging.getLogger(__name__)
 load_dotenv()
 
 
 def get_config_value(key: str, default: str = "") -> str:
-    """
-    优先从本地环境变量读取；
-    部署到 Streamlit Cloud 后，从 st.secrets 读取。
-    """
     value = os.getenv(key)
     if value:
         return str(value).strip()
@@ -47,116 +30,98 @@ def get_config_value(key: str, default: str = "") -> str:
     if st is not None:
         try:
             value = st.secrets.get(key, default)
-            if value:
-                return str(value).strip()
         except Exception:
-            pass
-
+            value = default
+        if value:
+            return str(value).strip()
     return default
 
 
-def get_client(
-    api_key: str | None = None,
-    base_url: str | None = None,
-) -> OpenAI:
-    """
-    创建 OpenAI 兼容客户端。
+def _blocked_address(value: str) -> bool:
+    address = ipaddress.ip_address(value)
+    return any(
+        (
+            address.is_private,
+            address.is_loopback,
+            address.is_link_local,
+            address.is_multicast,
+            address.is_reserved,
+            address.is_unspecified,
+        )
+    )
 
-    本版本为“用户侧模型接入版”：
-    - 使用用户在页面中填写的 API Key
-    - 不读取公开部署环境中的默认模型 Key
-    - 生成请求通过用户侧模型服务完成
-    """
+
+def _validate_base_url(base_url: str) -> str:
+    value = base_url.strip().rstrip("/")
+    parsed = urlparse(value)
+    allow_http = os.getenv("ALLOW_INSECURE_LLM_HTTP", "").lower() in {"1", "true", "yes", "on"}
+
+    if parsed.scheme not in {"http", "https"}:
+        raise RuntimeError("Base URL 只允许 http/https。")
+    if parsed.scheme != "https" and not allow_http:
+        raise RuntimeError("Base URL 必须使用 HTTPS。")
+    if not parsed.hostname or parsed.username or parsed.password:
+        raise RuntimeError("Base URL 格式不合法。")
+    if parsed.query or parsed.fragment:
+        raise RuntimeError("Base URL 不能带 query 或 fragment。")
+
+    host = parsed.hostname.lower()
+    allowed_hosts = {
+        item.strip().lower()
+        for item in os.getenv("LLM_ALLOWED_HOSTS", "").split(",")
+        if item.strip()
+    }
+    if allowed_hosts and host not in allowed_hosts:
+        raise RuntimeError("该模型网关不在服务端允许列表中。")
+
+    try:
+        addresses = {
+            item[4][0]
+            for item in socket.getaddrinfo(host, parsed.port or 443, type=socket.SOCK_STREAM)
+        }
+    except socket.gaierror as exc:
+        raise RuntimeError("模型网关域名解析失败。") from exc
+
+    if not addresses or any(_blocked_address(address) for address in addresses):
+        raise RuntimeError("Base URL 不能指向本机、内网或保留地址。")
+    return value
+
+
+def get_client(api_key: str | None = None, base_url: str | None = None) -> OpenAI:
     final_api_key = (api_key or "").strip()
     final_base_url = (base_url or "").strip() or "https://dashscope.aliyuncs.com/compatible-mode/v1"
-
     if not final_api_key:
         raise RuntimeError("请先在左侧「模型接入」中填写 API Key 后再生成。")
 
     return OpenAI(
         api_key=final_api_key,
-        base_url=final_base_url,
+        base_url=_validate_base_url(final_base_url),
+        max_retries=1,
+        timeout=120.0,
     )
 
 
 def get_model_name(model_name: str | None = None) -> str:
-    """
-    获取模型名称。
-
-    本版本不读取 .env / Secrets 中的 MODEL_NAME。
-    如果页面未传入模型名称，则默认使用 qwen-turbo。
-    """
     return (model_name or "").strip() or "qwen-turbo"
 
 
-# =========================================================
-# 任务类型识别
-# =========================================================
 def detect_task_type(user_input: str) -> str:
-    """
-    根据用户输入识别任务类型。
-    返回：
-    - qa：非遗问答
-    - route：路线规划
-    - study：研学任务
-    - social：图文文案
-    - video：短视频脚本
-    """
     text = user_input.lower()
-
-    video_keywords = [
-        "短视频", "分镜", "脚本", "旁白", "镜头", "抖音", "快手", "视频", "口播",
+    groups = [
+        ("video", ["短视频", "分镜", "脚本", "旁白", "镜头", "抖音", "快手", "视频", "口播"]),
+        ("social", ["小红书", "朋友圈", "推文", "文案", "标题", "标签", "种草", "发布", "图文", "宣传"]),
+        ("study", ["研学", "任务卡", "学习目标", "观察任务", "采访问题", "报告", "提纲", "课堂", "学生", "作业", "调研"]),
+        ("route", ["路线", "规划", "怎么走", "一日游", "半日", "两天", "周末", "citywalk", "打卡", "行程", "景点", "游玩", "旅行", "旅游", "亲子"]),
     ]
-
-    social_keywords = [
-        "小红书", "朋友圈", "推文", "文案", "标题", "标签", "种草", "发布", "图文", "宣传",
-    ]
-
-    study_keywords = [
-        "研学", "任务卡", "学习目标", "观察任务", "采访问题", "报告", "提纲",
-        "课堂", "学生", "作业", "调研",
-    ]
-
-    route_keywords = [
-        "路线", "规划", "怎么走", "一日游", "半日", "两天", "周末",
-        "citywalk", "打卡", "行程", "景点", "游玩", "旅行", "旅游", "亲子",
-    ]
-
-    qa_keywords = [
-        "是什么", "为什么", "介绍", "解释", "讲解", "区别", "代表", "文化", "历史", "背景", "价值",
-    ]
-
-    if any(keyword in text for keyword in video_keywords):
-        return "video"
-
-    if any(keyword in text for keyword in social_keywords):
-        return "social"
-
-    if any(keyword in text for keyword in study_keywords):
-        return "study"
-
-    if any(keyword in text for keyword in route_keywords):
-        return "route"
-
-    if any(keyword in text for keyword in qa_keywords):
-        return "qa"
-
+    for task_type, keywords in groups:
+        if any(keyword in text for keyword in keywords):
+            return task_type
     return "qa"
 
 
-# =========================================================
-# Prompt 构造
-# =========================================================
-def build_user_prompt(
-    user_input: str,
-    task_type: str,
-    context: str,
-) -> str:
-    """
-    构造最终发送给模型的用户 Prompt。
-    """
+def build_user_prompt(user_input: str, task_type: str, context: str) -> str:
     task_prompt = TASK_PROMPTS.get(task_type, FALLBACK_PROMPT)
-
+    context_text = context.strip() or "未检索到高度相关资料。请谨慎回答，并提醒用户核验实时信息。"
     return f"""
 你需要根据用户需求，结合【广东非遗知识库】生成高质量答案。
 
@@ -170,49 +135,39 @@ def build_user_prompt(
 {task_prompt}
 
 【广东非遗知识库检索结果】
-{context if context.strip() else "未检索到高度相关资料。请基于通用广东非遗知识谨慎回答，并提醒用户以官方信息为准。"}
+{context_text}
 
 【生成要求】
 1. 回答必须围绕广东、岭南文化、广东非遗或城市文化体验展开。
-2. 不要泛泛而谈，要尽量给出可执行、可落地的方案。
-3. 涉及开放时间、票价、活动、交通、预约等实时信息时，必须提醒用户以官方平台为准。
-4. 如果资料不足，不要编造具体事实，可以给出“建议核验”的提示。
-5. 语言要清晰、实用、有广东文化味道，但不要过度堆砌辞藻。
+2. 尽量给出可执行方案，不要泛泛而谈。
+3. 开放时间、票价、活动、交通和预约等实时信息必须提醒用户以官方平台为准。
+4. 资料不足时不要编造具体事实。
+5. 语言清晰实用，不要堆砌辞藻。
 """.strip()
 
 
 def build_messages(user_input: str) -> list[dict[str, str]]:
-    """
-    统一构造 messages，普通输出和流式输出共用。
-    """
     task_type = detect_task_type(user_input)
-
-    # 提速核心修改：top_k 从 6 改为 4，max_total_chars 从 4200 改为 2800
-    context = retrieve_context(
-        user_input,
-        top_k=4,
-        max_total_chars=2800,
-    )
-
+    context = retrieve_context(user_input, top_k=4, max_total_chars=2800)
     return [
-        {
-            "role": "system",
-            "content": SYSTEM_PROMPT,
-        },
+        {"role": "system", "content": SYSTEM_PROMPT},
         {
             "role": "user",
-            "content": build_user_prompt(
-                user_input=user_input,
-                task_type=task_type,
-                context=context,
-            ),
+            "content": build_user_prompt(user_input, task_type, context),
         },
     ]
 
 
-# =========================================================
-# 普通非流式输出
-# =========================================================
+def _raise_public_error(exc: Exception, *, streaming: bool = False) -> None:
+    if isinstance(exc, KnowledgeBaseError):
+        logger.error("RAG unavailable: %s", exc)
+        raise RuntimeError(f"知识库暂时不可用：{exc}") from exc
+
+    logger.exception("Model request failed", exc_info=exc)
+    prefix = "模型流式调用失败" if streaming else "模型调用失败"
+    raise RuntimeError(f"{prefix}，请检查 API Key、Base URL、模型名称和网络连接。") from exc
+
+
 def ask_agent(
     user_input: str,
     temperature: float = 0.62,
@@ -221,42 +176,25 @@ def ask_agent(
     base_url: str | None = None,
     model_name: str | None = None,
 ) -> str:
-    """
-    普通生成入口。
-    max_tokens 已从 1800 降为 1200，用于提速。
-    """
     if not user_input or not user_input.strip():
         return "请先输入你的需求，例如：我第一次来广州，有一天时间，想体验岭南非遗文化。"
 
-    client = get_client(api_key=api_key, base_url=base_url)
-    final_model_name = get_model_name(model_name)
-    messages = build_messages(user_input)
-
     try:
+        client = get_client(api_key=api_key, base_url=base_url)
         response = client.chat.completions.create(
-            model=final_model_name,
-            messages=messages,
+            model=get_model_name(model_name),
+            messages=build_messages(user_input),
             temperature=temperature,
             max_tokens=max_tokens,
         )
-
         answer = response.choices[0].message.content
-
         if not answer:
-            return "模型返回内容为空，请稍后重试，或换一种更具体的提问方式。"
-
+            raise RuntimeError("模型返回内容为空。")
         return answer.strip()
-
     except Exception as exc:
-        raise RuntimeError(
-            f"模型调用失败：{exc}\n\n"
-            "请检查 API Key、OPENAI_BASE_URL、MODEL_NAME 是否配置正确。"
-        )
+        _raise_public_error(exc)
 
 
-# =========================================================
-# 流式输出
-# =========================================================
 def ask_agent_stream(
     user_input: str,
     temperature: float = 0.62,
@@ -265,47 +203,30 @@ def ask_agent_stream(
     base_url: str | None = None,
     model_name: str | None = None,
 ) -> Generator[str, None, None]:
-    """
-    流式生成入口。
-    app.py 中会逐块读取这个生成器，实现像 ChatGPT 一样边生成边显示。
-    """
     if not user_input or not user_input.strip():
         yield "请先输入你的需求，例如：我第一次来广州，有一天时间，想体验岭南非遗文化。"
         return
 
-    client = get_client(api_key=api_key, base_url=base_url)
-    final_model_name = get_model_name(model_name)
-    messages = build_messages(user_input)
-
     try:
+        client = get_client(api_key=api_key, base_url=base_url)
         stream = client.chat.completions.create(
-            model=final_model_name,
-            messages=messages,
+            model=get_model_name(model_name),
+            messages=build_messages(user_input),
             temperature=temperature,
             max_tokens=max_tokens,
             stream=True,
         )
-
         for chunk in stream:
             if not chunk.choices:
                 continue
-
             delta = chunk.choices[0].delta
-
             if delta and delta.content:
                 yield delta.content
-
     except Exception as exc:
-        raise RuntimeError(
-            f"模型流式调用失败：{exc}\n\n"
-            "请检查 API Key、OPENAI_BASE_URL、MODEL_NAME 是否配置正确。"
-        )
+        _raise_public_error(exc, streaming=True)
 
 
-# =========================================================
-# 本地测试
-# =========================================================
 if __name__ == "__main__":
-    demo = "我第一次来广州，有一天时间，想体验岭南非遗文化，最好适合拍照和写研学记录。"
+    demo = "我第一次来广州，有一天时间，想体验岭南非遗文化。"
     for part in ask_agent_stream(demo):
         print(part, end="", flush=True)
