@@ -11,6 +11,11 @@ DEFAULT_STATE: dict[str, Any] = {
     "selected_scene": "游客路线",
     "last_scene": "游客路线",
     "user_input": "我第一次来广州，有一天时间，想体验岭南非遗文化，最好适合拍照和写研学记录。",
+    "selected_city": "自动判断",
+    "selected_duration": "自动判断",
+    "selected_identity": "自动匹配",
+    "selected_interests": [],
+    "custom_revision": "",
     "output_style": "清晰实用",
     "temperature": 0.62,
     "provider": "阿里云百炼 Qwen",
@@ -102,6 +107,17 @@ def clear_current_plan(state: MutableMapping[str, Any]) -> None:
     state["current_answer"] = ""
     state["current_sources"] = ""
     state["revision_history"] = []
+    state["custom_revision"] = ""
+
+
+def start_new_plan(state: MutableMapping[str, Any]) -> None:
+    clear_current_plan(state)
+    state["selected_scene"] = DEFAULT_STATE["selected_scene"]
+    state["user_input"] = ""
+    state["selected_city"] = DEFAULT_STATE["selected_city"]
+    state["selected_duration"] = DEFAULT_STATE["selected_duration"]
+    state["selected_identity"] = DEFAULT_STATE["selected_identity"]
+    state["selected_interests"] = []
 
 
 def set_toast(state: MutableMapping[str, Any], message: str, icon: str = "🦁") -> None:
