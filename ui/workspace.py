@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+from collections.abc import MutableMapping
+from typing import Any
+
 import streamlit as st
 
 from core.models import TaskRequest
@@ -13,6 +16,17 @@ EXAMPLES = {
     "佛山亲子体验": ("亲子体验", "我周末带孩子去佛山，想体验醒狮和石湾陶塑，节奏轻松一点。"),
     "英歌舞图文": ("内容创作", "帮我写一篇介绍潮汕英歌舞的图文内容，适合小红书发布。"),
 }
+
+
+def apply_example(state: MutableMapping[str, Any], scene: str, text: str) -> None:
+    """在组件渲染前更新示例对应的会话状态。"""
+    state["selected_scene"] = scene
+    state["user_input"] = text
+
+
+def _apply_example_callback(scene: str, text: str) -> None:
+    """Streamlit 按钮回调：回调会在下一轮组件渲染前执行。"""
+    apply_example(st.session_state, scene, text)
 
 
 def render_workspace() -> TaskRequest | None:
@@ -63,15 +77,14 @@ def render_workspace() -> TaskRequest | None:
                 columns, EXAMPLES.items(), strict=True
             ):
                 with column:
-                    if st.button(
+                    st.button(
                         label,
                         key=f"example_{label}",
                         use_container_width=True,
                         disabled=bool(st.session_state.pending_job),
-                    ):
-                        st.session_state.selected_scene = example_scene
-                        st.session_state.user_input = text
-                        st.rerun()
+                        on_click=_apply_example_callback,
+                        args=(example_scene, text),
+                    )
 
             user_input = st.text_area(
                 "一句话需求",
