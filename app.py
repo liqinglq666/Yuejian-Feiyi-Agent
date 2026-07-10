@@ -22,7 +22,7 @@ from ui.sidebar import render_sidebar
 from ui.styles import apply_styles
 from ui.workspace import render_workspace
 
-APP_BUILD_ID = "2026.07.10.6"
+APP_BUILD_ID = "2026.07.10.7"
 
 
 def _show_pending_toast() -> None:
