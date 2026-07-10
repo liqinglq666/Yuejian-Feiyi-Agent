@@ -5,6 +5,7 @@ import streamlit as st
 from core.config import build_model_config
 from core.models import ModelConfig, RevisionRequest, TaskRequest, TaskType
 from core.state import (
+    apply_pending_form_sync,
     complete_initial_generation,
     complete_revision,
     initialize_state,
@@ -21,7 +22,7 @@ from ui.sidebar import render_sidebar
 from ui.styles import apply_styles
 from ui.workspace import render_workspace
 
-APP_BUILD_ID = "2026.07.10.4"
+APP_BUILD_ID = "2026.07.10.5"
 
 
 def _show_pending_toast() -> None:
@@ -75,17 +76,19 @@ def _process_pending_job() -> None:
                 retrieval.source_markdown(),
             )
         elif kind == "revision":
-            root_request = TaskRequest.from_dict(job["root_request"])
+            effective_request = TaskRequest.from_dict(
+                job.get("revised_request") or job["root_request"]
+            )
             revision = RevisionRequest(
-                root_request=root_request,
+                root_request=effective_request,
                 current_answer=job["current_answer"],
                 instruction=job["instruction"],
                 target_task_type=TaskType(job["target_task_type"]),
             )
-            retrieval_query = f"{root_request.retrieval_query} {revision.instruction}"
+            retrieval_query = f"{effective_request.retrieval_query} {revision.instruction}"
             retrieval = retrieve(retrieval_query)
             messages = build_revision_messages(revision, retrieval)
-            render_request_summary(root_request)
+            render_request_summary(effective_request)
             answer = _stream_answer(config, messages)
             complete_revision(
                 st.session_state,
@@ -93,6 +96,7 @@ def _process_pending_job() -> None:
                 revision.target_task_type,
                 answer,
                 retrieval.source_markdown(),
+                revised_request=effective_request,
             )
         else:
             raise ValueError("未知生成任务。")
@@ -113,6 +117,7 @@ def main() -> None:
     )
 
     initialize_state(st.session_state)
+    apply_pending_form_sync(st.session_state)
     apply_styles()
     render_sidebar()
     st.sidebar.caption(f"Build {APP_BUILD_ID}")
