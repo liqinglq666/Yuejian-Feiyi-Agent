@@ -21,6 +21,8 @@ from ui.sidebar import render_sidebar
 from ui.styles import apply_styles
 from ui.workspace import render_workspace
 
+APP_BUILD_ID = "2026.07.10.3"
+
 
 def _show_pending_toast() -> None:
     message = str(st.session_state.get("toast_message", ""))
@@ -113,6 +115,7 @@ def main() -> None:
     initialize_state(st.session_state)
     apply_styles()
     render_sidebar()
+    st.sidebar.caption(f"Build {APP_BUILD_ID}")
     _show_pending_toast()
     render_topbar_and_hero()
 
