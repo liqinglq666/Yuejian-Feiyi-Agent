@@ -7,7 +7,6 @@ from typing import Any
 
 from core.models import TaskRequest, TaskType
 
-
 DEFAULT_STATE: dict[str, Any] = {
     "selected_scene": "游客路线",
     "last_scene": "游客路线",

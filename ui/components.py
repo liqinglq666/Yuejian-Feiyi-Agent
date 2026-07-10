@@ -6,7 +6,6 @@ import streamlit as st
 
 from core.models import TaskRequest
 
-
 SCENE_DESCRIPTIONS = {
     "游客路线": "生成城市文化路线、每站看点、体验建议与出发提醒。",
     "学生研学": "生成研学主题、观察任务、采访问题、记录表和报告提纲。",

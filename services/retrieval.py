@@ -301,7 +301,7 @@ def build_index(data_dir: Path = DEFAULT_DATA_DIR) -> SearchIndex:
                 continue
             title = heading or default_title
             digest = hashlib.sha1(
-                f"{source_path}:{position}:{content}".encode("utf-8")
+                f"{source_path}:{position}:{content}".encode()
             ).hexdigest()[:12]
             indexed.append(
                 IndexedChunk(

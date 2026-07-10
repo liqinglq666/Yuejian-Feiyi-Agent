@@ -81,7 +81,7 @@ class TaskRequest:
         return payload
 
     @classmethod
-    def from_dict(cls, payload: dict[str, Any]) -> "TaskRequest":
+    def from_dict(cls, payload: dict[str, Any]) -> TaskRequest:
         data = dict(payload)
         raw_type = data.get("task_type")
         data["task_type"] = TaskType(raw_type) if raw_type else None
@@ -161,9 +161,7 @@ class RetrievalBundle:
                 metadata.append(f"类别：{chunk.category}")
             if chunk.source_url:
                 metadata.append(f"链接：{chunk.source_url}")
-            blocks.append(
-                f"[S{index}] {'；'.join(metadata)}\n{chunk.content.strip()}"
-            )
+            blocks.append(f"[S{index}] {'；'.join(metadata)}\n{chunk.content.strip()}")
         return "\n\n---\n\n".join(blocks)
 
     def source_markdown(self) -> str:

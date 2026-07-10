@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from core.models import RetrievalBundle, RevisionRequest, TaskRequest, TaskType
 
-
 SYSTEM_PROMPT = """
 你是“粤见非遗”，一个面向广东文旅导览、研学教育与城市文化传播的 AI 智能体。
 
@@ -17,7 +16,6 @@ SYSTEM_PROMPT = """
 6. 不要解释你的内部步骤，直接给用户可用的完整结果。
 """.strip()
 
-
 WEB_OUTPUT_RULES = """
 【网页输出规则】
 - 只使用二级标题和三级标题。
@@ -26,7 +24,6 @@ WEB_OUTPUT_RULES = """
 - 不输出 HTML 标签、空编号或空列表项。
 - 涉及实时信息时写明“请以官方平台最新信息为准”。
 """.strip()
-
 
 TASK_INSTRUCTIONS: dict[TaskType, str] = {
     TaskType.QA: """

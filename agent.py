@@ -5,13 +5,17 @@ functions remain for scripts or third-party imports that used the original API.
 """
 from __future__ import annotations
 
+import os
 from collections.abc import Generator
+
+from dotenv import load_dotenv
 
 from core.models import ModelConfig, TaskRequest, TaskType
 from services.llm import complete_chat, stream_chat
 from services.prompt_builder import build_initial_messages
 from services.retrieval import retrieve
 
+load_dotenv()
 
 KEYWORD_GROUPS: tuple[tuple[TaskType, tuple[str, ...]], ...] = (
     (TaskType.VIDEO, ("短视频", "分镜", "旁白", "镜头", "口播")),
@@ -48,9 +52,13 @@ def _build_request(user_input: str, task_type: str | TaskType | None) -> TaskReq
 
 def _config(api_key: str | None, base_url: str | None, model_name: str | None) -> ModelConfig:
     return ModelConfig(
-        api_key=(api_key or "").strip(),
-        base_url=(base_url or "https://dashscope.aliyuncs.com/compatible-mode/v1").strip(),
-        model_name=(model_name or "qwen-turbo").strip(),
+        api_key=(api_key or os.getenv("OPENAI_API_KEY", "")).strip(),
+        base_url=(
+            base_url
+            or os.getenv("OPENAI_BASE_URL", "")
+            or "https://dashscope.aliyuncs.com/compatible-mode/v1"
+        ).strip(),
+        model_name=(model_name or os.getenv("MODEL_NAME", "") or "qwen-turbo").strip(),
     )
 
 
