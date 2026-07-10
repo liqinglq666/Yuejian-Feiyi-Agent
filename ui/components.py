@@ -49,7 +49,7 @@ def asset_data_uri(filename: str) -> str:
 
 
 def render_topbar_and_hero() -> None:
-    hero_uri = asset_data_uri("hero_lingnan_agent.webp")
+    hero_uri = asset_data_uri("readme_hero_lingnan.png")
     st.markdown(
         f"""
         <style>
@@ -70,13 +70,13 @@ def render_topbar_and_hero() -> None:
             height: 100%;
             object-fit: cover;
             object-position: center center;
-            z-index: -2;
+            z-index: 0;
         }}
         .hero-image-banner::after {{
             content: "";
             position: absolute;
             inset: 0;
-            z-index: -1;
+            z-index: 1;
             background: linear-gradient(
                 90deg,
                 rgba(250, 247, 240, .98) 0%,
@@ -86,6 +86,8 @@ def render_topbar_and_hero() -> None:
             );
         }}
         .hero-image-content {{
+            position: relative;
+            z-index: 2;
             max-width: 55%;
             padding: 2.1rem 2.2rem;
         }}
