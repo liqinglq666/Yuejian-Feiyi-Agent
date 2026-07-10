@@ -1,8 +1,9 @@
 from __future__ import annotations
 
+from collections.abc import MutableMapping
 from copy import deepcopy
 from datetime import datetime
-from typing import Any, MutableMapping
+from typing import Any
 
 from core.models import TaskRequest, TaskType
 

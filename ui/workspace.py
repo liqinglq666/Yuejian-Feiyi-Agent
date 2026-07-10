@@ -59,7 +59,9 @@ def render_workspace() -> TaskRequest | None:
 
             st.caption("试试这些：")
             columns = st.columns(4)
-            for column, (label, (example_scene, text)) in zip(columns, EXAMPLES.items()):
+            for column, (label, (example_scene, text)) in zip(
+                columns, EXAMPLES.items(), strict=True
+            ):
                 with column:
                     if st.button(
                         label,
