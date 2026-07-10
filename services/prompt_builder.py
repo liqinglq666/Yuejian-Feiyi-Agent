@@ -125,7 +125,8 @@ def build_revision_messages(
 【本轮生效条件｜最高优先级】
 {chr(10).join(request.condition_lines)}
 
-【本次修改要求｜最高优先级】
+【本次修改要求】
+以下要求为最高优先级：
 {revision.instruction.strip()}
 
 【最初需求】
