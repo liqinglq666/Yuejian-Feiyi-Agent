@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import html
 from collections.abc import MutableMapping
+from dataclasses import dataclass
 from typing import Any
 
 import streamlit as st
@@ -22,11 +23,55 @@ SCENES: dict[str, tuple[str, str]] = {
     "非遗问答": ("🦁", "快速理解文化与技艺"),
 }
 
-EXAMPLES = {
-    "广州一日路线": ("游客路线", "我第一次来广州，有一天时间，想体验岭南非遗文化，最好适合拍照和写研学记录。"),
-    "高中研学任务": ("学生研学", "我是高中生，要做一份广东非遗研学报告，请设计围绕粤剧、醒狮和广绣的任务卡。"),
-    "佛山亲子体验": ("亲子体验", "我周末带孩子去佛山，想体验醒狮和石湾陶塑，节奏轻松一点。"),
-    "英歌舞图文": ("内容创作", "帮我写一篇介绍潮汕英歌舞的图文内容，适合小红书发布。"),
+
+@dataclass(frozen=True)
+class ExamplePreset:
+    scene: str
+    text: str
+    city: str
+    duration: str
+    identity: str
+    interests: tuple[str, ...]
+    output_style: str
+
+
+EXAMPLES: dict[str, ExamplePreset] = {
+    "广州一日路线": ExamplePreset(
+        scene="游客路线",
+        text="我第一次来广州，有一天时间，想体验岭南非遗文化，最好适合拍照和写研学记录。",
+        city="广州",
+        duration="一天",
+        identity="外地游客",
+        interests=("非遗", "拍照", "研学"),
+        output_style="游客友好",
+    ),
+    "高中研学任务": ExamplePreset(
+        scene="学生研学",
+        text="我是高中生，要做一份广东非遗研学报告，请设计围绕粤剧、醒狮和广绣的任务卡。",
+        city="自动判断",
+        duration="一天",
+        identity="学生研学",
+        interests=("粤剧", "醒狮", "广绣", "研学"),
+        output_style="研学报告",
+    ),
+    "佛山亲子体验": ExamplePreset(
+        scene="亲子体验",
+        text="我周末带孩子去佛山，想体验醒狮和石湾陶塑，节奏轻松一点。",
+        city="佛山",
+        duration="周末",
+        identity="亲子家庭",
+        interests=("醒狮", "非遗"),
+        output_style="游客友好",
+    ),
+    "英歌舞图文": ExamplePreset(
+        scene="内容创作",
+        text="帮我写一篇介绍潮汕英歌舞的图文内容，适合小红书发布。",
+        city="汕头",
+        duration="不限",
+        identity="内容创作者",
+        interests=("非遗", "拍照"),
+        output_style="小红书风格",
+    ),
 }
 
 CITIES = ["自动判断", "广州", "佛山", "潮州", "汕头", "深圳", "梅州", "江门", "珠海", "东莞"]
@@ -47,18 +92,41 @@ INTERESTS = [
 ]
 
 
-def apply_example(state: MutableMapping[str, Any], scene: str, text: str) -> None:
-    """在组件渲染前更新示例对应的会话状态。"""
+def apply_example(
+    state: MutableMapping[str, Any],
+    scene: str,
+    text: str,
+    city: str = "自动判断",
+    duration: str = "自动判断",
+    identity: str = "自动匹配",
+    interests: tuple[str, ...] = (),
+    output_style: str = "清晰实用",
+) -> None:
     state["selected_scene"] = scene
+    state["last_scene"] = scene
     state["user_input"] = text
+    state["selected_city"] = city
+    state["selected_duration"] = duration
+    state["selected_identity"] = identity
+    state["selected_interests"] = list(interests)
+    state["output_style"] = output_style
 
 
 def select_scene(state: MutableMapping[str, Any], scene: str) -> None:
     state["selected_scene"] = scene
 
 
-def _apply_example_callback(scene: str, text: str) -> None:
-    apply_example(st.session_state, scene, text)
+def _apply_example_callback(preset: ExamplePreset) -> None:
+    apply_example(
+        st.session_state,
+        preset.scene,
+        preset.text,
+        preset.city,
+        preset.duration,
+        preset.identity,
+        preset.interests,
+        preset.output_style,
+    )
 
 
 def _select_scene_callback(scene: str) -> None:
@@ -93,7 +161,7 @@ def _render_scene_selector() -> str:
 def _render_examples() -> None:
     st.markdown('<div class="prompt-hint">没有灵感？从这些常用需求开始：</div>', unsafe_allow_html=True)
     columns = st.columns(len(EXAMPLES), gap="small")
-    for column, (label, (example_scene, text)) in zip(columns, EXAMPLES.items(), strict=True):
+    for column, (label, preset) in zip(columns, EXAMPLES.items(), strict=True):
         with column:
             st.button(
                 label,
@@ -101,7 +169,7 @@ def _render_examples() -> None:
                 use_container_width=True,
                 disabled=bool(st.session_state.pending_job),
                 on_click=_apply_example_callback,
-                args=(example_scene, text),
+                args=(preset,),
             )
 
 
