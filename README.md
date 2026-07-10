@@ -4,7 +4,7 @@
 
 <p align="center">
   <a href="https://yuejian-feiyi-agent.streamlit.app/">
-    <img src="https://raw.githubusercontent.com/liqinglq666/Yuejian-Feiyi-Agent/main/assets/hero_lingnan_agent.webp?v=20260710" alt="粤见非遗｜广东非遗体验工作台" width="100%">
+    <img src="https://raw.githubusercontent.com/liqinglq666/Yuejian-Feiyi-Agent/main/assets/readme_hero_lingnan.webp?v=20260710-3" alt="粤见非遗｜广东非遗体验工作台" width="100%">
   </a>
 </p>
 
