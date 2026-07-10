@@ -1,10 +1,15 @@
 from __future__ import annotations
 
+import base64
 import html
+from functools import lru_cache
+from pathlib import Path
 
 import streamlit as st
 
 from core.models import TaskRequest
+
+ASSET_DIR = Path(__file__).resolve().parents[1] / "assets"
 
 SCENE_DESCRIPTIONS = {
     "游客路线": "生成城市文化路线、每站看点、体验建议与出发提醒。",
@@ -31,9 +36,118 @@ SCENE_PUBLIC_NAMES = {
 }
 
 
+@lru_cache(maxsize=8)
+def asset_data_uri(filename: str) -> str:
+    """读取本地图片并转换成可直接嵌入网页的 Data URI。"""
+    path = ASSET_DIR / filename
+    if not path.is_file():
+        raise FileNotFoundError(f"缺少页面素材：{filename}")
+
+    mime = "image/webp" if path.suffix.lower() == ".webp" else "image/png"
+    encoded = base64.b64encode(path.read_bytes()).decode("ascii")
+    return f"data:{mime};base64,{encoded}"
+
+
 def render_topbar_and_hero() -> None:
+    hero_uri = asset_data_uri("hero_lingnan_agent.webp")
     st.markdown(
-        """
+        f"""
+        <style>
+        .hero-image-banner {{
+            position: relative;
+            min-height: 340px;
+            overflow: hidden;
+            border-radius: 30px;
+            margin-bottom: 1.25rem;
+            background: #f7f0e7;
+            box-shadow: 0 26px 62px rgba(22, 50, 79, .15);
+            isolation: isolate;
+        }}
+        .hero-image-bg {{
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            object-position: center center;
+            z-index: -2;
+        }}
+        .hero-image-banner::after {{
+            content: "";
+            position: absolute;
+            inset: 0;
+            z-index: -1;
+            background: linear-gradient(
+                90deg,
+                rgba(250, 247, 240, .98) 0%,
+                rgba(250, 247, 240, .93) 34%,
+                rgba(250, 247, 240, .62) 52%,
+                rgba(250, 247, 240, .08) 73%
+            );
+        }}
+        .hero-image-content {{
+            max-width: 55%;
+            padding: 2.1rem 2.2rem;
+        }}
+        .hero-image-kicker {{
+            display: inline-flex;
+            padding: .36rem .7rem;
+            color: #0f6f72;
+            background: rgba(255, 255, 255, .76);
+            border: 1px solid rgba(21, 154, 156, .16);
+            border-radius: 999px;
+            font-size: .8rem;
+            font-weight: 850;
+            backdrop-filter: blur(10px);
+        }}
+        .hero-image-title {{
+            max-width: 670px;
+            margin: .72rem 0 .45rem;
+            color: #16324f !important;
+            font-size: 2.75rem;
+            line-height: 1.08;
+            font-weight: 950;
+            letter-spacing: .018em;
+        }}
+        .hero-image-subtitle {{
+            max-width: 620px;
+            color: #425f70;
+            font-size: 1rem;
+            line-height: 1.72;
+            font-weight: 640;
+        }}
+        .hero-image-chips {{
+            display: flex;
+            flex-wrap: wrap;
+            gap: .42rem;
+            margin-top: .9rem;
+        }}
+        .hero-image-chip {{
+            padding: .34rem .64rem;
+            color: #16324f;
+            background: rgba(255, 255, 255, .76);
+            border: 1px solid rgba(22, 50, 79, .09);
+            border-radius: 999px;
+            font-size: .76rem;
+            font-weight: 760;
+            backdrop-filter: blur(10px);
+        }}
+        @media (max-width: 920px) {{
+            .hero-image-banner {{ min-height: 395px; }}
+            .hero-image-bg {{ object-position: 70% center; }}
+            .hero-image-banner::after {{
+                background: linear-gradient(
+                    90deg,
+                    rgba(250, 247, 240, .98) 0%,
+                    rgba(250, 247, 240, .94) 56%,
+                    rgba(250, 247, 240, .48) 100%
+                );
+            }}
+            .hero-image-content {{ max-width: 100%; padding: 1.55rem 1.2rem; }}
+            .hero-image-title {{ max-width: 82%; font-size: 2.15rem; }}
+            .hero-image-subtitle {{ max-width: 78%; font-size: .93rem; }}
+        }}
+        </style>
         <div class="topbar">
             <div class="topbar-left">
                 <div class="topbar-logo">粤</div>
@@ -45,23 +159,25 @@ def render_topbar_and_hero() -> None:
                 <span class="topbar-pill">内容创作</span>
             </div>
         </div>
-        <div class="hero">
-            <div class="hero-grid">
-                <div>
-                    <div class="hero-kicker">🦁 寻脉岭南，智游非遗</div>
-                    <h1 class="hero-title">一句话，规划你的岭南非遗体验</h1>
-                    <div class="hero-subtitle">
-                        说清楚去哪里、和谁、想体验什么，粤见非遗会为你生成可出发、可研学、可发布的完整方案。
-                    </div>
-                    <div class="hero-chips">
-                        <span class="hero-chip">🧭 城市文化路线</span>
-                        <span class="hero-chip">📚 研学任务卡</span>
-                        <span class="hero-chip">👨‍👩‍👧 亲子互动</span>
-                        <span class="hero-chip">🎬 图文与短视频</span>
-                    </div>
+        <div class="hero-image-banner">
+            <img
+                class="hero-image-bg"
+                src="{hero_uri}"
+                alt="醒狮、粤剧、广绣、陶塑与岭南建筑组成的广东非遗插画"
+                loading="eager"
+                decoding="async"
+            />
+            <div class="hero-image-content">
+                <div class="hero-image-kicker">🦁 寻脉岭南，智游非遗</div>
+                <h1 class="hero-image-title">一句话，规划你的岭南非遗体验</h1>
+                <div class="hero-image-subtitle">
+                    说清楚去哪里、和谁、想体验什么，粤见非遗会为你生成可出发、可研学、可发布的完整方案。
                 </div>
-                <div class="hero-art" aria-hidden="true">
-                    <div class="hero-seal">獅</div>
+                <div class="hero-image-chips">
+                    <span class="hero-image-chip">🧭 城市文化路线</span>
+                    <span class="hero-image-chip">📚 研学任务卡</span>
+                    <span class="hero-image-chip">👨‍👩‍👧 亲子互动</span>
+                    <span class="hero-image-chip">🎬 图文与短视频</span>
                 </div>
             </div>
         </div>
