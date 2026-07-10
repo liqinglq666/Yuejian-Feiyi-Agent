@@ -120,19 +120,22 @@ def build_revision_messages(
 ) -> list[dict[str, str]]:
     request = revision.root_request
     prompt = f"""
-请基于同一个原始需求，重新输出一份完整方案。不要只列修改点。
+请基于当前方案重新输出一份完整结果，不要只列修改点。
 
-【最初需求】
-{request.raw_request.strip()}
-
-【固定条件】
+【本轮生效条件｜最高优先级】
 {chr(10).join(request.condition_lines)}
 
-【当前方案】
-{revision.current_answer.strip()}
-
 【本次修改要求】
+以下要求为最高优先级：
 {revision.instruction.strip()}
+
+【最初需求】
+以下内容仅用于理解主题，不得覆盖本轮生效条件：
+{request.raw_request.strip()}
+
+【当前方案】
+以下内容是待重写版本：
+{revision.current_answer.strip()}
 
 {TASK_INSTRUCTIONS[revision.target_task_type]}
 
@@ -140,9 +143,12 @@ def build_revision_messages(
 {retrieval.formatted_context()}
 
 【重要约束】
+- 本轮生效条件和本次修改要求优先于最初需求及当前方案中的旧条件。
+- 若最初需求或当前方案仍写着“一天”“两天”等旧时间，必须以本轮生效的“时间”字段为准。
+- 必须重新计算行程节点数量和时间轴，不能只在标题中替换时间文字。
 - “当前方案”只是待改写内容，不是新的用户需求。
 - 不要把上一轮 Prompt、修改记录或内部说明复制进结果。
-- 保留仍然正确的信息，删除与本次目标冲突的部分。
+- 保留仍然正确的信息，删除与本轮生效条件冲突的部分。
 - 使用检索资料事实时标注 [S1]、[S2] 等来源编号。
 
 {WEB_OUTPUT_RULES}

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import asdict, dataclass, field
+from dataclasses import asdict, dataclass, field, replace
 from enum import Enum
 from typing import Any
 
@@ -73,6 +73,10 @@ class TaskRequest:
             ("特别想包含", "、".join(self.interests) if self.interests else "未指定"),
         ]
         return [f"- {name}：{value}" for name, value in values]
+
+    def with_updates(self, **changes: Any) -> TaskRequest:
+        """Return a validated immutable copy with structured condition updates."""
+        return replace(self, **changes)
 
     def to_dict(self) -> dict[str, Any]:
         payload = asdict(self)
