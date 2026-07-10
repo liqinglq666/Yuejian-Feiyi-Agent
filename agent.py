@@ -11,7 +11,7 @@ from collections.abc import Generator
 from dotenv import load_dotenv
 
 from core.models import ModelConfig, TaskRequest, TaskType
-from services.llm import complete_chat, stream_chat
+from services.llm import build_client
 from services.prompt_builder import build_initial_messages
 from services.retrieval import retrieve
 
@@ -62,6 +62,25 @@ def _config(api_key: str | None, base_url: str | None, model_name: str | None) -
     )
 
 
+def get_client(api_key: str | None = None, base_url: str | None = None):
+    """Compatibility client factory retained for existing imports and tests."""
+    return build_client(_config(api_key, base_url, None))
+
+
+def _messages(user_input: str, task_type: str | TaskType | None) -> list[dict[str, str]]:
+    request = _build_request(user_input, task_type)
+    retrieval = retrieve(request.retrieval_query)
+    return build_initial_messages(request, retrieval)
+
+
+def _raise_compat_error(exc: Exception, *, streaming: bool = False) -> None:
+    del exc
+    prefix = "模型流式调用失败" if streaming else "模型调用失败"
+    raise RuntimeError(
+        f"{prefix}，请检查 API Key、Base URL、模型名称和网络连接。"
+    ) from None
+
+
 def ask_agent(
     user_input: str,
     temperature: float = 0.62,
@@ -71,14 +90,23 @@ def ask_agent(
     model_name: str | None = None,
     task_type: str | TaskType | None = None,
 ) -> str:
-    request = _build_request(user_input, task_type)
-    retrieval = retrieve(request.retrieval_query)
-    return complete_chat(
-        _config(api_key, base_url, model_name),
-        build_initial_messages(request, retrieval),
-        temperature=temperature,
-        max_tokens=max_tokens,
-    )
+    if not user_input.strip():
+        return "请先输入你的需求，例如：我第一次来广州，有一天时间，想体验岭南非遗文化。"
+
+    try:
+        client = get_client(api_key=api_key, base_url=base_url)
+        response = client.chat.completions.create(
+            model=_config(api_key, base_url, model_name).model_name,
+            messages=_messages(user_input, task_type),
+            temperature=temperature,
+            max_tokens=max_tokens,
+        )
+        answer = response.choices[0].message.content
+        if not answer:
+            raise RuntimeError("模型返回内容为空。")
+        return answer.strip()
+    except Exception as exc:
+        _raise_compat_error(exc)
 
 
 def ask_agent_stream(
@@ -90,11 +118,24 @@ def ask_agent_stream(
     model_name: str | None = None,
     task_type: str | TaskType | None = None,
 ) -> Generator[str, None, None]:
-    request = _build_request(user_input, task_type)
-    retrieval = retrieve(request.retrieval_query)
-    yield from stream_chat(
-        _config(api_key, base_url, model_name),
-        build_initial_messages(request, retrieval),
-        temperature=temperature,
-        max_tokens=max_tokens,
-    )
+    if not user_input.strip():
+        yield "请先输入你的需求，例如：我第一次来广州，有一天时间，想体验岭南非遗文化。"
+        return
+
+    try:
+        client = get_client(api_key=api_key, base_url=base_url)
+        stream = client.chat.completions.create(
+            model=_config(api_key, base_url, model_name).model_name,
+            messages=_messages(user_input, task_type),
+            temperature=temperature,
+            max_tokens=max_tokens,
+            stream=True,
+        )
+        for chunk in stream:
+            if not chunk.choices:
+                continue
+            delta = chunk.choices[0].delta
+            if delta and delta.content:
+                yield delta.content
+    except Exception as exc:
+        _raise_compat_error(exc, streaming=True)
