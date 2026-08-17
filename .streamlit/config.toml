@@ -1,0 +1,11 @@
+[client]
+toolbarMode = "viewer"
+
+[browser]
+gatherUsageStats = false
+
+[theme]
+primaryColor = "#12b8b2"
+backgroundColor = "#ffffff"
+secondaryBackgroundColor = "#f4faff"
+textColor = "#101828"
