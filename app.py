@@ -22,7 +22,7 @@ from ui.sidebar import render_sidebar
 from ui.styles import apply_styles
 from ui.workspace import WORKSPACE_UI_BUILD_ID, render_workspace
 
-APP_BUILD_ID = "2026.08.19.5"
+APP_BUILD_ID = "2026.08.19.6"
 
 
 HERO_LAYER_FIX_CSS = """
@@ -142,7 +142,7 @@ def main() -> None:
         page_title="粤见非遗｜广东非遗体验工作台",
         page_icon="🦁",
         layout="wide",
-        initial_sidebar_state="expanded",
+        initial_sidebar_state="auto",
     )
 
     initialize_state(st.session_state)
