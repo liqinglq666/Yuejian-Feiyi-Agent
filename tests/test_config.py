@@ -1,6 +1,11 @@
 import pytest
 
-from core.config import DEFAULT_BASE_URL, DEFAULT_MODEL_NAME, build_model_config, model_service_ready
+from core.config import (
+    DEFAULT_BASE_URL,
+    DEFAULT_MODEL_NAME,
+    build_model_config,
+    model_service_ready,
+)
 
 
 def test_build_model_config_reads_server_environment(monkeypatch: pytest.MonkeyPatch) -> None:
