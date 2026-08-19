@@ -98,13 +98,14 @@ source_url: https://example.com/source
 
 系统不会把上一轮完整 Prompt 当作新的用户需求保存，避免多轮修改后上下文递归膨胀。
 
-### 6. 安全模型接入
+### 6. 服务端统一模型接入
 
-- API Key 只保存在当前 Streamlit 会话
-- 自定义 Base URL 默认要求 HTTPS
-- 拒绝本机、内网、保留地址及带账号密码的 URL
-- 支持服务器端域名允许列表
-- 401、403、404、429、超时和连接错误分别提示
+- API Key、Base URL 和模型名称仅由项目维护者在服务端部署环境中配置
+- 网页端不提供 API Key、模型服务商、Base URL 或模型名称输入框
+- 用户无法通过页面把请求转发到任意自定义模型网关
+- 模型服务地址默认要求 HTTPS，并拒绝本机、内网、保留地址及带账号密码的 URL
+- 生产环境可使用 `LLM_ALLOWED_HOSTS` 限制服务端允许访问的模型域名
+- 401、403、404、429、超时和连接错误会转换为不泄露密钥与内部配置的用户提示
 - 流式失败仅在尚未返回任何文本时回退普通生成，避免部分输出后再次计费
 
 ### 7. 多格式导出
@@ -129,7 +130,7 @@ flowchart TB
     MB --> RR
     RT --> PB[Prompt Builder]
     RR --> PB
-    PB --> LLM[OpenAI Compatible API]
+    PB --> LLM[服务端 OpenAI Compatible API]
     LLM --> OUT[结构化结果]
     OUT --> REV[连续调整]
     OUT --> EXP[Markdown / TXT / Word]
@@ -141,7 +142,7 @@ flowchart TB
 ```text
 Yuejian-Feiyi-Agent/
 ├── app.py                       # Streamlit 应用入口与流程编排
-├── core/                        # 领域模型、配置、状态与调整逻辑
+├── core/                        # 领域模型、服务端配置、状态与调整逻辑
 ├── services/                    # 检索、Prompt、模型网关、输出与导出
 ├── ui/                          # Streamlit 页面组件与样式
 ├── data/                        # 广东非遗知识库
@@ -194,17 +195,26 @@ python -m pip install -r requirements.txt
 python -m pip install -r requirements-dev.txt
 ```
 
-### 4. 启动应用
+### 4. 配置服务端模型
+
+复制 `.env.example` 为 `.env`，只在服务端填写真实配置：
+
+```env
+OPENAI_API_KEY=your_server_api_key_here
+OPENAI_BASE_URL=https://dashscope.aliyuncs.com/compatible-mode/v1
+MODEL_NAME=qwen-turbo
+LLM_ALLOWED_HOSTS=dashscope.aliyuncs.com
+```
+
+如果使用 Streamlit Community Cloud，可把同名键写入项目 Secrets；不要把 `.env` 或 `.streamlit/secrets.toml` 提交到 Git。
+
+### 5. 启动应用
 
 ```bash
 python -m streamlit run app.py
 ```
 
-浏览器访问 `http://localhost:8501`。
-
-### 5. 配置模型
-
-在侧边栏填写 API Key、Base URL 和模型名称，点击“测试模型连接”确认接口可用，再生成内容。
+浏览器访问 `http://localhost:8501`。终端用户无需也不能在网页中配置 API Key。
 
 ---
 
@@ -233,7 +243,7 @@ python -m compileall -q .
 python scripts/run_benchmark.py
 ```
 
-当前测试覆盖任务路由、检索查询、连续优化、城市与项目排序、模型网关安全、输出清洗和主要状态逻辑。
+当前测试覆盖任务路由、检索查询、连续优化、城市与项目排序、服务端模型配置、模型网关安全、输出清洗和主要状态逻辑。
 
 Benchmark 是可扩展的基础评测集，不在 README 中声明未经持续验证的准确率数字。
 
@@ -244,7 +254,7 @@ Benchmark 是可扩展的基础评测集，不在 README 中声明未经持续�
 - 当前检索器是无外部向量数据库的轻量混合检索，不等同于大型语义向量模型。
 - 路线暂未接入地图、实时交通和 POI 营业数据，因此不会承诺精确通勤时间。
 - 模型输出仍可能出现错误，重要文化事实应结合官方资料核验。
-- 在线 Demo 需要用户提供兼容模型 API Key。
+- 公网部署使用服务端统一 API Key 时，应在托管平台、反向代理或 API 网关增加访问控制、限流和预算告警，避免匿名滥用产生费用。
 - Word 导出以可编辑文本为主，复杂 Markdown 表格不会完全复刻网页样式。
 
 ## 文档
