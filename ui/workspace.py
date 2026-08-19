@@ -7,7 +7,7 @@ from typing import Any
 
 import streamlit as st
 
-from core.config import model_service_ready
+from core.config import active_model_source, platform_service_ready, user_api_configured
 from core.models import GUANGDONG_CITIES, MAX_RAW_REQUEST_CHARS, TaskRequest, TaskType
 from ui.components import (
     SCENE_DESCRIPTIONS,
@@ -182,6 +182,17 @@ def _render_examples() -> None:
             )
 
 
+def _model_status_text() -> str:
+    source = active_model_source(st.session_state)
+    if source == "user" and user_api_configured(st.session_state):
+        return "当前使用你的个人 API"
+    if source == "platform" and platform_service_ready():
+        return "当前使用平台 API"
+    if user_api_configured(st.session_state):
+        return "平台 API 不可用，可切换到我的 API"
+    return "平台 API 不可用，可在侧边栏配置个人 API"
+
+
 def _render_workspace_aside(
     scene: str,
     city: str,
@@ -191,7 +202,7 @@ def _render_workspace_aside(
 ) -> None:
     public_name = SCENE_PUBLIC_NAMES.get(scene, scene)
     description = SCENE_DESCRIPTIONS.get(scene, "生成广东非遗文化方案。")
-    api_text = "AI 服务已就绪，由平台统一提供" if model_service_ready() else "AI 服务暂不可用，请稍后再试"
+    api_text = _model_status_text()
     format_line = ""
     if scene == "内容创作":
         format_line = f'<span class="condition-pill">🎬 {html.escape(content_format)}</span>'
