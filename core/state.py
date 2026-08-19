@@ -20,6 +20,13 @@ DEFAULT_STATE: dict[str, Any] = {
     "custom_revision": "",
     "output_style": "清晰实用",
     "temperature": 0.62,
+    "model_mode": "auto",
+    "user_provider": "阿里云百炼",
+    "user_api_key": "",
+    "user_base_url": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+    "user_model_name": "qwen-plus",
+    "user_api_test_status": "",
+    "user_api_test_message": "",
     "pending_job": None,
     "pending_form_sync": None,
     "root_request": None,
@@ -184,6 +191,15 @@ def clear_current_plan(state: MutableMapping[str, Any]) -> None:
     state["revision_history"] = []
     state["custom_revision"] = ""
     state["active_plan_id"] = None
+
+
+def clear_user_api_config(state: MutableMapping[str, Any]) -> None:
+    """Forget BYOK credentials without touching generated plans."""
+    state["user_api_key"] = ""
+    state["user_api_test_status"] = ""
+    state["user_api_test_message"] = ""
+    if state.get("model_mode") == "user":
+        state["model_mode"] = "auto"
 
 
 def start_new_plan(state: MutableMapping[str, Any]) -> None:
