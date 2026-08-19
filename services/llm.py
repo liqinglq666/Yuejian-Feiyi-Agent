@@ -42,13 +42,13 @@ def validate_base_url(base_url: str, *, resolve_dns: bool = True) -> str:
     }
 
     if parsed.scheme not in {"http", "https"}:
-        raise ModelGatewayError("Base URL 只允许 http 或 https。")
+        raise ModelGatewayError("模型服务地址只允许 http 或 https。")
     if parsed.scheme != "https" and not allow_http:
-        raise ModelGatewayError("Base URL 必须使用 HTTPS。")
+        raise ModelGatewayError("模型服务地址必须使用 HTTPS。")
     if not parsed.hostname or parsed.username or parsed.password:
-        raise ModelGatewayError("Base URL 格式不合法。")
+        raise ModelGatewayError("模型服务地址格式不合法。")
     if parsed.query or parsed.fragment:
-        raise ModelGatewayError("Base URL 不能包含 query 或 fragment。")
+        raise ModelGatewayError("模型服务地址不能包含 query 或 fragment。")
 
     host = parsed.hostname.lower()
     allowed_hosts = {
@@ -57,7 +57,7 @@ def validate_base_url(base_url: str, *, resolve_dns: bool = True) -> str:
         if item.strip()
     }
     if allowed_hosts and host not in allowed_hosts:
-        raise ModelGatewayError("该模型网关不在服务端允许列表中。")
+        raise ModelGatewayError("当前模型服务地址不在服务端允许列表中。")
 
     if not resolve_dns:
         return value
@@ -72,23 +72,23 @@ def validate_base_url(base_url: str, *, resolve_dns: bool = True) -> str:
             )
         }
     except socket.gaierror as exc:
-        raise ModelGatewayError("模型网关域名解析失败。") from exc
+        raise ModelGatewayError("模型服务域名解析失败。") from exc
 
     if not addresses or any(_blocked_address(address) for address in addresses):
-        raise ModelGatewayError("Base URL 不能指向本机、内网或保留地址。")
+        raise ModelGatewayError("模型服务地址不能指向本机、内网或保留地址。")
     return value
 
 
 def build_client(config: ModelConfig) -> Any:
     if not config.api_key.strip():
-        raise ModelGatewayError("请先填写 API Key。")
+        raise ModelGatewayError("AI 服务暂未配置，请联系管理员。")
     if not config.model_name.strip():
-        raise ModelGatewayError("请先填写模型名称。")
+        raise ModelGatewayError("AI 模型暂未配置，请联系管理员。")
 
     try:
         from openai import OpenAI
     except ImportError as exc:
-        raise ModelGatewayError("缺少 openai 依赖，请先安装 requirements.txt。") from exc
+        raise ModelGatewayError("AI 服务依赖缺失，请联系管理员。") from exc
 
     return OpenAI(
         api_key=config.api_key.strip(),
@@ -208,19 +208,19 @@ def _public_error(exc: Exception, *, streaming: bool) -> ModelGatewayError:
     message = str(exc).lower()
 
     if status_code == 401:
-        detail = "API Key 无效或已过期。"
+        detail = "服务端模型凭据无效，请联系管理员。"
     elif status_code == 403:
-        detail = "当前账号没有调用该模型的权限。"
+        detail = "服务端当前没有调用该模型的权限。"
     elif status_code == 404:
-        detail = "模型名称或 Base URL 不正确。"
+        detail = "服务端模型名称或接口地址配置错误。"
     elif status_code == 429:
-        detail = "请求过于频繁，或账户额度不足。"
+        detail = "AI 服务当前请求过多或额度不足，请稍后重试。"
     elif "timeout" in message or "timed out" in message:
-        detail = "模型响应超时，请稍后重试。"
+        detail = "AI 服务响应超时，请稍后重试。"
     elif "connection" in message or "network" in message:
-        detail = "无法连接模型服务，请检查网络和 Base URL。"
+        detail = "暂时无法连接 AI 服务，请稍后重试。"
     else:
-        detail = "模型服务调用失败，请检查配置后重试。"
+        detail = "AI 服务调用失败，请稍后重试。"
 
     prefix = "流式生成失败" if streaming else "模型调用失败"
     return ModelGatewayError(f"{prefix}：{detail}")

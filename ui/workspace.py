@@ -7,6 +7,7 @@ from typing import Any
 
 import streamlit as st
 
+from core.config import model_service_ready
 from core.models import GUANGDONG_CITIES, MAX_RAW_REQUEST_CHARS, TaskRequest, TaskType
 from ui.components import (
     SCENE_DESCRIPTIONS,
@@ -190,8 +191,7 @@ def _render_workspace_aside(
 ) -> None:
     public_name = SCENE_PUBLIC_NAMES.get(scene, scene)
     description = SCENE_DESCRIPTIONS.get(scene, "生成广东非遗文化方案。")
-    api_ready = bool(str(st.session_state.get("user_api_key", "")).strip())
-    api_text = "API Key 已填写；可先测试连接" if api_ready else "还需在侧边栏填写 API Key"
+    api_text = "AI 服务已就绪，由平台统一提供" if model_service_ready() else "AI 服务暂不可用，请稍后再试"
     format_line = ""
     if scene == "内容创作":
         format_line = f'<span class="condition-pill">🎬 {html.escape(content_format)}</span>'

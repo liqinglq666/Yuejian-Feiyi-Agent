@@ -4,9 +4,8 @@ import html
 
 import streamlit as st
 
-from core.config import PROVIDER_PRESETS, build_model_config
+from core.config import model_service_ready
 from core.state import load_recent_plan, set_toast, start_new_plan
-from services.llm import ModelGatewayError, test_connection
 
 
 def render_sidebar() -> None:
@@ -30,29 +29,29 @@ def render_sidebar() -> None:
         _render_model_status()
         _render_recent_plans()
         _render_preferences()
-        _render_model_settings()
 
         with st.expander("使用帮助", expanded=False):
             st.markdown(
                 "写清楚 **去哪里、多久、和谁、想体验什么**，结果会更准确。\n\n"
+                "AI 服务由平台统一提供，无需填写 API Key 或模型地址。\n\n"
                 "开放时间、票务、预约和演出安排等实时信息，请以官方平台最新公告为准。"
             )
 
 
 def _render_model_status() -> None:
-    api_ready = bool(str(st.session_state.get("user_api_key", "")).strip())
-    provider = str(st.session_state.get("provider", "未选择服务"))
-    state_class = "ready" if api_ready else "waiting"
-    state_text = "已填写 API Key" if api_ready else "等待连接"
+    ready = model_service_ready()
+    state_class = "ready" if ready else "waiting"
+    state_text = "AI 服务已就绪" if ready else "AI 服务暂不可用"
+    state_value = "平台统一提供" if ready else "等待管理员配置"
     st.markdown(
         f"""
         <div class="model-status-card">
             <div class="status-row">
                 <div>
                     <div class="status-title"><span class="status-dot {state_class}"></span>{html.escape(state_text)}</div>
-                    <div class="status-value">{html.escape(provider)}</div>
+                    <div class="status-value">{html.escape(state_value)}</div>
                 </div>
-                <div class="status-value">🔒 仅当前会话</div>
+                <div class="status-value">🔒 服务端托管</div>
             </div>
         </div>
         """,
@@ -100,45 +99,3 @@ def _render_preferences() -> None:
             key="temperature",
             help="越高越活泼，越低越稳妥。",
         )
-
-
-def _render_model_settings() -> None:
-    with st.expander("模型与隐私", expanded=False):
-        st.caption("连接一个 OpenAI Compatible 模型后即可生成。API Key 只保存在当前会话中。")
-        st.text_input("API Key", type="password", key="user_api_key", placeholder="粘贴你的 API Key")
-
-        provider_names = list(PROVIDER_PRESETS)
-        provider = st.selectbox("接口服务", provider_names, key="provider")
-        preset = PROVIDER_PRESETS[provider]
-
-        if st.session_state.get("last_provider") != provider:
-            st.session_state.last_provider = provider
-            st.session_state.user_base_url = preset.base_url
-            st.session_state.user_model_name = preset.default_model
-            st.rerun()
-
-        custom = provider == "自定义 OpenAI 兼容接口"
-        st.text_input(
-            "Base URL",
-            key="user_base_url",
-            disabled=not custom,
-            placeholder="https://example.com/v1",
-        )
-        st.text_input(
-            "模型名称",
-            key="user_model_name",
-            placeholder="例如：qwen-plus / deepseek-chat",
-            help="服务商更新模型名称后，可直接填写其当前支持的模型 ID。",
-        )
-
-        if preset.model_examples:
-            st.caption("常见模型：" + " / ".join(preset.model_examples))
-
-        if st.button("测试模型连接", use_container_width=True):
-            try:
-                config = build_model_config(st.session_state)
-                with st.spinner("正在测试模型连接…"):
-                    answer = test_connection(config)
-                st.success(f"连接正常：{answer[:30]}")
-            except (ValueError, ModelGatewayError) as exc:
-                st.error(str(exc))

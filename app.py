@@ -22,7 +22,7 @@ from ui.sidebar import render_sidebar
 from ui.styles import apply_styles
 from ui.workspace import render_workspace
 
-APP_BUILD_ID = "2026.07.10.8"
+APP_BUILD_ID = "2026.08.19.1"
 
 
 HERO_LAYER_FIX_CSS = """
@@ -78,7 +78,7 @@ def _process_pending_job() -> None:
         return
 
     try:
-        config = build_model_config(st.session_state)
+        config = build_model_config()
         kind = job.get("kind")
         if kind == "initial":
             task_request = TaskRequest.from_dict(job["request"])
@@ -145,7 +145,7 @@ def main() -> None:
     request = render_workspace()
     if request is not None:
         try:
-            build_model_config(st.session_state)
+            build_model_config()
         except ValueError as exc:
             st.warning(str(exc))
         else:
