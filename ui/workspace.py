@@ -16,7 +16,7 @@ from ui.components import (
     render_section_heading,
 )
 
-WORKSPACE_UI_BUILD_ID = "2026.08.19.4"
+WORKSPACE_UI_BUILD_ID = "2026.08.19.5"
 
 SCENES: dict[str, tuple[str, str]] = {
     "游客路线": ("🧭", "自动规划非遗路线"),
@@ -251,6 +251,7 @@ def _render_workspace_aside(
 def render_workspace() -> TaskRequest | None:
     scene = _render_scene_selector()
     render_scene_note(scene)
+    pending = bool(st.session_state.pending_job)
 
     left, right = st.columns([2.55, 0.95], gap="large")
     with left:
@@ -264,10 +265,10 @@ def render_workspace() -> TaskRequest | None:
             user_input = st.text_area(
                 "一句话需求",
                 key="user_input",
-                height=145,
+                height=132,
                 max_chars=MAX_RAW_REQUEST_CHARS,
                 placeholder="例如：周末带孩子去佛山，想体验醒狮和陶塑，路线轻松一点……",
-                disabled=bool(st.session_state.pending_job),
+                disabled=pending,
                 label_visibility="collapsed",
             )
             _render_examples()
@@ -279,7 +280,7 @@ def render_workspace() -> TaskRequest | None:
                     ["图文", "短视频"],
                     key="content_format",
                     horizontal=True,
-                    disabled=bool(st.session_state.pending_job),
+                    disabled=pending,
                     help="图文会生成可发布正文；短视频会生成 60 秒分镜、旁白和拍摄建议。",
                 )
 
@@ -290,21 +291,21 @@ def render_workspace() -> TaskRequest | None:
                     "📍 城市",
                     CITIES,
                     key="selected_city",
-                    disabled=bool(st.session_state.pending_job),
+                    disabled=pending,
                 )
             with c2:
                 duration = st.selectbox(
                     "⏱ 时间",
                     DURATIONS,
                     key="selected_duration",
-                    disabled=bool(st.session_state.pending_job),
+                    disabled=pending,
                 )
             with c3:
                 identity = st.selectbox(
                     "👤 身份",
                     IDENTITIES,
                     key="selected_identity",
-                    disabled=bool(st.session_state.pending_job),
+                    disabled=pending,
                 )
 
             with st.expander("添加兴趣偏好，让方案更懂你", expanded=False):
@@ -312,7 +313,7 @@ def render_workspace() -> TaskRequest | None:
                     "特别想包含",
                     INTERESTS,
                     key="selected_interests",
-                    disabled=bool(st.session_state.pending_job),
+                    disabled=pending,
                     placeholder="可多选，例如：粤剧、醒狮、拍照",
                 )
 
@@ -329,11 +330,10 @@ def render_workspace() -> TaskRequest | None:
                 )
             )
 
-            if st.button(
-                "生成我的非遗方案 →" if not st.session_state.pending_job else "正在生成中…",
+            if not pending and st.button(
+                "生成我的非遗方案 →",
                 type="primary",
                 use_container_width=True,
-                disabled=bool(st.session_state.pending_job),
             ):
                 try:
                     task_type = None
