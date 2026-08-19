@@ -194,10 +194,43 @@ def render_topbar_and_hero() -> None:
             .hero-image-subtitle {{ max-width: 80%; font-size: .84rem; }}
         }}
         @media (max-width: 560px) {{
-            .hero-image-banner {{ min-height: 288px; }}
-            .hero-image-title {{ max-width: 92%; font-size: 1.62rem; }}
-            .hero-image-subtitle {{ max-width: 92%; }}
-            .hero-image-chips {{ max-width: 88%; }}
+            .hero-image-banner {{
+                min-height: 294px;
+                border-radius: 16px;
+                margin: .28rem 0 .68rem;
+            }}
+            .hero-image-bg {{
+                object-position: 76% center;
+                transform: scale(1.03);
+                transform-origin: center center;
+            }}
+            .hero-image-banner::after {{
+                background: linear-gradient(
+                    90deg,
+                    rgba(250, 247, 240, .995) 0%,
+                    rgba(250, 247, 240, .975) 54%,
+                    rgba(250, 247, 240, .74) 78%,
+                    rgba(250, 247, 240, .34) 100%
+                );
+            }}
+            .hero-image-content {{ max-width: 100%; padding: .96rem .82rem; }}
+            .hero-image-kicker {{ font-size: .68rem; padding: .24rem .5rem; }}
+            .hero-image-title {{
+                max-width: 100%;
+                font-size: 1.54rem;
+                line-height: 1.12;
+                margin: .42rem 0 .26rem;
+                overflow-wrap: anywhere;
+            }}
+            .hero-image-subtitle {{ max-width: 92%; font-size: .81rem; line-height: 1.48; }}
+            .hero-image-chips {{ max-width: 94%; gap: .28rem; margin-top: .48rem; }}
+            .hero-image-chip {{ padding: .24rem .46rem; font-size: .65rem; }}
+        }}
+        @media (max-width: 380px) {{
+            .hero-image-banner {{ min-height: 282px; }}
+            .hero-image-title {{ font-size: 1.44rem; }}
+            .hero-image-subtitle {{ max-width: 96%; font-size: .79rem; }}
+            .hero-image-chip:nth-child(n+3) {{ display: none; }}
         }}
         </style>
         <div class="hero-image-banner">

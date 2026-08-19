@@ -17,12 +17,13 @@ from services.output import sanitize_model_output
 from services.prompt_builder import build_initial_messages, build_revision_messages
 from services.retrieval import KnowledgeBaseError, retrieve
 from ui.components import render_request_summary, render_topbar_and_hero
+from ui.mobile_styles import apply_mobile_styles
 from ui.results import render_results
 from ui.sidebar import render_sidebar
 from ui.styles import apply_styles
 from ui.workspace import WORKSPACE_UI_BUILD_ID, render_workspace
 
-APP_BUILD_ID = "2026.08.19.5"
+APP_BUILD_ID = "2026.08.19.6"
 
 
 HERO_LAYER_FIX_CSS = """
@@ -142,12 +143,13 @@ def main() -> None:
         page_title="粤见非遗｜广东非遗体验工作台",
         page_icon="🦁",
         layout="wide",
-        initial_sidebar_state="expanded",
+        initial_sidebar_state="auto",
     )
 
     initialize_state(st.session_state)
     apply_pending_form_sync(st.session_state)
     apply_styles()
+    apply_mobile_styles()
     st.markdown(HERO_LAYER_FIX_CSS, unsafe_allow_html=True)
     render_sidebar()
     st.sidebar.caption(f"Build {APP_BUILD_ID} · UI {WORKSPACE_UI_BUILD_ID}")
