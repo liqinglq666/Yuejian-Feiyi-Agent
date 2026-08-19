@@ -137,6 +137,7 @@ class ModelConfig:
     model_name: str
     timeout_seconds: float = 120.0
     max_retries: int = 1
+    credential_source: str = "platform"
 
     def redacted(self) -> dict[str, Any]:
         return {
@@ -145,6 +146,7 @@ class ModelConfig:
             "model_name": self.model_name,
             "timeout_seconds": self.timeout_seconds,
             "max_retries": self.max_retries,
+            "credential_source": self.credential_source,
         }
 
 
