@@ -193,6 +193,43 @@ def _model_status_text() -> str:
     return "平台 API 不可用，可在侧边栏配置个人 API"
 
 
+def _workspace_aside_markup(
+    scene: str,
+    city: str,
+    duration: str,
+    identity: str,
+    content_format: str,
+    api_text: str,
+) -> str:
+    public_name = SCENE_PUBLIC_NAMES.get(scene, scene)
+    description = SCENE_DESCRIPTIONS.get(scene, "生成广东非遗文化方案。")
+    pills = [
+        f'<span class="condition-pill">📍 {html.escape(city)}</span>',
+        f'<span class="condition-pill">⏱ {html.escape(duration)}</span>',
+        f'<span class="condition-pill">👤 {html.escape(identity)}</span>',
+    ]
+    if scene == "内容创作":
+        pills.append(f'<span class="condition-pill">🎬 {html.escape(content_format)}</span>')
+
+    return "".join(
+        [
+            '<div class="workspace-aside">',
+            f'<div class="workspace-aside-title">本次将生成 · {html.escape(public_name)}</div>',
+            f'<div class="workspace-aside-copy">{html.escape(description)}</div>',
+            '<div class="condition-strip">',
+            *pills,
+            "</div>",
+            '<div class="aside-list">',
+            '<div class="aside-item"><div class="aside-icon">01</div><div class="aside-text"><strong>按场景组织结果</strong><span>不同任务使用不同输出结构</span></div></div>',
+            '<div class="aside-item"><div class="aside-icon">02</div><div class="aside-text"><strong>检索广东非遗知识</strong><span>文化事实优先结合项目知识库</span></div></div>',
+            '<div class="aside-item"><div class="aside-icon">03</div><div class="aside-text"><strong>生成后继续调整</strong><span>支持亲子、研学、图文和短视频转换</span></div></div>',
+            "</div>",
+            f'<div class="aside-model-status"><span>模型服务</span><strong>{html.escape(api_text)}</strong></div>',
+            "</div>",
+        ]
+    )
+
+
 def _render_workspace_aside(
     scene: str,
     city: str,
@@ -200,43 +237,15 @@ def _render_workspace_aside(
     identity: str,
     content_format: str,
 ) -> None:
-    public_name = SCENE_PUBLIC_NAMES.get(scene, scene)
-    description = SCENE_DESCRIPTIONS.get(scene, "生成广东非遗文化方案。")
-    api_text = _model_status_text()
-    format_line = ""
-    if scene == "内容创作":
-        format_line = f'<span class="condition-pill">🎬 {html.escape(content_format)}</span>'
     st.markdown(
-        f"""
-        <div class="workspace-aside">
-            <div class="workspace-aside-title">本次将生成 · {html.escape(public_name)}</div>
-            <div class="workspace-aside-copy">{html.escape(description)}</div>
-            <div class="condition-strip">
-                <span class="condition-pill">📍 {html.escape(city)}</span>
-                <span class="condition-pill">⏱ {html.escape(duration)}</span>
-                <span class="condition-pill">👤 {html.escape(identity)}</span>
-                {format_line}
-            </div>
-            <div class="aside-list">
-                <div class="aside-item">
-                    <div class="aside-icon">🧠</div>
-                    <div class="aside-text"><strong>按场景组织结果</strong><span>路线、研学、图文、短视频与问答使用不同模板</span></div>
-                </div>
-                <div class="aside-item">
-                    <div class="aside-icon">📚</div>
-                    <div class="aside-text"><strong>检索广东非遗知识</strong><span>结合项目知识库核验文化事实，不展示内部来源编号</span></div>
-                </div>
-                <div class="aside-item">
-                    <div class="aside-icon">✨</div>
-                    <div class="aside-text"><strong>生成后继续调整</strong><span>可转亲子版、研学表、图文或短视频脚本</span></div>
-                </div>
-                <div class="aside-item">
-                    <div class="aside-icon">🔌</div>
-                    <div class="aside-text"><strong>模型状态</strong><span>{html.escape(api_text)}</span></div>
-                </div>
-            </div>
-        </div>
-        """,
+        _workspace_aside_markup(
+            scene,
+            city,
+            duration,
+            identity,
+            content_format,
+            _model_status_text(),
+        ),
         unsafe_allow_html=True,
     )
 
@@ -245,7 +254,7 @@ def render_workspace() -> TaskRequest | None:
     scene = _render_scene_selector()
     render_scene_note(scene)
 
-    left, right = st.columns([2.35, 0.9], gap="large")
+    left, right = st.columns([2.55, 0.95], gap="large")
     with left:
         with st.container(border=True):
             render_section_heading(
@@ -257,7 +266,7 @@ def render_workspace() -> TaskRequest | None:
             user_input = st.text_area(
                 "一句话需求",
                 key="user_input",
-                height=155,
+                height=145,
                 max_chars=MAX_RAW_REQUEST_CHARS,
                 placeholder="例如：周末带孩子去佛山，想体验醒狮和陶塑，路线轻松一点……",
                 disabled=bool(st.session_state.pending_job),
@@ -310,14 +319,16 @@ def render_workspace() -> TaskRequest | None:
                 )
 
             st.markdown(
-                f"""
-                <div class="condition-strip">
-                    <span class="condition-pill">{html.escape(SCENE_PUBLIC_NAMES.get(scene, scene))}</span>
-                    <span class="condition-pill">{html.escape(city)}</span>
-                    <span class="condition-pill">{html.escape(duration)}</span>
-                    <span class="condition-pill">{html.escape(st.session_state.output_style)}</span>
-                </div>
-                """,
+                "".join(
+                    [
+                        '<div class="condition-strip">',
+                        f'<span class="condition-pill">{html.escape(SCENE_PUBLIC_NAMES.get(scene, scene))}</span>',
+                        f'<span class="condition-pill">{html.escape(city)}</span>',
+                        f'<span class="condition-pill">{html.escape(duration)}</span>',
+                        f'<span class="condition-pill">{html.escape(st.session_state.output_style)}</span>',
+                        "</div>",
+                    ]
+                ),
                 unsafe_allow_html=True,
             )
 
