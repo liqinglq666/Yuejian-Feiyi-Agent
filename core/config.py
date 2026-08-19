@@ -1,51 +1,34 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+import os
+
+from dotenv import load_dotenv
 
 from core.models import ModelConfig
 
+DEFAULT_BASE_URL = "https://dashscope.aliyuncs.com/compatible-mode/v1"
+DEFAULT_MODEL_NAME = "qwen-turbo"
 
-@dataclass(frozen=True)
-class ProviderPreset:
-    name: str
-    base_url: str
-    default_model: str
-    model_examples: tuple[str, ...]
+load_dotenv()
 
 
-PROVIDER_PRESETS: dict[str, ProviderPreset] = {
-    "阿里云百炼 Qwen": ProviderPreset(
-        name="阿里云百炼 Qwen",
-        base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",
-        default_model="qwen-turbo",
-        model_examples=("qwen-turbo", "qwen-plus", "qwen-max"),
-    ),
-    "DeepSeek": ProviderPreset(
-        name="DeepSeek",
-        base_url="https://api.deepseek.com",
-        default_model="deepseek-chat",
-        model_examples=("deepseek-chat",),
-    ),
-    "自定义 OpenAI 兼容接口": ProviderPreset(
-        name="自定义 OpenAI 兼容接口",
-        base_url="",
-        default_model="",
-        model_examples=(),
-    ),
-}
+def model_service_ready() -> bool:
+    """Return whether the server-side model credential is configured."""
+    return bool(os.getenv("OPENAI_API_KEY", "").strip())
 
 
-def build_model_config(session_state: object) -> ModelConfig:
-    api_key = str(getattr(session_state, "user_api_key", "")).strip()
-    base_url = str(getattr(session_state, "user_base_url", "")).strip()
-    model_name = str(getattr(session_state, "user_model_name", "")).strip()
+def build_model_config() -> ModelConfig:
+    """Build model configuration from server-side environment variables only."""
+    api_key = os.getenv("OPENAI_API_KEY", "").strip()
+    base_url = (os.getenv("OPENAI_BASE_URL", "") or DEFAULT_BASE_URL).strip()
+    model_name = (os.getenv("MODEL_NAME", "") or DEFAULT_MODEL_NAME).strip()
 
     if not api_key:
-        raise ValueError("请先在左侧填写 API Key。")
+        raise ValueError("AI 服务暂未配置，请联系管理员。")
     if not base_url:
-        raise ValueError("请填写 Base URL。")
+        raise ValueError("AI 服务地址暂未配置，请联系管理员。")
     if not model_name:
-        raise ValueError("请填写模型名称。")
+        raise ValueError("AI 模型暂未配置，请联系管理员。")
 
     return ModelConfig(
         api_key=api_key,
