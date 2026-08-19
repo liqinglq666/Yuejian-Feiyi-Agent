@@ -60,16 +60,15 @@ def _switch_top_nav_scene(scene: str) -> None:
 
 
 def _render_topbar() -> None:
-    brand_col, nav_col = st.columns([1.45, 1.0], vertical_alignment="center")
+    brand_col, nav_col = st.columns([1.55, 0.95], vertical_alignment="center")
     with brand_col:
-        st.markdown(
+        st.html(
             """
             <div class="topbar-left">
                 <div class="topbar-logo">粤</div>
                 <div>粤见非遗</div>
             </div>
-            """,
-            unsafe_allow_html=True,
+            """
         )
 
     with nav_col:
@@ -91,17 +90,17 @@ def _render_topbar() -> None:
 def render_topbar_and_hero() -> None:
     hero_uri = asset_data_uri("readme_hero_lingnan.png")
     _render_topbar()
-    st.markdown(
+    st.html(
         f"""
         <style>
         .hero-image-banner {{
             position: relative;
-            min-height: 286px;
+            min-height: 248px;
             overflow: hidden;
-            border-radius: 24px;
-            margin: .58rem 0 1rem;
+            border-radius: 22px;
+            margin: .42rem 0 .82rem;
             background: #f7f0e7;
-            box-shadow: 0 16px 38px rgba(22, 50, 79, .10);
+            box-shadow: 0 12px 30px rgba(22, 50, 79, .085);
             isolation: isolate;
         }}
         .hero-image-bg {{
@@ -110,7 +109,9 @@ def render_topbar_and_hero() -> None:
             width: 100%;
             height: 100%;
             object-fit: cover;
-            object-position: 63% center;
+            object-position: 58% center;
+            transform: scale(1.11);
+            transform-origin: left center;
             z-index: 0;
         }}
         .hero-image-banner::after {{
@@ -120,73 +121,83 @@ def render_topbar_and_hero() -> None:
             z-index: 1;
             background: linear-gradient(
                 90deg,
-                rgba(250, 247, 240, .985) 0%,
-                rgba(250, 247, 240, .94) 31%,
-                rgba(250, 247, 240, .70) 48%,
-                rgba(250, 247, 240, .06) 72%
+                rgba(250, 247, 240, .99) 0%,
+                rgba(250, 247, 240, .945) 30%,
+                rgba(250, 247, 240, .70) 47%,
+                rgba(250, 247, 240, .035) 68%
             );
         }}
         .hero-image-content {{
             position: relative;
             z-index: 2;
-            max-width: 52%;
-            padding: 1.55rem 1.8rem 1.45rem;
+            max-width: 50%;
+            padding: 1.22rem 1.65rem 1.15rem;
         }}
         .hero-image-kicker {{
             display: inline-flex;
-            padding: .31rem .62rem;
+            padding: .28rem .58rem;
             color: #0f6f72;
-            background: rgba(255, 255, 255, .78);
-            border: 1px solid rgba(21, 154, 156, .14);
+            background: rgba(255, 255, 255, .80);
+            border: 1px solid rgba(21, 154, 156, .13);
             border-radius: 999px;
-            font-size: .76rem;
+            font-size: .72rem;
             font-weight: 820;
         }}
         .hero-image-title {{
-            max-width: 650px;
-            margin: .62rem 0 .38rem;
+            max-width: 620px;
+            margin: .48rem 0 .30rem;
             color: #16324f !important;
-            font-size: 2.38rem;
-            line-height: 1.10;
+            font-size: 2.12rem;
+            line-height: 1.08;
             font-weight: 940;
-            letter-spacing: .012em;
+            letter-spacing: .008em;
         }}
         .hero-image-subtitle {{
-            max-width: 600px;
+            max-width: 570px;
             color: #425f70;
-            font-size: .94rem;
-            line-height: 1.62;
-            font-weight: 620;
+            font-size: .89rem;
+            line-height: 1.54;
+            font-weight: 610;
         }}
         .hero-image-chips {{
             display: flex;
             flex-wrap: wrap;
-            gap: .36rem;
-            margin-top: .72rem;
+            gap: .32rem;
+            margin-top: .56rem;
         }}
         .hero-image-chip {{
-            padding: .29rem .56rem;
+            padding: .26rem .52rem;
             color: #16324f;
-            background: rgba(255, 255, 255, .78);
-            border: 1px solid rgba(22, 50, 79, .08);
+            background: rgba(255, 255, 255, .80);
+            border: 1px solid rgba(22, 50, 79, .075);
             border-radius: 999px;
-            font-size: .72rem;
-            font-weight: 730;
+            font-size: .68rem;
+            font-weight: 720;
         }}
         @media (max-width: 920px) {{
-            .hero-image-banner {{ min-height: 330px; border-radius: 20px; }}
-            .hero-image-bg {{ object-position: 72% center; }}
+            .hero-image-banner {{ min-height: 300px; border-radius: 18px; }}
+            .hero-image-bg {{
+                object-position: 68% center;
+                transform: scale(1.06);
+                transform-origin: 30% center;
+            }}
             .hero-image-banner::after {{
                 background: linear-gradient(
                     90deg,
-                    rgba(250, 247, 240, .985) 0%,
-                    rgba(250, 247, 240, .94) 58%,
-                    rgba(250, 247, 240, .44) 100%
+                    rgba(250, 247, 240, .99) 0%,
+                    rgba(250, 247, 240, .95) 58%,
+                    rgba(250, 247, 240, .42) 100%
                 );
             }}
-            .hero-image-content {{ max-width: 100%; padding: 1.35rem 1rem; }}
-            .hero-image-title {{ max-width: 82%; font-size: 1.92rem; }}
-            .hero-image-subtitle {{ max-width: 78%; font-size: .88rem; }}
+            .hero-image-content {{ max-width: 100%; padding: 1.18rem .95rem; }}
+            .hero-image-title {{ max-width: 82%; font-size: 1.82rem; }}
+            .hero-image-subtitle {{ max-width: 80%; font-size: .84rem; }}
+        }}
+        @media (max-width: 560px) {{
+            .hero-image-banner {{ min-height: 288px; }}
+            .hero-image-title {{ max-width: 92%; font-size: 1.62rem; }}
+            .hero-image-subtitle {{ max-width: 92%; }}
+            .hero-image-chips {{ max-width: 88%; }}
         }}
         </style>
         <div class="hero-image-banner">
@@ -211,21 +222,19 @@ def render_topbar_and_hero() -> None:
                 </div>
             </div>
         </div>
-        """,
-        unsafe_allow_html=True,
+        """
     )
 
 
 def render_section_heading(kicker: str, title: str, copy: str) -> None:
-    st.markdown(
+    st.html(
         f"""
         <div class="section-heading">
             <div class="section-eyebrow">{html.escape(kicker)}</div>
             <div class="section-title">{html.escape(title)}</div>
             <div class="section-copy">{html.escape(copy)}</div>
         </div>
-        """,
-        unsafe_allow_html=True,
+        """
     )
 
 
@@ -233,14 +242,13 @@ def render_scene_note(scene: str) -> None:
     icon = SCENE_ICONS.get(scene, "🦁")
     description = SCENE_DESCRIPTIONS.get(scene, "生成广东非遗文化方案。")
     public_name = SCENE_PUBLIC_NAMES.get(scene, scene)
-    st.markdown(
+    st.html(
         f"""
         <div class="scene-note">
             <div class="scene-title">{icon} 已选择：{html.escape(public_name)}</div>
             <div class="scene-desc">{html.escape(description)}</div>
         </div>
-        """,
-        unsafe_allow_html=True,
+        """
     )
 
 
@@ -254,7 +262,7 @@ def render_request_summary(request: TaskRequest) -> None:
             request.output_style,
         ]
     )
-    st.markdown(
+    st.html(
         f"""
         <div class="request-summary">
             <div class="request-icon">🍊</div>
@@ -264,28 +272,26 @@ def render_request_summary(request: TaskRequest) -> None:
                 <div class="request-meta">{html.escape(conditions)}</div>
             </div>
         </div>
-        """,
-        unsafe_allow_html=True,
+        """
     )
 
 
 def render_empty_state() -> None:
-    st.markdown(
+    st.html(
         """
         <div class="empty-state">
             <div class="empty-icon">🪭</div>
             <div class="empty-title">你的岭南非遗方案会出现在这里</div>
             <div class="empty-copy">先选择一个场景，再写下一句话需求。路线、任务卡、文案和来源都会自动整理好。</div>
         </div>
-        """,
-        unsafe_allow_html=True,
+        """
     )
 
 
 def render_result_overview(request: TaskRequest) -> None:
     title = SCENE_PUBLIC_NAMES.get(request.scene, request.scene)
     interests = "、".join(request.interests) if request.interests else "智能匹配"
-    st.markdown(
+    st.html(
         f"""
         <div class="result-hero">
             <div class="result-label">已生成 · {html.escape(title)}</div>
@@ -297,6 +303,5 @@ def render_result_overview(request: TaskRequest) -> None:
             <div class="fact-card"><div class="fact-label">输出风格</div><div class="fact-value">{html.escape(request.output_style)}</div></div>
             <div class="fact-card"><div class="fact-label">当前用途</div><div class="fact-value">{html.escape(title)}</div></div>
         </div>
-        """,
-        unsafe_allow_html=True,
+        """
     )
