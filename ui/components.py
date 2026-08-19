@@ -35,6 +35,12 @@ SCENE_PUBLIC_NAMES = {
     "非遗问答": "非遗问答",
 }
 
+TOP_NAV_SCENES = (
+    ("路线规划", "游客路线"),
+    ("研学任务", "学生研学"),
+    ("内容创作", "内容创作"),
+)
+
 
 @lru_cache(maxsize=8)
 def asset_data_uri(filename: str) -> str:
@@ -48,19 +54,54 @@ def asset_data_uri(filename: str) -> str:
     return f"data:{mime};base64,{encoded}"
 
 
+def _switch_top_nav_scene(scene: str) -> None:
+    st.session_state["selected_scene"] = scene
+    st.session_state["last_scene"] = scene
+
+
+def _render_topbar() -> None:
+    brand_col, nav_col = st.columns([1.45, 1.0], vertical_alignment="center")
+    with brand_col:
+        st.markdown(
+            """
+            <div class="topbar-left">
+                <div class="topbar-logo">粤</div>
+                <div>粤见非遗</div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+    with nav_col:
+        columns = st.columns(len(TOP_NAV_SCENES), gap="small")
+        current_scene = str(st.session_state.get("selected_scene", "游客路线"))
+        for column, (label, scene) in zip(columns, TOP_NAV_SCENES, strict=True):
+            with column:
+                st.button(
+                    label,
+                    key=f"topnav_{scene}",
+                    type="primary" if current_scene == scene else "secondary",
+                    use_container_width=True,
+                    disabled=bool(st.session_state.get("pending_job")),
+                    on_click=_switch_top_nav_scene,
+                    args=(scene,),
+                )
+
+
 def render_topbar_and_hero() -> None:
     hero_uri = asset_data_uri("readme_hero_lingnan.png")
+    _render_topbar()
     st.markdown(
         f"""
         <style>
         .hero-image-banner {{
             position: relative;
-            min-height: 340px;
+            min-height: 286px;
             overflow: hidden;
-            border-radius: 30px;
-            margin-bottom: 1.25rem;
+            border-radius: 24px;
+            margin: .58rem 0 1rem;
             background: #f7f0e7;
-            box-shadow: 0 26px 62px rgba(22, 50, 79, .15);
+            box-shadow: 0 16px 38px rgba(22, 50, 79, .10);
             isolation: isolate;
         }}
         .hero-image-bg {{
@@ -69,7 +110,7 @@ def render_topbar_and_hero() -> None:
             width: 100%;
             height: 100%;
             object-fit: cover;
-            object-position: center center;
+            object-position: 63% center;
             z-index: 0;
         }}
         .hero-image-banner::after {{
@@ -79,88 +120,75 @@ def render_topbar_and_hero() -> None:
             z-index: 1;
             background: linear-gradient(
                 90deg,
-                rgba(250, 247, 240, .98) 0%,
-                rgba(250, 247, 240, .93) 34%,
-                rgba(250, 247, 240, .62) 52%,
-                rgba(250, 247, 240, .08) 73%
+                rgba(250, 247, 240, .985) 0%,
+                rgba(250, 247, 240, .94) 31%,
+                rgba(250, 247, 240, .70) 48%,
+                rgba(250, 247, 240, .06) 72%
             );
         }}
         .hero-image-content {{
             position: relative;
             z-index: 2;
-            max-width: 55%;
-            padding: 2.1rem 2.2rem;
+            max-width: 52%;
+            padding: 1.55rem 1.8rem 1.45rem;
         }}
         .hero-image-kicker {{
             display: inline-flex;
-            padding: .36rem .7rem;
+            padding: .31rem .62rem;
             color: #0f6f72;
-            background: rgba(255, 255, 255, .76);
-            border: 1px solid rgba(21, 154, 156, .16);
+            background: rgba(255, 255, 255, .78);
+            border: 1px solid rgba(21, 154, 156, .14);
             border-radius: 999px;
-            font-size: .8rem;
-            font-weight: 850;
-            backdrop-filter: blur(10px);
+            font-size: .76rem;
+            font-weight: 820;
         }}
         .hero-image-title {{
-            max-width: 670px;
-            margin: .72rem 0 .45rem;
+            max-width: 650px;
+            margin: .62rem 0 .38rem;
             color: #16324f !important;
-            font-size: 2.75rem;
-            line-height: 1.08;
-            font-weight: 950;
-            letter-spacing: .018em;
+            font-size: 2.38rem;
+            line-height: 1.10;
+            font-weight: 940;
+            letter-spacing: .012em;
         }}
         .hero-image-subtitle {{
-            max-width: 620px;
+            max-width: 600px;
             color: #425f70;
-            font-size: 1rem;
-            line-height: 1.72;
-            font-weight: 640;
+            font-size: .94rem;
+            line-height: 1.62;
+            font-weight: 620;
         }}
         .hero-image-chips {{
             display: flex;
             flex-wrap: wrap;
-            gap: .42rem;
-            margin-top: .9rem;
+            gap: .36rem;
+            margin-top: .72rem;
         }}
         .hero-image-chip {{
-            padding: .34rem .64rem;
+            padding: .29rem .56rem;
             color: #16324f;
-            background: rgba(255, 255, 255, .76);
-            border: 1px solid rgba(22, 50, 79, .09);
+            background: rgba(255, 255, 255, .78);
+            border: 1px solid rgba(22, 50, 79, .08);
             border-radius: 999px;
-            font-size: .76rem;
-            font-weight: 760;
-            backdrop-filter: blur(10px);
+            font-size: .72rem;
+            font-weight: 730;
         }}
         @media (max-width: 920px) {{
-            .hero-image-banner {{ min-height: 395px; }}
-            .hero-image-bg {{ object-position: 70% center; }}
+            .hero-image-banner {{ min-height: 330px; border-radius: 20px; }}
+            .hero-image-bg {{ object-position: 72% center; }}
             .hero-image-banner::after {{
                 background: linear-gradient(
                     90deg,
-                    rgba(250, 247, 240, .98) 0%,
-                    rgba(250, 247, 240, .94) 56%,
-                    rgba(250, 247, 240, .48) 100%
+                    rgba(250, 247, 240, .985) 0%,
+                    rgba(250, 247, 240, .94) 58%,
+                    rgba(250, 247, 240, .44) 100%
                 );
             }}
-            .hero-image-content {{ max-width: 100%; padding: 1.55rem 1.2rem; }}
-            .hero-image-title {{ max-width: 82%; font-size: 2.15rem; }}
-            .hero-image-subtitle {{ max-width: 78%; font-size: .93rem; }}
+            .hero-image-content {{ max-width: 100%; padding: 1.35rem 1rem; }}
+            .hero-image-title {{ max-width: 82%; font-size: 1.92rem; }}
+            .hero-image-subtitle {{ max-width: 78%; font-size: .88rem; }}
         }}
         </style>
-        <div class="topbar">
-            <div class="topbar-left">
-                <div class="topbar-logo">粤</div>
-                <div>粤见非遗</div>
-            </div>
-            <div class="topbar-nav">
-                <span class="topbar-pill">路线规划</span>
-                <span class="topbar-pill">研学任务</span>
-                <span class="topbar-pill">内容创作</span>
-            </div>
-        </div>
         <div class="hero-image-banner">
             <img
                 class="hero-image-bg"
@@ -170,16 +198,16 @@ def render_topbar_and_hero() -> None:
                 decoding="async"
             />
             <div class="hero-image-content">
-                <div class="hero-image-kicker">🦁 寻脉岭南，智游非遗</div>
+                <div class="hero-image-kicker">寻脉岭南 · 智游非遗</div>
                 <h1 class="hero-image-title">一句话，规划你的岭南非遗体验</h1>
                 <div class="hero-image-subtitle">
                     说清楚去哪里、和谁、想体验什么，粤见非遗会为你生成可出发、可研学、可发布的完整方案。
                 </div>
                 <div class="hero-image-chips">
-                    <span class="hero-image-chip">🧭 城市文化路线</span>
-                    <span class="hero-image-chip">📚 研学任务卡</span>
-                    <span class="hero-image-chip">👨‍👩‍👧 亲子互动</span>
-                    <span class="hero-image-chip">🎬 图文与短视频</span>
+                    <span class="hero-image-chip">城市文化路线</span>
+                    <span class="hero-image-chip">研学任务卡</span>
+                    <span class="hero-image-chip">亲子互动</span>
+                    <span class="hero-image-chip">图文与短视频</span>
                 </div>
             </div>
         </div>

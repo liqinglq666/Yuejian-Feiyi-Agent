@@ -22,7 +22,7 @@ from ui.sidebar import render_sidebar
 from ui.styles import apply_styles
 from ui.workspace import render_workspace
 
-APP_BUILD_ID = "2026.08.19.2"
+APP_BUILD_ID = "2026.08.19.3"
 
 
 HERO_LAYER_FIX_CSS = """
