@@ -16,7 +16,7 @@ from ui.components import (
     render_section_heading,
 )
 
-WORKSPACE_UI_BUILD_ID = "2026.08.19.5"
+WORKSPACE_UI_BUILD_ID = "2026.08.19.6"
 
 SCENES: dict[str, tuple[str, str]] = {
     "游客路线": ("🧭", "自动规划非遗路线"),
