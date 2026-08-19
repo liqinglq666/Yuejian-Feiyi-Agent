@@ -31,7 +31,12 @@ def _blocked_address(value: str) -> bool:
     )
 
 
-def validate_base_url(base_url: str, *, resolve_dns: bool = True) -> str:
+def validate_base_url(
+    base_url: str,
+    *,
+    resolve_dns: bool = True,
+    enforce_server_allowlist: bool = True,
+) -> str:
     value = base_url.strip().rstrip("/")
     parsed = urlparse(value)
     allow_http = os.getenv("ALLOW_INSECURE_LLM_HTTP", "").lower() in {
@@ -51,13 +56,14 @@ def validate_base_url(base_url: str, *, resolve_dns: bool = True) -> str:
         raise ModelGatewayError("模型服务地址不能包含 query 或 fragment。")
 
     host = parsed.hostname.lower()
-    allowed_hosts = {
-        item.strip().lower()
-        for item in os.getenv("LLM_ALLOWED_HOSTS", "").split(",")
-        if item.strip()
-    }
-    if allowed_hosts and host not in allowed_hosts:
-        raise ModelGatewayError("当前模型服务地址不在服务端允许列表中。")
+    if enforce_server_allowlist:
+        allowed_hosts = {
+            item.strip().lower()
+            for item in os.getenv("LLM_ALLOWED_HOSTS", "").split(",")
+            if item.strip()
+        }
+        if allowed_hosts and host not in allowed_hosts:
+            raise ModelGatewayError("当前模型服务地址不在服务端允许列表中。")
 
     if not resolve_dns:
         return value
@@ -80,10 +86,13 @@ def validate_base_url(base_url: str, *, resolve_dns: bool = True) -> str:
 
 
 def build_client(config: ModelConfig) -> Any:
+    is_user = config.credential_source == "user"
     if not config.api_key.strip():
-        raise ModelGatewayError("AI 服务暂未配置，请联系管理员。")
+        detail = "个人 API Key 为空，请重新配置。" if is_user else "平台 AI 服务暂未配置。"
+        raise ModelGatewayError(detail)
     if not config.model_name.strip():
-        raise ModelGatewayError("AI 模型暂未配置，请联系管理员。")
+        detail = "个人模型名称为空，请重新配置。" if is_user else "平台 AI 模型暂未配置。"
+        raise ModelGatewayError(detail)
 
     try:
         from openai import OpenAI
@@ -92,7 +101,10 @@ def build_client(config: ModelConfig) -> Any:
 
     return OpenAI(
         api_key=config.api_key.strip(),
-        base_url=validate_base_url(config.base_url),
+        base_url=validate_base_url(
+            config.base_url,
+            enforce_server_allowlist=not is_user,
+        ),
         timeout=config.timeout_seconds,
         max_retries=config.max_retries,
     )
@@ -120,7 +132,7 @@ def stream_chat(
             if delta and delta.content:
                 yield delta.content
     except Exception as exc:
-        raise _public_error(exc, streaming=True) from exc
+        raise _public_error(exc, config=config, streaming=True) from exc
 
 
 def complete_chat(
@@ -144,7 +156,7 @@ def complete_chat(
     except Exception as exc:
         if isinstance(exc, ModelGatewayError):
             raise
-        raise _public_error(exc, streaming=False) from exc
+        raise _public_error(exc, config=config, streaming=False) from exc
 
 
 def test_connection(config: ModelConfig) -> str:
@@ -199,22 +211,44 @@ def collect_stream_with_safe_fallback(
     yield answer, True
 
 
-def _public_error(exc: Exception, *, streaming: bool) -> ModelGatewayError:
+def _public_error(
+    exc: Exception,
+    *,
+    config: ModelConfig,
+    streaming: bool,
+) -> ModelGatewayError:
     if isinstance(exc, ModelGatewayError):
         return exc
 
     logger.exception("Model gateway request failed", exc_info=exc)
     status_code = getattr(exc, "status_code", None)
     message = str(exc).lower()
+    is_user = config.credential_source == "user"
 
     if status_code == 401:
-        detail = "服务端模型凭据无效，请联系管理员。"
+        detail = (
+            "个人 API Key 无效，或与当前 Base URL 不匹配。"
+            if is_user
+            else "平台模型凭据无效，请联系管理员。"
+        )
     elif status_code == 403:
-        detail = "服务端当前没有调用该模型的权限。"
+        detail = (
+            "个人 API 当前没有调用该模型的权限。"
+            if is_user
+            else "平台当前没有调用该模型的权限。"
+        )
     elif status_code == 404:
-        detail = "服务端模型名称或接口地址配置错误。"
+        detail = (
+            "个人模型名称或 Base URL 配置错误。"
+            if is_user
+            else "平台模型名称或接口地址配置错误。"
+        )
     elif status_code == 429:
-        detail = "AI 服务当前请求过多或额度不足，请稍后重试。"
+        detail = (
+            "个人 API 当前请求过多或额度不足，请检查服务商额度。"
+            if is_user
+            else "平台 AI 服务当前请求过多或额度不足，请稍后重试。"
+        )
     elif "timeout" in message or "timed out" in message:
         detail = "AI 服务响应超时，请稍后重试。"
     elif "connection" in message or "network" in message:
