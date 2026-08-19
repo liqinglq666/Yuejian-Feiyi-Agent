@@ -20,9 +20,9 @@ from ui.components import render_request_summary, render_topbar_and_hero
 from ui.results import render_results
 from ui.sidebar import render_sidebar
 from ui.styles import apply_styles
-from ui.workspace import render_workspace
+from ui.workspace import WORKSPACE_UI_BUILD_ID, render_workspace
 
-APP_BUILD_ID = "2026.08.19.3"
+APP_BUILD_ID = "2026.08.19.4"
 
 
 HERO_LAYER_FIX_CSS = """
@@ -150,7 +150,7 @@ def main() -> None:
     apply_styles()
     st.markdown(HERO_LAYER_FIX_CSS, unsafe_allow_html=True)
     render_sidebar()
-    st.sidebar.caption(f"Build {APP_BUILD_ID}")
+    st.sidebar.caption(f"Build {APP_BUILD_ID} · UI {WORKSPACE_UI_BUILD_ID}")
     _show_pending_toast()
     render_topbar_and_hero()
 
