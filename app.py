@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import streamlit as st
 
-from core.config import build_model_config
+from core.config import build_model_config, user_api_configured
 from core.models import ModelConfig, RevisionRequest, TaskRequest, TaskType
 from core.state import (
     apply_pending_form_sync,
@@ -22,7 +22,7 @@ from ui.sidebar import render_sidebar
 from ui.styles import apply_styles
 from ui.workspace import render_workspace
 
-APP_BUILD_ID = "2026.08.19.1"
+APP_BUILD_ID = "2026.08.19.2"
 
 
 HERO_LAYER_FIX_CSS = """
@@ -72,13 +72,23 @@ def _stream_answer(config: ModelConfig, messages: list[dict[str, str]]) -> str:
     return final_answer
 
 
+def _render_gateway_recovery_hint() -> None:
+    mode = str(st.session_state.get("model_mode", "auto"))
+    if mode not in {"auto", "platform"}:
+        return
+    if user_api_configured(st.session_state):
+        st.info("平台调用失败。你已配置个人 API；请在侧边栏显式切换到“我的 API”后重试。")
+    else:
+        st.info("平台调用失败时，你仍可以在侧边栏“AI 模型服务”中配置自己的 API 继续使用。")
+
+
 def _process_pending_job() -> None:
     job = st.session_state.get("pending_job")
     if not job:
         return
 
     try:
-        config = build_model_config()
+        config = build_model_config(st.session_state)
         kind = job.get("kind")
         if kind == "initial":
             task_request = TaskRequest.from_dict(job["request"])
@@ -123,6 +133,8 @@ def _process_pending_job() -> None:
     except (ValueError, KnowledgeBaseError, ModelGatewayError) as exc:
         st.session_state.pending_job = None
         st.error(str(exc))
+        if isinstance(exc, ModelGatewayError):
+            _render_gateway_recovery_hint()
 
 
 def main() -> None:
@@ -145,7 +157,7 @@ def main() -> None:
     request = render_workspace()
     if request is not None:
         try:
-            build_model_config()
+            build_model_config(st.session_state)
         except ValueError as exc:
             st.warning(str(exc))
         else:

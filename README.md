@@ -98,13 +98,22 @@ source_url: https://example.com/source
 
 系统不会把上一轮完整 Prompt 当作新的用户需求保存，避免多轮修改后上下文递归膨胀。
 
-### 6. 服务端统一模型接入
+### 6. 平台 API + 用户 BYOK 双通道
 
-- API Key、Base URL 和模型名称仅由项目维护者在服务端部署环境中配置
-- 网页端不提供 API Key、模型服务商、Base URL 或模型名称输入框
-- 用户无法通过页面把请求转发到任意自定义模型网关
-- 模型服务地址默认要求 HTTPS，并拒绝本机、内网、保留地址及带账号密码的 URL
-- 生产环境可使用 `LLM_ALLOWED_HOSTS` 限制服务端允许访问的模型域名
+应用支持三种模型使用方式：
+
+- `自动`：默认模式，只使用平台 API；平台不可用时不会未经确认消耗用户自己的额度
+- `平台 API`：明确使用维护者在部署环境中配置的共享 API
+- `我的 API`：用户在当前 Streamlit 会话中填写自己的 OpenAI-compatible API
+
+平台共享 API 由部署者通过环境变量或 Streamlit Secrets 管理。用户自己的 API Key 只保存在当前会话中，不进入最近方案、导出文件、URL、数据库或仓库文件；关闭会话或点击“清除我的 API Key”后即可丢弃。
+
+模型网关继续执行以下安全限制：
+
+- 默认要求 HTTPS
+- 拒绝本机、内网、link-local、保留地址和带账号密码的 URL
+- 平台共享 API 可通过 `LLM_ALLOWED_HOSTS` 进一步限制允许访问的域名
+- 用户 BYOK 不受平台域名白名单锁死，但仍必须通过上述 HTTPS 与地址安全校验
 - 401、403、404、429、超时和连接错误会转换为不泄露密钥与内部配置的用户提示
 - 流式失败仅在尚未返回任何文本时回退普通生成，避免部分输出后再次计费
 
@@ -130,7 +139,10 @@ flowchart TB
     MB --> RR
     RT --> PB[Prompt Builder]
     RR --> PB
-    PB --> LLM[服务端 OpenAI Compatible API]
+    PB --> MR[Model Route Resolver]
+    PA[平台 Secrets] --> MR
+    UA[用户会话 BYOK] --> MR
+    MR --> LLM[OpenAI Compatible API]
     LLM --> OUT[结构化结果]
     OUT --> REV[连续调整]
     OUT --> EXP[Markdown / TXT / Word]
@@ -142,7 +154,7 @@ flowchart TB
 ```text
 Yuejian-Feiyi-Agent/
 ├── app.py                       # Streamlit 应用入口与流程编排
-├── core/                        # 领域模型、服务端配置、状态与调整逻辑
+├── core/                        # 领域模型、模型路由、状态与调整逻辑
 ├── services/                    # 检索、Prompt、模型网关、输出与导出
 ├── ui/                          # Streamlit 页面组件与样式
 ├── data/                        # 广东非遗知识库
@@ -195,11 +207,12 @@ python -m pip install -r requirements.txt
 python -m pip install -r requirements-dev.txt
 ```
 
-### 4. 配置服务端模型
+### 4. 配置平台共享模型
 
 复制 `.env.example` 为 `.env`，只在服务端填写真实配置：
 
 ```env
+PLATFORM_API_ENABLED=true
 OPENAI_API_KEY=your_server_api_key_here
 OPENAI_BASE_URL=https://dashscope.aliyuncs.com/compatible-mode/v1
 MODEL_NAME=qwen-turbo
@@ -208,13 +221,21 @@ LLM_ALLOWED_HOSTS=dashscope.aliyuncs.com
 
 如果使用 Streamlit Community Cloud，可把同名键写入项目 Secrets；不要把 `.env` 或 `.streamlit/secrets.toml` 提交到 Git。
 
+以后如果不再希望承担平台 API 费用，不必删除代码或破坏部署，只需把：
+
+```env
+PLATFORM_API_ENABLED=false
+```
+
+应用仍可正常打开，用户可以切换到“我的 API”并使用自己的 OpenAI-compatible 服务。
+
 ### 5. 启动应用
 
 ```bash
 python -m streamlit run app.py
 ```
 
-浏览器访问 `http://localhost:8501`。终端用户无需也不能在网页中配置 API Key。
+浏览器访问 `http://localhost:8501`。默认使用平台 API；用户也可以主动选择 BYOK。
 
 ---
 
@@ -243,7 +264,7 @@ python -m compileall -q .
 python scripts/run_benchmark.py
 ```
 
-当前测试覆盖任务路由、检索查询、连续优化、城市与项目排序、服务端模型配置、模型网关安全、输出清洗和主要状态逻辑。
+当前测试覆盖任务路由、检索查询、连续优化、城市与项目排序、平台/BYOK 模型路由、模型网关安全、输出清洗和主要状态逻辑。
 
 Benchmark 是可扩展的基础评测集，不在 README 中声明未经持续验证的准确率数字。
 
@@ -254,7 +275,8 @@ Benchmark 是可扩展的基础评测集，不在 README 中声明未经持续�
 - 当前检索器是无外部向量数据库的轻量混合检索，不等同于大型语义向量模型。
 - 路线暂未接入地图、实时交通和 POI 营业数据，因此不会承诺精确通勤时间。
 - 模型输出仍可能出现错误，重要文化事实应结合官方资料核验。
-- 公网部署使用服务端统一 API Key 时，应在托管平台、反向代理或 API 网关增加访问控制、限流和预算告警，避免匿名滥用产生费用。
+- 公网部署使用平台共享 API 时，应在托管平台、反向代理或 API 网关增加访问控制、限流和预算告警，避免匿名滥用产生费用。
+- 用户 BYOK 的自定义地址必须是可从部署服务器访问的公网 HTTPS OpenAI-compatible 服务；本机与内网地址会被拒绝。
 - Word 导出以可编辑文本为主，复杂 Markdown 表格不会完全复刻网页样式。
 
 ## 文档
