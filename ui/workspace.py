@@ -16,6 +16,8 @@ from ui.components import (
     render_section_heading,
 )
 
+WORKSPACE_UI_BUILD_ID = "2026.08.19.4"
+
 SCENES: dict[str, tuple[str, str]] = {
     "游客路线": ("🧭", "自动规划非遗路线"),
     "学生研学": ("📚", "生成任务卡与报告提纲"),
@@ -165,10 +167,7 @@ def _render_scene_selector() -> str:
 
 
 def _render_examples() -> None:
-    st.markdown(
-        '<div class="prompt-hint">没有灵感？从这些常用需求开始：</div>',
-        unsafe_allow_html=True,
-    )
+    st.html('<div class="prompt-hint">没有灵感？从这些常用需求开始：</div>')
     columns = st.columns(len(EXAMPLES), gap="small")
     for column, (label, preset) in zip(columns, EXAMPLES.items(), strict=True):
         with column:
@@ -213,7 +212,7 @@ def _workspace_aside_markup(
 
     return "".join(
         [
-            '<div class="workspace-aside">',
+            f'<div class="workspace-aside" data-ui-build="{WORKSPACE_UI_BUILD_ID}">',
             f'<div class="workspace-aside-title">本次将生成 · {html.escape(public_name)}</div>',
             f'<div class="workspace-aside-copy">{html.escape(description)}</div>',
             '<div class="condition-strip">',
@@ -237,7 +236,7 @@ def _render_workspace_aside(
     identity: str,
     content_format: str,
 ) -> None:
-    st.markdown(
+    st.html(
         _workspace_aside_markup(
             scene,
             city,
@@ -245,8 +244,7 @@ def _render_workspace_aside(
             identity,
             content_format,
             _model_status_text(),
-        ),
-        unsafe_allow_html=True,
+        )
     )
 
 
@@ -318,7 +316,7 @@ def render_workspace() -> TaskRequest | None:
                     placeholder="可多选，例如：粤剧、醒狮、拍照",
                 )
 
-            st.markdown(
+            st.html(
                 "".join(
                     [
                         '<div class="condition-strip">',
@@ -328,8 +326,7 @@ def render_workspace() -> TaskRequest | None:
                         f'<span class="condition-pill">{html.escape(st.session_state.output_style)}</span>',
                         "</div>",
                     ]
-                ),
-                unsafe_allow_html=True,
+                )
             )
 
             if st.button(

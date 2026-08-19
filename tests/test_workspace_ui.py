@@ -1,4 +1,4 @@
-from ui.workspace import _workspace_aside_markup
+from ui.workspace import WORKSPACE_UI_BUILD_ID, _workspace_aside_markup
 
 
 def test_workspace_aside_markup_is_single_block_without_markdown_code_indentation() -> None:
@@ -12,10 +12,18 @@ def test_workspace_aside_markup_is_single_block_without_markdown_code_indentatio
     )
 
     assert "\n" not in markup
-    assert '<div class="workspace-aside">' in markup
+    assert '<div class="workspace-aside"' in markup
+    assert f'data-ui-build="{WORKSPACE_UI_BUILD_ID}"' in markup
     assert '<div class="aside-list">' in markup
+    assert ">01<" in markup
+    assert ">02<" in markup
+    assert ">03<" in markup
     assert "当前使用平台 API" in markup
     assert "<code" not in markup
+    assert "🧠" not in markup
+    assert "📚" not in markup
+    assert "✨" not in markup
+    assert "🔌" not in markup
 
 
 def test_workspace_aside_only_shows_content_format_for_content_creation() -> None:
