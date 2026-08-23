@@ -1,5 +1,6 @@
 import pytest
 
+from services import llm
 from services.llm import ModelGatewayError, validate_base_url
 
 
@@ -53,3 +54,49 @@ def test_byok_still_rejects_non_https_url() -> None:
             resolve_dns=False,
             enforce_server_allowlist=False,
         )
+
+
+def test_platform_dns_validation_can_reuse_short_cache(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    calls: list[tuple[str, int]] = []
+
+    def fake_resolve(host: str, port: int) -> tuple[str, ...]:
+        calls.append((host, port))
+        return ("93.184.216.34",)
+
+    monkeypatch.setattr(llm, "_resolve_public_addresses", fake_resolve)
+    llm._resolve_public_addresses_cached.cache_clear()
+
+    for _ in range(2):
+        validate_base_url(
+            "https://api.example.com/v1",
+            enforce_server_allowlist=False,
+            cache_dns=True,
+        )
+
+    assert calls == [("api.example.com", 443)]
+
+
+def test_uncached_dns_validation_still_resolves_every_time(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    calls: list[tuple[str, int]] = []
+
+    def fake_resolve(host: str, port: int) -> tuple[str, ...]:
+        calls.append((host, port))
+        return ("93.184.216.34",)
+
+    monkeypatch.setattr(llm, "_resolve_public_addresses", fake_resolve)
+
+    for _ in range(2):
+        validate_base_url(
+            "https://api.example.com/v1",
+            enforce_server_allowlist=False,
+            cache_dns=False,
+        )
+
+    assert calls == [
+        ("api.example.com", 443),
+        ("api.example.com", 443),
+    ]
