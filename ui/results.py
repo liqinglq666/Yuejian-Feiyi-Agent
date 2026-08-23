@@ -12,11 +12,12 @@ from services.output import sanitize_model_output
 from ui.components import render_empty_state, render_result_overview, render_section_heading
 
 _HEADING_PATTERN = re.compile(r"^(#{2,3})\s+(.+?)\s*$")
+_TAB_HEADING_PATTERN = re.compile(r"^##\s+(.+?)\s*$")
 _SOURCE_MARKER_PATTERN = re.compile(r"\s*\[\s*S\s*\d+\s*\]", flags=re.IGNORECASE)
 
 
 def split_markdown_sections(markdown: str) -> list[tuple[str, str]]:
-    """把模型 Markdown 按二、三级标题拆成可用于 Tabs 的内容块。"""
+    """把模型 Markdown 按二、三级标题拆成内容块，保留旧版公共行为。"""
     sections: list[tuple[str, str]] = []
     current_title = "方案概览"
     current_lines: list[str] = []
@@ -28,6 +29,30 @@ def split_markdown_sections(markdown: str) -> list[tuple[str, str]]:
             if body:
                 sections.append((current_title, body))
             current_title = match.group(2).strip()
+            current_lines = []
+        else:
+            current_lines.append(line)
+
+    body = "\n".join(current_lines).strip()
+    if body:
+        sections.append((current_title, body))
+
+    return sections or [("完整内容", markdown.strip())]
+
+
+def _split_tab_sections(markdown: str) -> list[tuple[str, str]]:
+    """只按二级标题切 Tab，三级标题继续属于其父章节。"""
+    sections: list[tuple[str, str]] = []
+    current_title = "方案概览"
+    current_lines: list[str] = []
+
+    for line in markdown.splitlines():
+        match = _TAB_HEADING_PATTERN.match(line.strip())
+        if match:
+            body = "\n".join(current_lines).strip()
+            if body:
+                sections.append((current_title, body))
+            current_title = match.group(1).strip()
             current_lines = []
         else:
             current_lines.append(line)
@@ -63,7 +88,7 @@ def _render_sources(sources: str) -> None:
 
 
 def _render_route_tabs(answer: str, sources: str) -> None:
-    sections = split_markdown_sections(answer)
+    sections = _split_tab_sections(answer)
     route = _select_section_content(sections, ("总览", "路线", "行程", "时间轴", "节点"), answer)
     tips = _select_section_content(sections, ("体验", "记录", "提醒", "准备", "建议"), answer)
     tab_route, tab_tips, tab_full, tab_sources = st.tabs(
@@ -80,7 +105,7 @@ def _render_route_tabs(answer: str, sources: str) -> None:
 
 
 def _render_study_tabs(answer: str, sources: str) -> None:
-    sections = split_markdown_sections(answer)
+    sections = _split_tab_sections(answer)
     tasks = _select_section_content(sections, ("主题", "目标", "准备", "任务", "观察", "采访"), answer)
     report = _select_section_content(sections, ("记录", "报告", "提纲", "总结", "成果"), answer)
     tab_tasks, tab_report, tab_full, tab_sources = st.tabs(
@@ -97,7 +122,7 @@ def _render_study_tabs(answer: str, sources: str) -> None:
 
 
 def _render_social_tabs(answer: str, sources: str) -> None:
-    sections = split_markdown_sections(answer)
+    sections = _split_tab_sections(answer)
     copy = _select_section_content(sections, ("定位", "标题", "正文", "文案", "发布"), answer)
     assets = _select_section_content(sections, ("配图", "标签", "选题", "拍摄", "封面"), answer)
     tab_preview, tab_assets, tab_full, tab_sources = st.tabs(
@@ -114,7 +139,7 @@ def _render_social_tabs(answer: str, sources: str) -> None:
 
 
 def _render_video_tabs(answer: str, sources: str) -> None:
-    sections = split_markdown_sections(answer)
+    sections = _split_tab_sections(answer)
     storyboard = _select_section_content(sections, ("钩子", "分镜", "旁白", "字幕", "脚本"), answer)
     shooting = _select_section_content(sections, ("拍摄", "镜头", "标题", "标签", "建议"), answer)
     tab_storyboard, tab_shooting, tab_full, tab_sources = st.tabs(
@@ -131,7 +156,7 @@ def _render_video_tabs(answer: str, sources: str) -> None:
 
 
 def _render_qa_tabs(answer: str, sources: str) -> None:
-    sections = split_markdown_sections(answer)
+    sections = _split_tab_sections(answer)
     core = _select_section_content(sections, ("一句话", "背景", "核心", "看点", "解释"), answer)
     experience = _select_section_content(sections, ("体验", "方式", "地点", "建议", "提醒"), answer)
     tab_core, tab_experience, tab_sources = st.tabs(["💡 核心解答", "🧭 如何体验", "📚 检索资料"])

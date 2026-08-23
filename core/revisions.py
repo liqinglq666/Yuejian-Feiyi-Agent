@@ -81,6 +81,19 @@ _IDENTITY_KEYWORDS: tuple[tuple[str, tuple[str, ...]], ...] = (
     ("本地居民", ("本地居民", "本地人")),
 )
 
+_NEGATION_MARKERS = (
+    "不要",
+    "不想",
+    "不需要",
+    "不是",
+    "不用",
+    "取消",
+    "别用",
+    "别做",
+    "别改",
+    "去掉",
+)
+
 
 def plan_quick_revision(request: TaskRequest, action: str) -> RevisionPlan:
     try:
@@ -149,12 +162,17 @@ def plan_custom_revision(request: TaskRequest, instruction: str) -> RevisionPlan
     )
 
 
+def _is_negated(text: str, start: int, *, lookbehind: int = 10) -> bool:
+    prefix = text[max(0, start - lookbehind) : start]
+    return any(marker in prefix for marker in _NEGATION_MARKERS)
+
+
 def _infer_task_type(text: str) -> TaskType | None:
     matches: list[tuple[int, TaskType]] = []
     for task_type, keywords in _TASK_KEYWORDS.items():
         for keyword in keywords:
             start = text.rfind(keyword)
-            if start >= 0:
+            if start >= 0 and not _is_negated(text, start):
                 matches.append((start, task_type))
     if not matches:
         return None
@@ -166,7 +184,7 @@ def _infer_identity(text: str) -> str | None:
     for identity, keywords in _IDENTITY_KEYWORDS:
         for keyword in keywords:
             start = text.rfind(keyword)
-            if start >= 0:
+            if start >= 0 and not _is_negated(text, start):
                 matches.append((start, identity))
     if not matches:
         return None
@@ -222,12 +240,8 @@ def _infer_duration(text: str) -> str | None:
     for duration, patterns in duration_patterns:
         for pattern in patterns:
             start = text.rfind(pattern)
-            if start < 0:
-                continue
-            prefix = text[max(0, start - 7) : start]
-            if any(marker in prefix for marker in ("不要", "不想", "取消", "别用", "去掉")):
-                continue
-            matches.append((start, duration))
+            if start >= 0 and not _is_negated(text, start):
+                matches.append((start, duration))
     if not matches:
         return None
     return max(matches, key=lambda item: item[0])[1]

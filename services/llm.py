@@ -12,6 +12,8 @@ from core.models import ModelConfig
 
 logger = logging.getLogger(__name__)
 
+_REASONING_MODEL_PREFIXES = ("gpt-5", "o1", "o3", "o4")
+
 
 class ModelGatewayError(RuntimeError):
     """A safe, user-facing model gateway error."""
@@ -110,6 +112,32 @@ def build_client(config: ModelConfig) -> Any:
     )
 
 
+def _uses_reasoning_model_parameters(model_name: str) -> bool:
+    normalized = model_name.strip().lower()
+    return normalized.startswith(_REASONING_MODEL_PREFIXES)
+
+
+def _completion_request_kwargs(
+    config: ModelConfig,
+    messages: list[dict[str, str]],
+    *,
+    temperature: float,
+    max_tokens: int,
+    stream: bool,
+) -> dict[str, Any]:
+    kwargs: dict[str, Any] = {
+        "model": config.model_name,
+        "messages": messages,
+        "stream": stream,
+    }
+    if _uses_reasoning_model_parameters(config.model_name):
+        kwargs["max_completion_tokens"] = max_tokens
+    else:
+        kwargs["temperature"] = temperature
+        kwargs["max_tokens"] = max_tokens
+    return kwargs
+
+
 def stream_chat(
     config: ModelConfig,
     messages: list[dict[str, str]],
@@ -119,11 +147,13 @@ def stream_chat(
 ) -> Generator[str, None, None]:
     try:
         stream = build_client(config).chat.completions.create(
-            model=config.model_name,
-            messages=messages,
-            temperature=temperature,
-            max_tokens=max_tokens,
-            stream=True,
+            **_completion_request_kwargs(
+                config,
+                messages,
+                temperature=temperature,
+                max_tokens=max_tokens,
+                stream=True,
+            )
         )
         for chunk in stream:
             if not chunk.choices:
@@ -144,10 +174,13 @@ def complete_chat(
 ) -> str:
     try:
         response = build_client(config).chat.completions.create(
-            model=config.model_name,
-            messages=messages,
-            temperature=temperature,
-            max_tokens=max_tokens,
+            **_completion_request_kwargs(
+                config,
+                messages,
+                temperature=temperature,
+                max_tokens=max_tokens,
+                stream=False,
+            )
         )
         answer = response.choices[0].message.content
         if not answer:
@@ -225,7 +258,13 @@ def _public_error(
     message = str(exc).lower()
     is_user = config.credential_source == "user"
 
-    if status_code == 401:
+    if status_code == 400:
+        detail = (
+            "个人模型不接受当前请求参数，请检查模型名称或更换兼容模型。"
+            if is_user
+            else "平台模型不接受当前请求参数，请联系管理员检查模型配置。"
+        )
+    elif status_code == 401:
         detail = (
             "个人 API Key 无效，或与当前 Base URL 不匹配。"
             if is_user
