@@ -94,6 +94,24 @@ _NEGATION_MARKERS = (
     "去掉",
 )
 
+_NEGATION_CLAUSE_BOUNDARIES = (
+    "，",
+    "。",
+    "；",
+    "！",
+    "？",
+    ",",
+    ";",
+    "!",
+    "?",
+    "\n",
+    "还是",
+    "而是",
+    "但是",
+    "不过",
+    "然后",
+)
+
 
 def plan_quick_revision(request: TaskRequest, action: str) -> RevisionPlan:
     try:
@@ -162,9 +180,15 @@ def plan_custom_revision(request: TaskRequest, instruction: str) -> RevisionPlan
     )
 
 
-def _is_negated(text: str, start: int, *, lookbehind: int = 10) -> bool:
-    prefix = text[max(0, start - lookbehind) : start]
-    return any(marker in prefix for marker in _NEGATION_MARKERS)
+def _is_negated(text: str, start: int) -> bool:
+    prefix = text[:start]
+    clause_start = 0
+    for boundary in _NEGATION_CLAUSE_BOUNDARIES:
+        position = prefix.rfind(boundary)
+        if position >= 0:
+            clause_start = max(clause_start, position + len(boundary))
+    clause_prefix = prefix[clause_start:]
+    return any(marker in clause_prefix for marker in _NEGATION_MARKERS)
 
 
 def _infer_task_type(text: str) -> TaskType | None:
