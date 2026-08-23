@@ -16,7 +16,11 @@ from core.state import (
     queue_initial_generation,
     set_toast,
 )
-from services.llm import ModelGatewayError, collect_stream_with_safe_fallback
+from services.llm import (
+    ModelGatewayError,
+    collect_stream_with_safe_fallback,
+    model_runtime_summary,
+)
 from services.output import sanitize_model_output
 from services.prompt_builder import build_initial_messages, build_revision_messages
 from services.retrieval import KnowledgeBaseError, retrieve
@@ -27,7 +31,7 @@ from ui.sidebar import render_sidebar
 from ui.styles import apply_styles
 from ui.workspace import WORKSPACE_UI_BUILD_ID, render_workspace
 
-APP_BUILD_ID = "2026.08.23.1"
+APP_BUILD_ID = "2026.08.23.2"
 GENERATION_RETRIEVAL_TOP_K = 3
 GENERATION_RETRIEVAL_CHAR_BUDGET = 2200
 
@@ -69,6 +73,7 @@ def _stream_answer(
 ) -> str:
     final_answer = ""
     first_token_seconds: float | None = None
+    runtime_label = model_runtime_summary(config)
 
     for text, is_final in collect_stream_with_safe_fallback(
         config,
@@ -78,14 +83,14 @@ def _stream_answer(
         if first_token_seconds is None:
             first_token_seconds = perf_counter() - started_at
             model_line.markdown(
-                f"✓ AI 首字响应 · {first_token_seconds:.1f}s，正在继续生成…"
+                f"✓ {runtime_label} 首字响应 · {first_token_seconds:.1f}s，正在继续生成…"
             )
             status.update(label="正在生成方案…")
         final_answer = sanitize_model_output(text)
         answer_placeholder.markdown(final_answer if is_final else final_answer + "▌")
 
     generation_seconds = perf_counter() - started_at
-    model_line.markdown(f"✓ AI 生成完成 · {generation_seconds:.1f}s")
+    model_line.markdown(f"✓ {runtime_label} 生成完成 · {generation_seconds:.1f}s")
 
     if not final_answer.strip():
         raise ModelGatewayError("模型没有返回可用内容。")
@@ -121,7 +126,8 @@ def _generate_with_progress(
         )
 
         messages = message_builder(retrieval)
-        model_line.markdown("◌ AI 已收到上下文，正在等待首字响应…")
+        runtime_label = model_runtime_summary(config)
+        model_line.markdown(f"◌ {runtime_label} · 正在等待首字响应…")
         status.update(label="正在等待 AI 响应…")
 
         answer = _stream_answer(

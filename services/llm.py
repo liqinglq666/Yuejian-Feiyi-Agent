@@ -15,11 +15,25 @@ from core.models import ModelConfig
 logger = logging.getLogger(__name__)
 
 _REASONING_MODEL_PREFIXES = ("gpt-5", "o1", "o3", "o4")
+_DASHSCOPE_THINKING_MODEL_PREFIXES = (
+    "qwen-turbo",
+    "qwen-plus",
+    "qwen-flash",
+    "qwen3",
+    "deepseek-v4",
+)
 _DNS_CACHE_TTL_SECONDS = 60.0
 
 
 class ModelGatewayError(RuntimeError):
     """A safe, user-facing model gateway error."""
+
+
+def _env_flag(name: str, *, default: bool) -> bool:
+    raw = os.getenv(name)
+    if raw is None:
+        return default
+    return raw.strip().lower() in {"1", "true", "yes", "on"}
 
 
 def _blocked_address(value: str) -> bool:
@@ -142,6 +156,34 @@ def _uses_reasoning_model_parameters(model_name: str) -> bool:
     return normalized.startswith(_REASONING_MODEL_PREFIXES)
 
 
+def _is_dashscope_host(base_url: str) -> bool:
+    host = (urlparse(base_url.strip()).hostname or "").lower()
+    return host == "dashscope.aliyuncs.com" or host.endswith(".maas.aliyuncs.com")
+
+
+def _supports_platform_thinking_control(config: ModelConfig) -> bool:
+    if config.credential_source != "platform" or not _is_dashscope_host(config.base_url):
+        return False
+    normalized = config.model_name.strip().lower()
+    return normalized.startswith(_DASHSCOPE_THINKING_MODEL_PREFIXES)
+
+
+def platform_thinking_enabled(config: ModelConfig) -> bool:
+    """Return the effective thinking mode for supported shared DashScope models."""
+    return _supports_platform_thinking_control(config) and _env_flag(
+        "LLM_ENABLE_THINKING",
+        default=False,
+    )
+
+
+def model_runtime_summary(config: ModelConfig) -> str:
+    """Short runtime label safe to show in the generation progress UI."""
+    if _supports_platform_thinking_control(config):
+        mode = "思考模式" if platform_thinking_enabled(config) else "非思考模式"
+        return f"{config.model_name} · {mode}"
+    return config.model_name
+
+
 def _completion_request_kwargs(
     config: ModelConfig,
     messages: list[dict[str, str]],
@@ -160,6 +202,9 @@ def _completion_request_kwargs(
     else:
         kwargs["temperature"] = temperature
         kwargs["max_tokens"] = max_tokens
+
+    if _supports_platform_thinking_control(config):
+        kwargs["extra_body"] = {"enable_thinking": platform_thinking_enabled(config)}
     return kwargs
 
 
