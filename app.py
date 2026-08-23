@@ -1,9 +1,13 @@
 from __future__ import annotations
 
+from collections.abc import Callable
+from time import perf_counter
+from typing import Any
+
 import streamlit as st
 
 from core.config import build_model_config, user_api_configured
-from core.models import ModelConfig, RevisionRequest, TaskRequest, TaskType
+from core.models import ModelConfig, RetrievalBundle, RevisionRequest, TaskRequest, TaskType
 from core.state import (
     apply_pending_form_sync,
     complete_initial_generation,
@@ -23,7 +27,9 @@ from ui.sidebar import render_sidebar
 from ui.styles import apply_styles
 from ui.workspace import WORKSPACE_UI_BUILD_ID, render_workspace
 
-APP_BUILD_ID = "2026.08.19.6"
+APP_BUILD_ID = "2026.08.23.1"
+GENERATION_RETRIEVAL_TOP_K = 3
+GENERATION_RETRIEVAL_CHAR_BUDGET = 2200
 
 
 HERO_LAYER_FIX_CSS = """
@@ -52,25 +58,88 @@ def _show_pending_toast() -> None:
     st.session_state.toast_icon = "🦁"
 
 
-def _stream_answer(config: ModelConfig, messages: list[dict[str, str]]) -> str:
-    placeholder = st.empty()
+def _stream_answer(
+    config: ModelConfig,
+    messages: list[dict[str, str]],
+    *,
+    answer_placeholder: Any,
+    model_line: Any,
+    status: Any,
+    started_at: float,
+) -> str:
     final_answer = ""
-    with st.status("正在检索知识并生成方案…", expanded=True) as status:
-        st.write("正在读取结构化需求")
-        st.write("正在检索广东非遗知识")
-        st.write("正在生成并核对输出结构")
-        for text, is_final in collect_stream_with_safe_fallback(
-            config,
-            messages,
-            temperature=float(st.session_state.temperature),
-        ):
-            final_answer = sanitize_model_output(text)
-            placeholder.markdown(final_answer if is_final else final_answer + "▌")
-        status.update(label="方案已生成", state="complete", expanded=False)
+    first_token_seconds: float | None = None
+
+    for text, is_final in collect_stream_with_safe_fallback(
+        config,
+        messages,
+        temperature=float(st.session_state.temperature),
+    ):
+        if first_token_seconds is None:
+            first_token_seconds = perf_counter() - started_at
+            model_line.markdown(
+                f"✓ AI 首字响应 · {first_token_seconds:.1f}s，正在继续生成…"
+            )
+            status.update(label="正在生成方案…")
+        final_answer = sanitize_model_output(text)
+        answer_placeholder.markdown(final_answer if is_final else final_answer + "▌")
+
+    generation_seconds = perf_counter() - started_at
+    model_line.markdown(f"✓ AI 生成完成 · {generation_seconds:.1f}s")
 
     if not final_answer.strip():
         raise ModelGatewayError("模型没有返回可用内容。")
     return final_answer
+
+
+def _generate_with_progress(
+    config: ModelConfig,
+    retrieval_query: str,
+    message_builder: Callable[[RetrievalBundle], list[dict[str, str]]],
+) -> tuple[str, RetrievalBundle]:
+    answer_placeholder = st.empty()
+    overall_started = perf_counter()
+
+    with st.status("正在准备非遗方案…", expanded=True) as status:
+        request_line = st.empty()
+        retrieval_line = st.empty()
+        model_line = st.empty()
+
+        request_line.markdown("✓ 结构化需求已读取")
+        retrieval_line.markdown("◌ 正在检索广东非遗知识…")
+        status.update(label="正在检索广东非遗知识…")
+
+        retrieval_started = perf_counter()
+        retrieval = retrieve(
+            retrieval_query,
+            top_k=GENERATION_RETRIEVAL_TOP_K,
+            max_total_chars=GENERATION_RETRIEVAL_CHAR_BUDGET,
+        )
+        retrieval_seconds = perf_counter() - retrieval_started
+        retrieval_line.markdown(
+            f"✓ 检索完成 · {len(retrieval.chunks)} 条相关资料 · {retrieval_seconds:.2f}s"
+        )
+
+        messages = message_builder(retrieval)
+        model_line.markdown("◌ AI 已收到上下文，正在等待首字响应…")
+        status.update(label="正在等待 AI 响应…")
+
+        answer = _stream_answer(
+            config,
+            messages,
+            answer_placeholder=answer_placeholder,
+            model_line=model_line,
+            status=status,
+            started_at=perf_counter(),
+        )
+        total_seconds = perf_counter() - overall_started
+        status.update(
+            label=f"方案已生成 · {total_seconds:.1f}s",
+            state="complete",
+            expanded=False,
+        )
+
+    return answer, retrieval
 
 
 def _render_gateway_recovery_hint() -> None:
@@ -93,10 +162,12 @@ def _process_pending_job() -> None:
         kind = job.get("kind")
         if kind == "initial":
             task_request = TaskRequest.from_dict(job["request"])
-            retrieval = retrieve(task_request.retrieval_query)
-            messages = build_initial_messages(task_request, retrieval)
             render_request_summary(task_request)
-            answer = _stream_answer(config, messages)
+            answer, retrieval = _generate_with_progress(
+                config,
+                task_request.retrieval_query,
+                lambda bundle: build_initial_messages(task_request, bundle),
+            )
             complete_initial_generation(
                 st.session_state,
                 task_request,
@@ -114,10 +185,12 @@ def _process_pending_job() -> None:
                 target_task_type=TaskType(job["target_task_type"]),
             )
             retrieval_query = f"{effective_request.retrieval_query} {revision.instruction}"
-            retrieval = retrieve(retrieval_query)
-            messages = build_revision_messages(revision, retrieval)
             render_request_summary(effective_request)
-            answer = _stream_answer(config, messages)
+            answer, retrieval = _generate_with_progress(
+                config,
+                retrieval_query,
+                lambda bundle: build_revision_messages(revision, bundle),
+            )
             complete_revision(
                 st.session_state,
                 revision.instruction,
