@@ -5,6 +5,8 @@ import logging
 import os
 import socket
 from collections.abc import Generator, Iterable
+from functools import lru_cache
+from time import monotonic
 from typing import Any
 from urllib.parse import urlparse
 
@@ -13,6 +15,7 @@ from core.models import ModelConfig
 logger = logging.getLogger(__name__)
 
 _REASONING_MODEL_PREFIXES = ("gpt-5", "o1", "o3", "o4")
+_DNS_CACHE_TTL_SECONDS = 60.0
 
 
 class ModelGatewayError(RuntimeError):
@@ -33,11 +36,40 @@ def _blocked_address(value: str) -> bool:
     )
 
 
+def _resolve_public_addresses(host: str, port: int) -> tuple[str, ...]:
+    try:
+        addresses = {
+            item[4][0]
+            for item in socket.getaddrinfo(
+                host,
+                port,
+                type=socket.SOCK_STREAM,
+            )
+        }
+    except socket.gaierror as exc:
+        raise ModelGatewayError("模型服务域名解析失败。") from exc
+
+    if not addresses or any(_blocked_address(address) for address in addresses):
+        raise ModelGatewayError("模型服务地址不能指向本机、内网或保留地址。")
+    return tuple(sorted(addresses))
+
+
+@lru_cache(maxsize=64)
+def _resolve_public_addresses_cached(
+    host: str,
+    port: int,
+    time_bucket: int,
+) -> tuple[str, ...]:
+    del time_bucket
+    return _resolve_public_addresses(host, port)
+
+
 def validate_base_url(
     base_url: str,
     *,
     resolve_dns: bool = True,
     enforce_server_allowlist: bool = True,
+    cache_dns: bool = False,
 ) -> str:
     value = base_url.strip().rstrip("/")
     parsed = urlparse(value)
@@ -70,20 +102,12 @@ def validate_base_url(
     if not resolve_dns:
         return value
 
-    try:
-        addresses = {
-            item[4][0]
-            for item in socket.getaddrinfo(
-                host,
-                parsed.port or 443,
-                type=socket.SOCK_STREAM,
-            )
-        }
-    except socket.gaierror as exc:
-        raise ModelGatewayError("模型服务域名解析失败。") from exc
-
-    if not addresses or any(_blocked_address(address) for address in addresses):
-        raise ModelGatewayError("模型服务地址不能指向本机、内网或保留地址。")
+    port = parsed.port or 443
+    if cache_dns:
+        time_bucket = int(monotonic() // _DNS_CACHE_TTL_SECONDS)
+        _resolve_public_addresses_cached(host, port, time_bucket)
+    else:
+        _resolve_public_addresses(host, port)
     return value
 
 
@@ -106,6 +130,7 @@ def build_client(config: ModelConfig) -> Any:
         base_url=validate_base_url(
             config.base_url,
             enforce_server_allowlist=not is_user,
+            cache_dns=not is_user,
         ),
         timeout=config.timeout_seconds,
         max_retries=config.max_retries,
