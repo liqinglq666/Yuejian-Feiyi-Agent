@@ -1,0 +1,260 @@
+from __future__ import annotations
+
+import ipaddress
+import logging
+import os
+import socket
+from collections.abc import Generator, Iterable
+from typing import Any
+from urllib.parse import urlparse
+
+from core.models import ModelConfig
+
+logger = logging.getLogger(__name__)
+
+
+class ModelGatewayError(RuntimeError):
+    """A safe, user-facing model gateway error."""
+
+
+def _blocked_address(value: str) -> bool:
+    address = ipaddress.ip_address(value)
+    return any(
+        (
+            address.is_private,
+            address.is_loopback,
+            address.is_link_local,
+            address.is_multicast,
+            address.is_reserved,
+            address.is_unspecified,
+        )
+    )
+
+
+def validate_base_url(
+    base_url: str,
+    *,
+    resolve_dns: bool = True,
+    enforce_server_allowlist: bool = True,
+) -> str:
+    value = base_url.strip().rstrip("/")
+    parsed = urlparse(value)
+    allow_http = os.getenv("ALLOW_INSECURE_LLM_HTTP", "").lower() in {
+        "1",
+        "true",
+        "yes",
+        "on",
+    }
+
+    if parsed.scheme not in {"http", "https"}:
+        raise ModelGatewayError("模型服务地址只允许 http 或 https。")
+    if parsed.scheme != "https" and not allow_http:
+        raise ModelGatewayError("模型服务地址必须使用 HTTPS。")
+    if not parsed.hostname or parsed.username or parsed.password:
+        raise ModelGatewayError("模型服务地址格式不合法。")
+    if parsed.query or parsed.fragment:
+        raise ModelGatewayError("模型服务地址不能包含 query 或 fragment。")
+
+    host = parsed.hostname.lower()
+    if enforce_server_allowlist:
+        allowed_hosts = {
+            item.strip().lower()
+            for item in os.getenv("LLM_ALLOWED_HOSTS", "").split(",")
+            if item.strip()
+        }
+        if allowed_hosts and host not in allowed_hosts:
+            raise ModelGatewayError("当前模型服务地址不在服务端允许列表中。")
+
+    if not resolve_dns:
+        return value
+
+    try:
+        addresses = {
+            item[4][0]
+            for item in socket.getaddrinfo(
+                host,
+                parsed.port or 443,
+                type=socket.SOCK_STREAM,
+            )
+        }
+    except socket.gaierror as exc:
+        raise ModelGatewayError("模型服务域名解析失败。") from exc
+
+    if not addresses or any(_blocked_address(address) for address in addresses):
+        raise ModelGatewayError("模型服务地址不能指向本机、内网或保留地址。")
+    return value
+
+
+def build_client(config: ModelConfig) -> Any:
+    is_user = config.credential_source == "user"
+    if not config.api_key.strip():
+        detail = "个人 API Key 为空，请重新配置。" if is_user else "平台 AI 服务暂未配置。"
+        raise ModelGatewayError(detail)
+    if not config.model_name.strip():
+        detail = "个人模型名称为空，请重新配置。" if is_user else "平台 AI 模型暂未配置。"
+        raise ModelGatewayError(detail)
+
+    try:
+        from openai import OpenAI
+    except ImportError as exc:
+        raise ModelGatewayError("AI 服务依赖缺失，请联系管理员。") from exc
+
+    return OpenAI(
+        api_key=config.api_key.strip(),
+        base_url=validate_base_url(
+            config.base_url,
+            enforce_server_allowlist=not is_user,
+        ),
+        timeout=config.timeout_seconds,
+        max_retries=config.max_retries,
+    )
+
+
+def stream_chat(
+    config: ModelConfig,
+    messages: list[dict[str, str]],
+    *,
+    temperature: float = 0.62,
+    max_tokens: int = 1600,
+) -> Generator[str, None, None]:
+    try:
+        stream = build_client(config).chat.completions.create(
+            model=config.model_name,
+            messages=messages,
+            temperature=temperature,
+            max_tokens=max_tokens,
+            stream=True,
+        )
+        for chunk in stream:
+            if not chunk.choices:
+                continue
+            delta = chunk.choices[0].delta
+            if delta and delta.content:
+                yield delta.content
+    except Exception as exc:
+        raise _public_error(exc, config=config, streaming=True) from exc
+
+
+def complete_chat(
+    config: ModelConfig,
+    messages: list[dict[str, str]],
+    *,
+    temperature: float = 0.62,
+    max_tokens: int = 1600,
+) -> str:
+    try:
+        response = build_client(config).chat.completions.create(
+            model=config.model_name,
+            messages=messages,
+            temperature=temperature,
+            max_tokens=max_tokens,
+        )
+        answer = response.choices[0].message.content
+        if not answer:
+            raise ModelGatewayError("模型返回内容为空。")
+        return answer.strip()
+    except Exception as exc:
+        if isinstance(exc, ModelGatewayError):
+            raise
+        raise _public_error(exc, config=config, streaming=False) from exc
+
+
+def test_connection(config: ModelConfig) -> str:
+    answer = complete_chat(
+        config,
+        [
+            {"role": "system", "content": "你是接口连通性测试助手。"},
+            {"role": "user", "content": "只回复 OK"},
+        ],
+        temperature=0.0,
+        max_tokens=8,
+    )
+    return answer
+
+
+def collect_stream_with_safe_fallback(
+    config: ModelConfig,
+    messages: list[dict[str, str]],
+    *,
+    temperature: float,
+    max_tokens: int = 1600,
+) -> Iterable[tuple[str, bool]]:
+    """Yield `(text, is_final)` and avoid a second bill after partial output.
+
+    A normal completion fallback is attempted only when streaming fails before the
+    gateway returned any text.
+    """
+    full = ""
+    try:
+        for part in stream_chat(
+            config,
+            messages,
+            temperature=temperature,
+            max_tokens=max_tokens,
+        ):
+            full += part
+            yield full, False
+        if not full.strip():
+            raise ModelGatewayError("模型流式返回为空。")
+        yield full, True
+        return
+    except Exception:
+        if full.strip():
+            raise
+
+    answer = complete_chat(
+        config,
+        messages,
+        temperature=temperature,
+        max_tokens=max_tokens,
+    )
+    yield answer, True
+
+
+def _public_error(
+    exc: Exception,
+    *,
+    config: ModelConfig,
+    streaming: bool,
+) -> ModelGatewayError:
+    if isinstance(exc, ModelGatewayError):
+        return exc
+
+    logger.exception("Model gateway request failed", exc_info=exc)
+    status_code = getattr(exc, "status_code", None)
+    message = str(exc).lower()
+    is_user = config.credential_source == "user"
+
+    if status_code == 401:
+        detail = (
+            "个人 API Key 无效，或与当前 Base URL 不匹配。"
+            if is_user
+            else "平台模型凭据无效，请联系管理员。"
+        )
+    elif status_code == 403:
+        detail = (
+            "个人 API 当前没有调用该模型的权限。"
+            if is_user
+            else "平台当前没有调用该模型的权限。"
+        )
+    elif status_code == 404:
+        detail = (
+            "个人模型名称或 Base URL 配置错误。"
+            if is_user
+            else "平台模型名称或接口地址配置错误。"
+        )
+    elif status_code == 429:
+        detail = (
+            "个人 API 当前请求过多或额度不足，请检查服务商额度。"
+            if is_user
+            else "平台 AI 服务当前请求过多或额度不足，请稍后重试。"
+        )
+    elif "timeout" in message or "timed out" in message:
+        detail = "AI 服务响应超时，请稍后重试。"
+    elif "connection" in message or "network" in message:
+        detail = "暂时无法连接 AI 服务，请稍后重试。"
+    else:
+        detail = "AI 服务调用失败，请稍后重试。"
+
+    prefix = "流式生成失败" if streaming else "模型调用失败"
+    return ModelGatewayError(f"{prefix}：{detail}")

@@ -1,0 +1,23 @@
+[
+  {
+    "id": "route-guangzhou-001",
+    "scene": "游客路线",
+    "query": "广州一天体验粤剧、醒狮和岭南建筑",
+    "expected_task_type": "route",
+    "expected_terms": ["广州", "粤剧", "醒狮"]
+  },
+  {
+    "id": "study-001",
+    "scene": "学生研学",
+    "query": "设计一份广绣研学任务卡和采访问题",
+    "expected_task_type": "study",
+    "expected_terms": ["广绣", "研学"]
+  },
+  {
+    "id": "social-001",
+    "scene": "内容创作",
+    "query": "写一篇英歌舞小红书，并给短视频延展建议",
+    "expected_task_type": "social",
+    "expected_terms": ["英歌舞"]
+  }
+]
