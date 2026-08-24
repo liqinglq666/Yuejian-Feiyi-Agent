@@ -43,6 +43,11 @@ def _env_flag(name: str, *, default: bool) -> bool:
     return raw.strip().lower() in {"1", "true", "yes", "on"}
 
 
+def debug_ui_enabled() -> bool:
+    """Expose engineering diagnostics only when explicitly enabled by deployers."""
+    return _env_flag("DEBUG_UI", default=False)
+
+
 def platform_api_enabled() -> bool:
     """Return whether the deployment owner currently offers the shared API."""
     return _env_flag("PLATFORM_API_ENABLED", default=True)
