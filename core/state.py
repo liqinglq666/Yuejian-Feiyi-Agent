@@ -24,7 +24,7 @@ DEFAULT_STATE: dict[str, Any] = {
     "user_provider": "阿里云百炼",
     "user_api_key": "",
     "user_base_url": "https://dashscope.aliyuncs.com/compatible-mode/v1",
-    "user_model_name": "qwen-plus",
+    "user_model_name": "qwen3.7-flash",
     "user_api_test_status": "",
     "user_api_test_message": "",
     "pending_job": None,
