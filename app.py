@@ -1,12 +1,13 @@
 from __future__ import annotations
 
+import logging
 from collections.abc import Callable
 from time import perf_counter
 from typing import Any
 
 import streamlit as st
 
-from core.config import build_model_config, user_api_configured
+from core.config import build_model_config, debug_ui_enabled, user_api_configured
 from core.models import ModelConfig, RetrievalBundle, RevisionRequest, TaskRequest, TaskType
 from core.state import (
     apply_pending_form_sync,
@@ -31,7 +32,9 @@ from ui.sidebar import render_sidebar
 from ui.styles import apply_styles
 from ui.workspace import WORKSPACE_UI_BUILD_ID, render_workspace
 
-APP_BUILD_ID = "2026.08.23.2"
+logger = logging.getLogger(__name__)
+
+APP_BUILD_ID = "2026.08.24.1"
 GENERATION_RETRIEVAL_TOP_K = 3
 GENERATION_RETRIEVAL_CHAR_BUDGET = 2200
 
@@ -74,6 +77,7 @@ def _stream_answer(
     final_answer = ""
     first_token_seconds: float | None = None
     runtime_label = model_runtime_summary(config)
+    debug = debug_ui_enabled()
 
     for text, is_final in collect_stream_with_safe_fallback(
         config,
@@ -82,15 +86,25 @@ def _stream_answer(
     ):
         if first_token_seconds is None:
             first_token_seconds = perf_counter() - started_at
-            model_line.markdown(
-                f"✓ {runtime_label} 首字响应 · {first_token_seconds:.1f}s，正在继续生成…"
-            )
-            status.update(label="正在生成方案…")
+            if debug:
+                model_line.markdown(
+                    f"✓ {runtime_label} 首字响应 · {first_token_seconds:.1f}s，正在继续生成…"
+                )
+            status.update(label="正在生成专属方案…")
         final_answer = sanitize_model_output(text)
         answer_placeholder.markdown(final_answer if is_final else final_answer + "▌")
 
     generation_seconds = perf_counter() - started_at
-    model_line.markdown(f"✓ {runtime_label} 生成完成 · {generation_seconds:.1f}s")
+    logger.info(
+        "Generation completed: model=%s first_token=%.3fs total=%.3fs",
+        runtime_label,
+        first_token_seconds or generation_seconds,
+        generation_seconds,
+    )
+    if debug:
+        model_line.markdown(f"✓ {runtime_label} 生成完成 · {generation_seconds:.1f}s")
+    else:
+        model_line.markdown("✓ 专属方案已生成")
 
     if not final_answer.strip():
         raise ModelGatewayError("模型没有返回可用内容。")
@@ -104,15 +118,16 @@ def _generate_with_progress(
 ) -> tuple[str, RetrievalBundle]:
     answer_placeholder = st.empty()
     overall_started = perf_counter()
+    debug = debug_ui_enabled()
 
-    with st.status("正在准备非遗方案…", expanded=True) as status:
+    with st.status("正在为你生成方案…", expanded=True) as status:
         request_line = st.empty()
         retrieval_line = st.empty()
         model_line = st.empty()
 
-        request_line.markdown("✓ 结构化需求已读取")
-        retrieval_line.markdown("◌ 正在检索广东非遗知识…")
-        status.update(label="正在检索广东非遗知识…")
+        request_line.markdown("✓ 已理解你的需求")
+        retrieval_line.markdown("◌ 正在整理相关非遗资料…")
+        status.update(label="正在整理相关非遗资料…")
 
         retrieval_started = perf_counter()
         retrieval = retrieve(
@@ -121,14 +136,26 @@ def _generate_with_progress(
             max_total_chars=GENERATION_RETRIEVAL_CHAR_BUDGET,
         )
         retrieval_seconds = perf_counter() - retrieval_started
-        retrieval_line.markdown(
-            f"✓ 检索完成 · {len(retrieval.chunks)} 条相关资料 · {retrieval_seconds:.2f}s"
+        logger.info(
+            "Retrieval completed: chunks=%d duration=%.3fs",
+            len(retrieval.chunks),
+            retrieval_seconds,
         )
+        if debug:
+            retrieval_line.markdown(
+                f"✓ 检索完成 · {len(retrieval.chunks)} 条相关资料 · {retrieval_seconds:.2f}s"
+            )
+        else:
+            retrieval_line.markdown("✓ 已整理相关非遗资料")
 
         messages = message_builder(retrieval)
-        runtime_label = model_runtime_summary(config)
-        model_line.markdown(f"◌ {runtime_label} · 正在等待首字响应…")
-        status.update(label="正在等待 AI 响应…")
+        if debug:
+            model_line.markdown(
+                f"◌ {model_runtime_summary(config)} · 正在等待首字响应…"
+            )
+        else:
+            model_line.markdown("◌ 正在生成专属方案…")
+        status.update(label="正在生成专属方案…")
 
         answer = _stream_answer(
             config,
@@ -139,23 +166,39 @@ def _generate_with_progress(
             started_at=perf_counter(),
         )
         total_seconds = perf_counter() - overall_started
-        status.update(
-            label=f"方案已生成 · {total_seconds:.1f}s",
-            state="complete",
-            expanded=False,
-        )
+        logger.info("Generation workflow completed in %.3fs", total_seconds)
+        label = f"方案已生成 · {total_seconds:.1f}s" if debug else "方案已生成"
+        status.update(label=label, state="complete", expanded=False)
 
     return answer, retrieval
 
 
 def _render_gateway_recovery_hint() -> None:
-    mode = str(st.session_state.get("model_mode", "auto"))
-    if mode not in {"auto", "platform"}:
-        return
     if user_api_configured(st.session_state):
-        st.info("平台调用失败。你已配置个人 API；请在侧边栏显式切换到“我的 API”后重试。")
+        st.info("当前 AI 服务暂时不可用。你已连接自己的 API，可在“AI 服务”中切换后重试。")
     else:
-        st.info("平台调用失败时，你仍可以在侧边栏“AI 模型服务”中配置自己的 API 继续使用。")
+        st.info("当前 AI 服务暂时不可用，请稍后重试。你也可以在“AI 服务”中连接自己的 API。")
+
+
+def _render_generation_error(
+    exc: Exception,
+    *,
+    config: ModelConfig | None,
+) -> None:
+    debug = debug_ui_enabled()
+    if isinstance(exc, ModelGatewayError):
+        if config is not None and config.credential_source == "user":
+            st.error(str(exc))
+        else:
+            st.error("暂时无法生成方案，请稍后重试。")
+            _render_gateway_recovery_hint()
+    elif isinstance(exc, KnowledgeBaseError):
+        st.error("相关资料暂时无法整理，请稍后重试。")
+    else:
+        st.error("当前请求暂时无法处理，请重新提交。")
+
+    if debug:
+        st.caption(f"诊断信息：{exc}")
 
 
 def _process_pending_job() -> None:
@@ -163,6 +206,7 @@ def _process_pending_job() -> None:
     if not job:
         return
 
+    config: ModelConfig | None = None
     try:
         config = build_model_config(st.session_state)
         kind = job.get("kind")
@@ -212,9 +256,13 @@ def _process_pending_job() -> None:
         st.rerun()
     except (ValueError, KnowledgeBaseError, ModelGatewayError) as exc:
         st.session_state.pending_job = None
-        st.error(str(exc))
-        if isinstance(exc, ModelGatewayError):
-            _render_gateway_recovery_hint()
+        _render_generation_error(exc, config=config)
+
+
+def _render_model_unavailable_notice(exc: ValueError) -> None:
+    st.warning("AI 服务暂时不可用，请稍后重试，或在侧边栏“AI 服务”中连接自己的 API。")
+    if debug_ui_enabled():
+        st.caption(f"诊断信息：{exc}")
 
 
 def main() -> None:
@@ -231,7 +279,8 @@ def main() -> None:
     apply_mobile_styles()
     st.markdown(HERO_LAYER_FIX_CSS, unsafe_allow_html=True)
     render_sidebar()
-    st.sidebar.caption(f"Build {APP_BUILD_ID} · UI {WORKSPACE_UI_BUILD_ID}")
+    if debug_ui_enabled():
+        st.sidebar.caption(f"Build {APP_BUILD_ID} · UI {WORKSPACE_UI_BUILD_ID}")
     _show_pending_toast()
     render_topbar_and_hero()
 
@@ -240,7 +289,7 @@ def main() -> None:
         try:
             build_model_config(st.session_state)
         except ValueError as exc:
-            st.warning(str(exc))
+            _render_model_unavailable_notice(exc)
         else:
             queue_initial_generation(st.session_state, request)
             set_toast(st.session_state, "已收到需求，正在生成方案…", "🦁")
