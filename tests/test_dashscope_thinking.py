@@ -8,7 +8,7 @@ from services.llm import (
 )
 
 
-def _config(*, source: str = "platform", model: str = "qwen-turbo") -> ModelConfig:
+def _config(*, source: str = "platform", model: str = "qwen3.7-flash") -> ModelConfig:
     return ModelConfig(
         api_key="test-key",
         base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",
@@ -33,14 +33,14 @@ def test_platform_dashscope_thinking_is_disabled_by_default(
 
     assert platform_thinking_enabled(config) is False
     assert kwargs["extra_body"] == {"enable_thinking": False}
-    assert model_runtime_summary(config) == "qwen-turbo · 非思考模式"
+    assert model_runtime_summary(config) == "qwen3.7-flash · 非思考模式"
 
 
 def test_platform_dashscope_thinking_can_be_enabled_explicitly(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setenv("LLM_ENABLE_THINKING", "true")
-    config = _config(model="qwen3.5-flash")
+    config = _config(model="qwen3.7-flash")
 
     kwargs = _completion_request_kwargs(
         config,
@@ -52,7 +52,7 @@ def test_platform_dashscope_thinking_can_be_enabled_explicitly(
 
     assert platform_thinking_enabled(config) is True
     assert kwargs["extra_body"] == {"enable_thinking": True}
-    assert model_runtime_summary(config) == "qwen3.5-flash · 思考模式"
+    assert model_runtime_summary(config) == "qwen3.7-flash · 思考模式"
 
 
 def test_byok_dashscope_settings_are_not_overridden(
@@ -70,7 +70,7 @@ def test_byok_dashscope_settings_are_not_overridden(
     )
 
     assert "extra_body" not in kwargs
-    assert model_runtime_summary(config) == "qwen-turbo"
+    assert model_runtime_summary(config) == "qwen3.7-flash"
 
 
 def test_non_dashscope_platform_model_is_not_modified() -> None:
