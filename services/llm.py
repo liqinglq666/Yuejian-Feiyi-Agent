@@ -353,8 +353,14 @@ def _public_error(
     if isinstance(exc, ModelGatewayError):
         return exc
 
-    logger.exception("Model gateway request failed", exc_info=exc)
     status_code = getattr(exc, "status_code", None)
+    logger.warning(
+        "Model gateway request failed: type=%s status=%s source=%s streaming=%s",
+        type(exc).__name__,
+        status_code,
+        config.credential_source,
+        streaming,
+    )
     message = str(exc).lower()
     is_user = config.credential_source == "user"
     is_timeout = "timeout" in message or "timed out" in message
