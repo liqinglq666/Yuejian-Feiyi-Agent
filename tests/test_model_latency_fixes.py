@@ -1,8 +1,8 @@
 import pytest
 
+import services.llm as llm
 from core.config import DEFAULT_MODEL_NAME, build_user_model_config
 from core.models import ModelConfig
-import services.llm as llm
 
 
 def test_default_platform_model_is_qwen37_flash() -> None:
