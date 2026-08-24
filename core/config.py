@@ -173,6 +173,6 @@ def build_model_config(state: Mapping[str, Any] | None = None) -> ModelConfig:
     if user_api_configured(state):
         raise ValueError(
             "平台 AI 服务当前不可用。为避免未经确认消耗你的个人额度，"
-            "请在“AI 模型服务”中切换到“我的 API”后继续。"
+            "请在“AI 服务”中切换到“使用我的 API”后继续。"
         )
-    raise ValueError("平台 AI 服务当前不可用。你可以在“AI 模型服务”中配置自己的 API。")
+    raise ValueError("平台 AI 服务当前不可用。你可以在“AI 服务”中连接自己的 API。")
