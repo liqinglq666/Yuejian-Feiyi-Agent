@@ -14,11 +14,14 @@ from core.state import clear_user_api_config, load_recent_plan, set_toast, start
 from services.llm import ModelGatewayError, test_connection
 
 MODE_LABELS = {
-    "自动": "auto",
-    "平台 API": "platform",
-    "我的 API": "user",
+    "自动使用": "auto",
+    "使用我的 API": "user",
 }
-MODE_VALUES = {value: label for label, value in MODE_LABELS.items()}
+MODE_VALUES = {
+    "auto": "自动使用",
+    "platform": "自动使用",
+    "user": "使用我的 API",
+}
 
 
 def render_sidebar() -> None:
@@ -47,8 +50,8 @@ def render_sidebar() -> None:
         with st.expander("使用帮助", expanded=False):
             st.markdown(
                 "写清楚 **去哪里、多久、和谁、想体验什么**，结果会更准确。\n\n"
-                "默认优先使用平台 API；你也可以在“AI 模型服务”中选择“我的 API”。\n\n"
-                "个人 API Key 仅保存在当前 Streamlit 会话中，不会写入最近方案或导出文件。\n\n"
+                "默认直接使用系统 AI 服务；如有需要，也可以连接自己的 API。\n\n"
+                "个人 API Key 仅保存在当前会话中，不会写入最近方案或导出文件。\n\n"
                 "开放时间、票务、预约和演出安排等实时信息，请以官方平台最新公告为准。"
             )
 
@@ -60,19 +63,12 @@ def _render_model_status() -> None:
 
     if mode == "user":
         ready = user_ready
-        state_text = "个人 API 已就绪" if ready else "个人 API 待配置"
-        state_value = "当前使用：我的 API" if ready else "请补全 Key、地址和模型"
-        badge = "🔑 会话级"
-    elif mode == "platform":
-        ready = platform_ready
-        state_text = "平台 API 已就绪" if ready else "平台 API 暂不可用"
-        state_value = "当前使用：平台 API" if ready else "可切换到我的 API"
-        badge = "🔒 服务端托管"
+        state_text = "AI 服务正常" if ready else "需要完成连接设置"
+        state_value = "可以开始生成方案" if ready else "请补全个人 API 信息"
     else:
         ready = platform_ready
-        state_text = "AI 服务已就绪" if ready else "平台 API 暂不可用"
-        state_value = "自动使用平台 API" if ready else "可配置并切换到我的 API"
-        badge = "⚡ 自动模式"
+        state_text = "AI 服务正常" if ready else "AI 服务暂不可用"
+        state_value = "可以开始生成方案" if ready else "请稍后重试或连接自己的 API"
 
     state_class = "ready" if ready else "waiting"
     st.markdown(
@@ -83,7 +79,6 @@ def _render_model_status() -> None:
                     <div class="status-title"><span class="status-dot {state_class}"></span>{html.escape(state_text)}</div>
                     <div class="status-value">{html.escape(state_value)}</div>
                 </div>
-                <div class="status-value">{html.escape(badge)}</div>
             </div>
         </div>
         """,
@@ -92,7 +87,7 @@ def _render_model_status() -> None:
 
 
 def _sync_model_mode_from_choice() -> None:
-    label = str(st.session_state.get("model_mode_choice", "自动"))
+    label = str(st.session_state.get("model_mode_choice", "自动使用"))
     st.session_state["model_mode"] = MODE_LABELS.get(label, "auto")
 
 
@@ -107,21 +102,24 @@ def _apply_provider_preset() -> None:
 
 def _use_personal_api() -> None:
     st.session_state["model_mode"] = "user"
-    st.session_state["model_mode_choice"] = "我的 API"
-    set_toast(st.session_state, "已切换到你的个人 API", "🔑")
+    st.session_state["model_mode_choice"] = "使用我的 API"
+    set_toast(st.session_state, "已切换到你的个人 AI 服务", "🔑")
 
 
 def _clear_personal_api() -> None:
     clear_user_api_config(st.session_state)
-    st.session_state["model_mode_choice"] = "自动"
+    st.session_state["model_mode_choice"] = "自动使用"
     set_toast(st.session_state, "已清除本次会话中的个人 API Key", "🧹")
 
 
 def _render_model_settings() -> None:
-    with st.expander("AI 模型服务", expanded=False):
+    with st.expander("AI 服务", expanded=False):
         current_mode = str(st.session_state.get("model_mode", "auto"))
         if "model_mode_choice" not in st.session_state:
-            st.session_state["model_mode_choice"] = MODE_VALUES.get(current_mode, "自动")
+            st.session_state["model_mode_choice"] = MODE_VALUES.get(
+                current_mode,
+                "自动使用",
+            )
 
         st.radio(
             "使用方式",
@@ -129,24 +127,20 @@ def _render_model_settings() -> None:
             key="model_mode_choice",
             horizontal=True,
             on_change=_sync_model_mode_from_choice,
-            help="自动模式只会使用平台 API；平台不可用时不会未经确认消耗你的个人额度。",
+            help="默认使用系统提供的 AI 服务；只有你主动选择时才会使用个人 API。",
         )
         _sync_model_mode_from_choice()
 
         platform_ready = platform_service_ready()
-        if platform_ready:
-            st.caption("🟢 平台 API 可用。自动模式会优先使用平台额度。")
-        else:
-            st.caption("🟠 平台 API 当前未提供。你仍可配置自己的 OpenAI-compatible API。")
+        if st.session_state.get("model_mode") != "user":
+            if platform_ready:
+                st.caption("系统 AI 服务已就绪。")
+            else:
+                st.caption("系统 AI 服务暂不可用，你可以连接自己的 API 继续使用。")
 
-        if st.session_state.get("model_mode") != "user" and not user_api_configured(
-            st.session_state
-        ):
-            st.caption("需要自备 API 时，再展开下面的个人配置即可。")
-
-        st.markdown("**我的 API（BYOK）**")
+        st.markdown("**连接我的 API**")
         st.selectbox(
-            "服务商",
+            "API 服务商",
             list(PROVIDER_PRESETS),
             key="user_provider",
             on_change=_apply_provider_preset,
@@ -159,18 +153,27 @@ def _render_model_settings() -> None:
             placeholder="仅保存在当前会话",
             disabled=bool(st.session_state.pending_job),
         )
-        st.text_input(
-            "Base URL",
-            key="user_base_url",
-            placeholder="https://.../v1",
+
+        provider = str(st.session_state.get("user_provider", "阿里云百炼"))
+        is_custom = provider == "自定义 OpenAI-compatible"
+        show_advanced = is_custom or st.checkbox(
+            "显示高级配置",
+            key="show_advanced_api_config",
             disabled=bool(st.session_state.pending_job),
         )
-        st.text_input(
-            "模型名称",
-            key="user_model_name",
-            placeholder="例如 qwen-plus",
-            disabled=bool(st.session_state.pending_job),
-        )
+        if show_advanced:
+            st.text_input(
+                "Base URL",
+                key="user_base_url",
+                placeholder="https://.../v1",
+                disabled=bool(st.session_state.pending_job),
+            )
+            st.text_input(
+                "模型名称",
+                key="user_model_name",
+                placeholder="例如 qwen3.7-flash",
+                disabled=bool(st.session_state.pending_job),
+            )
 
         left, right = st.columns(2)
         with left:
@@ -209,7 +212,7 @@ def _render_model_settings() -> None:
             st.error(message)
 
         st.caption(
-            "隐私说明：个人 API Key 只保存在当前 Streamlit 会话内；不写入数据库、最近方案、URL 或导出文件。"
+            "个人 API Key 只保存在当前会话中，不会写入数据库、最近方案、URL 或导出文件。"
         )
         st.button(
             "清除我的 API Key",
