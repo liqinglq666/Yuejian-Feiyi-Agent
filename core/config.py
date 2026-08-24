@@ -3,18 +3,19 @@ from __future__ import annotations
 import os
 from collections.abc import Mapping
 from typing import Any
+from urllib.parse import urlparse
 
 from dotenv import load_dotenv
 
 from core.models import ModelConfig
 
 DEFAULT_BASE_URL = "https://dashscope.aliyuncs.com/compatible-mode/v1"
-DEFAULT_MODEL_NAME = "qwen-turbo"
+DEFAULT_MODEL_NAME = "qwen3.7-flash"
 
 PROVIDER_PRESETS: dict[str, dict[str, str]] = {
     "阿里云百炼": {
         "base_url": DEFAULT_BASE_URL,
-        "model_name": "qwen-plus",
+        "model_name": DEFAULT_MODEL_NAME,
     },
     "DeepSeek": {
         "base_url": "https://api.deepseek.com",
@@ -105,6 +106,22 @@ def build_platform_model_config() -> ModelConfig:
     )
 
 
+def _user_thinking_preference(
+    provider: str,
+    base_url: str,
+    model_name: str,
+) -> bool | None:
+    """Apply provider-preset defaults without changing custom BYOK behavior."""
+    host = (urlparse(base_url).hostname or "").lower()
+    if (
+        provider == "DeepSeek"
+        and host == "api.deepseek.com"
+        and model_name.lower().startswith("deepseek-v4")
+    ):
+        return False
+    return None
+
+
 def build_user_model_config(state: Mapping[str, Any] | None) -> ModelConfig:
     if state is None:
         raise ValueError("请先配置个人 API。")
@@ -112,6 +129,7 @@ def build_user_model_config(state: Mapping[str, Any] | None) -> ModelConfig:
     api_key = str(state.get("user_api_key", "")).strip()
     base_url = str(state.get("user_base_url", "")).strip()
     model_name = str(state.get("user_model_name", "")).strip()
+    provider = str(state.get("user_provider", "")).strip()
 
     if not api_key:
         raise ValueError("请先填写个人 API Key。")
@@ -125,6 +143,7 @@ def build_user_model_config(state: Mapping[str, Any] | None) -> ModelConfig:
         base_url=base_url,
         model_name=model_name,
         credential_source="user",
+        thinking_enabled=_user_thinking_preference(provider, base_url, model_name),
     )
 
 

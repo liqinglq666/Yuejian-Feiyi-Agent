@@ -115,7 +115,7 @@ source_url: https://example.com/source
 - 平台共享 API 可通过 `LLM_ALLOWED_HOSTS` 进一步限制允许访问的域名
 - 用户 BYOK 不受平台域名白名单锁死，但仍必须通过上述 HTTPS 与地址安全校验
 - 401、403、404、429、超时和连接错误会转换为不泄露密钥与内部配置的用户提示
-- 流式失败仅在尚未返回任何文本时回退普通生成，避免部分输出后再次计费
+- 400/401/403/404/429 与超时等确定性失败不会重复发起非流式请求；仅对尚未返回文本且可能是流传输兼容问题的异常回退一次普通生成
 
 ### 7. 多格式导出
 
@@ -215,7 +215,8 @@ python -m pip install -r requirements-dev.txt
 PLATFORM_API_ENABLED=true
 OPENAI_API_KEY=your_server_api_key_here
 OPENAI_BASE_URL=https://dashscope.aliyuncs.com/compatible-mode/v1
-MODEL_NAME=qwen-turbo
+MODEL_NAME=qwen3.7-flash
+LLM_ENABLE_THINKING=false
 LLM_ALLOWED_HOSTS=dashscope.aliyuncs.com
 ```
 

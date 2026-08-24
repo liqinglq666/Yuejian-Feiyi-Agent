@@ -22,11 +22,16 @@ _DASHSCOPE_THINKING_MODEL_PREFIXES = (
     "qwen3",
     "deepseek-v4",
 )
+_DEEPSEEK_THINKING_MODEL_PREFIXES = ("deepseek-v4",)
 _DNS_CACHE_TTL_SECONDS = 60.0
 
 
 class ModelGatewayError(RuntimeError):
     """A safe, user-facing model gateway error."""
+
+    def __init__(self, message: str, *, allow_fallback: bool = False) -> None:
+        super().__init__(message)
+        self.allow_fallback = allow_fallback
 
 
 def _env_flag(name: str, *, default: bool) -> bool:
@@ -161,11 +166,23 @@ def _is_dashscope_host(base_url: str) -> bool:
     return host == "dashscope.aliyuncs.com" or host.endswith(".maas.aliyuncs.com")
 
 
+def _is_deepseek_host(base_url: str) -> bool:
+    host = (urlparse(base_url.strip()).hostname or "").lower()
+    return host == "api.deepseek.com"
+
+
 def _supports_platform_thinking_control(config: ModelConfig) -> bool:
     if config.credential_source != "platform" or not _is_dashscope_host(config.base_url):
         return False
     normalized = config.model_name.strip().lower()
     return normalized.startswith(_DASHSCOPE_THINKING_MODEL_PREFIXES)
+
+
+def _supports_explicit_thinking_preference(config: ModelConfig) -> bool:
+    if config.thinking_enabled is None or not _is_deepseek_host(config.base_url):
+        return False
+    normalized = config.model_name.strip().lower()
+    return normalized.startswith(_DEEPSEEK_THINKING_MODEL_PREFIXES)
 
 
 def platform_thinking_enabled(config: ModelConfig) -> bool:
@@ -180,6 +197,9 @@ def model_runtime_summary(config: ModelConfig) -> str:
     """Short runtime label safe to show in the generation progress UI."""
     if _supports_platform_thinking_control(config):
         mode = "思考模式" if platform_thinking_enabled(config) else "非思考模式"
+        return f"{config.model_name} · {mode}"
+    if _supports_explicit_thinking_preference(config):
+        mode = "思考模式" if config.thinking_enabled else "非思考模式"
         return f"{config.model_name} · {mode}"
     return config.model_name
 
@@ -203,8 +223,15 @@ def _completion_request_kwargs(
         kwargs["temperature"] = temperature
         kwargs["max_tokens"] = max_tokens
 
+    extra_body: dict[str, Any] = {}
     if _supports_platform_thinking_control(config):
-        kwargs["extra_body"] = {"enable_thinking": platform_thinking_enabled(config)}
+        extra_body["enable_thinking"] = platform_thinking_enabled(config)
+    if _supports_explicit_thinking_preference(config):
+        extra_body["thinking"] = {
+            "type": "enabled" if config.thinking_enabled else "disabled"
+        }
+    if extra_body:
+        kwargs["extra_body"] = extra_body
     return kwargs
 
 
@@ -282,10 +309,10 @@ def collect_stream_with_safe_fallback(
     temperature: float,
     max_tokens: int = 1600,
 ) -> Iterable[tuple[str, bool]]:
-    """Yield `(text, is_final)` and avoid a second bill after partial output.
+    """Yield `(text, is_final)` and avoid duplicate calls for hard failures.
 
-    A normal completion fallback is attempted only when streaming fails before the
-    gateway returned any text.
+    A normal completion fallback is attempted only when streaming fails before any
+    text and the gateway classified the failure as safe to retry non-streaming.
     """
     full = ""
     try:
@@ -298,9 +325,12 @@ def collect_stream_with_safe_fallback(
             full += part
             yield full, False
         if not full.strip():
-            raise ModelGatewayError("模型流式返回为空。")
+            raise ModelGatewayError("模型流式返回为空。", allow_fallback=True)
         yield full, True
         return
+    except ModelGatewayError as exc:
+        if full.strip() or not exc.allow_fallback:
+            raise
     except Exception:
         if full.strip():
             raise
@@ -327,6 +357,7 @@ def _public_error(
     status_code = getattr(exc, "status_code", None)
     message = str(exc).lower()
     is_user = config.credential_source == "user"
+    is_timeout = "timeout" in message or "timed out" in message
 
     if status_code == 400:
         detail = (
@@ -358,12 +389,19 @@ def _public_error(
             if is_user
             else "平台 AI 服务当前请求过多或额度不足，请稍后重试。"
         )
-    elif "timeout" in message or "timed out" in message:
+    elif is_timeout:
         detail = "AI 服务响应超时，请稍后重试。"
     elif "connection" in message or "network" in message:
         detail = "暂时无法连接 AI 服务，请稍后重试。"
     else:
         detail = "AI 服务调用失败，请稍后重试。"
 
+    # HTTP errors and timeouts are expected to fail the same way when retried
+    # non-streaming. Only transport/stream failures without an HTTP status may
+    # fall back once before any text has been returned.
+    allow_fallback = streaming and status_code is None and not is_timeout
     prefix = "流式生成失败" if streaming else "模型调用失败"
-    return ModelGatewayError(f"{prefix}：{detail}")
+    return ModelGatewayError(
+        f"{prefix}：{detail}",
+        allow_fallback=allow_fallback,
+    )
