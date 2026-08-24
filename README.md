@@ -98,15 +98,14 @@ source_url: https://example.com/source
 
 系统不会把上一轮完整 Prompt 当作新的用户需求保存，避免多轮修改后上下文递归膨胀。
 
-### 6. 平台 API + 用户 BYOK 双通道
+### 6. 平台服务 + 用户 BYOK 双通道
 
-应用支持三种模型使用方式：
+普通用户侧只提供两种使用方式：
 
-- `自动`：默认模式，只使用平台 API；平台不可用时不会未经确认消耗用户自己的额度
-- `平台 API`：明确使用维护者在部署环境中配置的共享 API
-- `我的 API`：用户在当前 Streamlit 会话中填写自己的 OpenAI-compatible API
+- `自动使用`：默认使用部署者提供的共享 AI 服务；平台不可用时不会未经确认消耗用户自己的额度
+- `使用我的 API`：用户主动在当前 Streamlit 会话中连接自己的 OpenAI-compatible API
 
-平台共享 API 由部署者通过环境变量或 Streamlit Secrets 管理。用户自己的 API Key 只保存在当前会话中，不进入最近方案、导出文件、URL、数据库或仓库文件；关闭会话或点击“清除我的 API Key”后即可丢弃。
+平台共享服务由部署者通过环境变量或 Streamlit Secrets 管理。用户自己的 API Key 只保存在当前会话中，不进入最近方案、导出文件、URL、数据库或仓库文件；关闭会话或点击“清除我的 API Key”后即可丢弃。
 
 模型网关继续执行以下安全限制：
 
@@ -119,7 +118,7 @@ source_url: https://example.com/source
 
 ### 7. 多格式导出
 
-结果可下载为 Markdown、TXT 和 Word `.docx`。
+结果可下载为 Markdown、TXT 和 Word `.docx`。Word 导出会将标准 Markdown 标题、列表和表格转换为可编辑的原生 Word 结构。
 
 ---
 
@@ -162,9 +161,6 @@ Yuejian-Feiyi-Agent/
 ├── scripts/run_benchmark.py     # 路由与检索评测脚本
 ├── tests/                       # 单元测试
 ├── docs/                        # 架构、评测与知识库说明
-├── agent.py                     # 兼容旧版公共调用入口
-├── rag.py                       # 兼容旧版 RAG 入口
-├── prompts.py                   # 兼容旧版 Prompt 导出
 └── .github/workflows/ci.yml     # Ruff、编译和 Pytest
 ```
 
@@ -228,7 +224,7 @@ LLM_ALLOWED_HOSTS=dashscope.aliyuncs.com
 PLATFORM_API_ENABLED=false
 ```
 
-应用仍可正常打开，用户可以切换到“我的 API”并使用自己的 OpenAI-compatible 服务。
+应用仍可正常打开，用户可以切换到“使用我的 API”并使用自己的 OpenAI-compatible 服务。
 
 ### 5. 启动应用
 
@@ -236,7 +232,7 @@ PLATFORM_API_ENABLED=false
 python -m streamlit run app.py
 ```
 
-浏览器访问 `http://localhost:8501`。默认使用平台 API；用户也可以主动选择 BYOK。
+浏览器访问 `http://localhost:8501`。默认使用平台服务；用户也可以主动连接自己的 API。
 
 ---
 
@@ -265,7 +261,7 @@ python -m compileall -q .
 python scripts/run_benchmark.py
 ```
 
-当前测试覆盖任务路由、检索查询、连续优化、城市与项目排序、平台/BYOK 模型路由、模型网关安全、输出清洗和主要状态逻辑。
+当前测试覆盖任务路由、检索查询、连续优化、城市与项目排序、平台/BYOK 模型路由、模型网关安全、输出清洗、导出和主要状态逻辑。
 
 Benchmark 是可扩展的基础评测集，不在 README 中声明未经持续验证的准确率数字。
 
@@ -278,7 +274,7 @@ Benchmark 是可扩展的基础评测集，不在 README 中声明未经持续�
 - 模型输出仍可能出现错误，重要文化事实应结合官方资料核验。
 - 公网部署使用平台共享 API 时，应在托管平台、反向代理或 API 网关增加访问控制、限流和预算告警，避免匿名滥用产生费用。
 - 用户 BYOK 的自定义地址必须是可从部署服务器访问的公网 HTTPS OpenAI-compatible 服务；本机与内网地址会被拒绝。
-- Word 导出以可编辑文本为主，复杂 Markdown 表格不会完全复刻网页样式。
+- Word 导出支持标准标题、列表和表格；嵌套表格、复杂合并单元格等高级 Markdown 排版不会完全复刻网页样式。
 
 ## 文档
 
