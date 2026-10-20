@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import "./folk-theme.css";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://yuejian-feiyi.vercel.app"),
@@ -12,7 +13,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "粤见非遗 · YUEJIAN",
     description: "遇见岭南，让非遗可感。用 AI 定制独一无二的非遗文化体验。",
-    images: ["/heritage-hero.png"],
+    images: ["/heritage/hero-desktop.webp"],
   },
 };
 
