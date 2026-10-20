@@ -1,0 +1,72 @@
+name: Production smoke test
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "web/**"
+      - "backend/**"
+      - "vercel.json"
+      - ".github/workflows/production-smoke.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  live-website:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check deployed website and API
+        env:
+          SITE_URL: https://yuejian-feiyi.vercel.app
+        run: |
+          python - <<'PY'
+          import json
+          import os
+          import time
+          import urllib.request
+          from urllib.error import HTTPError, URLError
+
+          base = os.environ["SITE_URL"].rstrip("/")
+
+          def fetch(path, *, payload=None):
+              data = None if payload is None else json.dumps(payload, ensure_ascii=False).encode("utf-8")
+              headers = {"User-Agent": "Yuejian-production-smoke/1.0"}
+              if data is not None:
+                  headers["Content-Type"] = "application/json"
+              for attempt in range(6):
+                  try:
+                      req = urllib.request.Request(base + path, data=data, headers=headers)
+                      with urllib.request.urlopen(req, timeout=35) as res:
+                          return res.status, res.headers.get("Content-Type", ""), res.read()
+                  except (HTTPError, URLError, TimeoutError) as exc:
+                      if attempt == 5:
+                          raise
+                      print("Retry", path, type(exc).__name__, "attempt", attempt + 1)
+                      time.sleep(5)
+              raise RuntimeError("unreachable")
+
+          for path in ("/", "/studio"):
+              status, mime, data = fetch(path)
+              assert status == 200, (path, status)
+              assert "text/html" in mime, (path, mime)
+              assert "粤见非遗".encode() in data, (path, data[:180])
+              print("OK", path, status, len(data), "bytes")
+
+          status, mime, body = fetch("/api/v1/status")
+          assert status == 200
+          payload = json.loads(body)
+          assert payload["service"] == "ok"
+          assert len(payload["scenes"]) == 5
+          print("OK /api/v1/status", payload["service"], len(payload["scenes"]), "scenes")
+
+          status, mime, body = fetch("/api/v1/export", payload={
+              "request": {"scene": "游客路线", "raw_request": "广州一天非遗"},
+              "answer": "## 路线\n参观岭南文化。",
+              "format": "md",
+          })
+          assert status == 200
+          assert "粤见非遗生成结果".encode() in body
+          print("OK /api/v1/export", len(body), "bytes")
+          PY
