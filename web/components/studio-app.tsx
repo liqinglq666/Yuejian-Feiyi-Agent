@@ -8,7 +8,7 @@ import {
   MapPin, Menu, MessageCircle, PencilLine, Plus, RefreshCw, Send, Settings2,
   ShieldCheck, X,
 } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { SiteHeader } from "@/components/site-header";
@@ -93,9 +93,9 @@ function ModelSettings({ model, setModel, onClose, platformReady }: {
   </div>;
 }
 
-function MarkdownDoc({ content }: { content: string }) {
+const MarkdownDoc = memo(function MarkdownDoc({ content }: { content: string }) {
   return <div className="markdown-document"><ReactMarkdown remarkPlugins={[remarkGfm]} skipHtml>{content}</ReactMarkdown></div>;
-}
+});
 
 export function StudioApp() {
   const params = useSearchParams();
@@ -133,6 +133,37 @@ export function StudioApp() {
   const controller = useRef<AbortController | null>(null);
   const pendingHomepageLaunch = useRef(false);
   const closeSettings = useCallback(() => setShowSettings(false), []);
+  const pendingStream = useRef("");
+  const streamTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const flushStream = useCallback((text: string, replace = false) => {
+    pendingStream.current = replace ? text : pendingStream.current + text;
+    if (streamTimer.current !== null) return;
+    streamTimer.current = setTimeout(() => {
+      setStream(pendingStream.current);
+      streamTimer.current = null;
+    }, 190);
+  }, []);
+  const resetStream = useCallback(() => {
+    if (streamTimer.current !== null) clearTimeout(streamTimer.current);
+    streamTimer.current = null;
+    pendingStream.current = "";
+    setStream("");
+  }, []);
+  const refreshStatus = useCallback(async () => {
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        const response = await fetch("/api/v1/status", {cache:"no-store",signal:AbortSignal.timeout(6500)});
+        if (!response.ok) throw Error("status unavailable");
+        const info = await response.json() as AppStatus;
+        setStatus(info); setStatusError(false);
+        return;
+      } catch {
+        if (attempt < 2) await new Promise((resolve) => setTimeout(resolve, 500 * (attempt + 1)));
+      }
+    }
+    setStatusError(true);
+  }, []);
+
 
   useEffect(() => {
     if (!drawerOpen) return;
@@ -152,22 +183,7 @@ export function StudioApp() {
   }, [drawerOpen]);
 
   useEffect(() => {
-    const checkStatus = async () => {
-      for (let attempt = 0; attempt < 3; attempt++) {
-        try {
-          const response = await fetch("/api/v1/status", {cache:"no-store",signal:AbortSignal.timeout(6500)});
-          if (!response.ok) throw Error("status unavailable");
-          const info = await response.json() as AppStatus;
-          setStatus(info); setStatusError(false);
-          return;
-        } catch {
-          // Brief retries are safe: status never spends an AI quota.
-          if (attempt < 2) await new Promise((resolve) => setTimeout(resolve, 500 * (attempt + 1)));
-        }
-      }
-      setStatusError(true);
-    };
-    void checkStatus();
+    void refreshStatus();
     // Defer hydration to a callback; initial render stays SSR-safe.
     queueMicrotask(() => {
       try {
@@ -191,11 +207,12 @@ export function StudioApp() {
       } catch { /* Browsers may block session storage. */ }
       setHydrated(true);
     });
-    return () => controller.current?.abort();
-  }, []);
+    return () => { controller.current?.abort(); if (streamTimer.current !== null) clearTimeout(streamTimer.current); };
+  }, [refreshStatus]);
 
   useEffect(() => {
     if (!hydrated || !status || !pendingHomepageLaunch.current) return;
+    if (!status.platform_ready) return;
     pendingHomepageLaunch.current = false;
     queueMicrotask(() => document.getElementById("generate-submit")?.click());
   }, [hydrated, status]);
@@ -223,7 +240,8 @@ export function StudioApp() {
   function startNew() {
     if ((request.raw_request.trim() || result) && !window.confirm("开始新方案？当前编辑内容将清空，已生成的方案仍可在最近记录中查看。")) return;
     controller.current?.abort();
-    setBusy(false); setRequest(DEFAULT_REQUEST); setResult(null); setStream(""); setError("");
+    pendingHomepageLaunch.current = false;
+    setBusy(false); setRequest(DEFAULT_REQUEST); setResult(null); resetStream(); setError("");
     setRevision(""); setActiveTab("all"); setDrawerOpen(false); setNotice("");
     requestAnimationFrame(() => inputRef.current?.focus());
   }
@@ -234,10 +252,11 @@ export function StudioApp() {
 
   async function run(kind: "generate" | "revise", preset?: string) {
     if (busy) return;
+    pendingHomepageLaunch.current = false;
     if (kind === "revise" && !result) return;
     if (kind === "generate" && !request.raw_request.trim()) { setError("请先写下你的需求，或者使用示例。"); inputRef.current?.focus(); return; }
     if (model.mode === "user" && (!model.api_key.trim() || !model.base_url.trim() || !model.model_name.trim())) { setError("请先在 AI 服务设置中填写完整的个人 API 信息。"); setShowSettings(true); return; }
-    setBusy(true); setError(""); setNotice(""); setStream(""); setActiveTab("all"); setStage("正在准备你的方案…");
+    setBusy(true); setError(""); setNotice(""); resetStream(); setActiveTab("all"); setStage("正在准备你的方案…");
     const abortController = new AbortController();
     controller.current = abortController;
     const previous = result;
@@ -250,9 +269,9 @@ export function StudioApp() {
         kind === "revise" && previous ? { current_answer:previous.answer, ...(preset ? {preset} : {instruction:revision.trim()}) } : null,
         (event: StreamEvent) => {
           if (event.type === "stage") setStage(event.label);
-          if (event.type === "snapshot") setStream(event.text);
-          if (event.type === "delta") setStream((value) => value + event.text);
-          if (event.type === "failure") { setError(event.message); setStream(""); }
+          if (event.type === "snapshot") flushStream(event.text, true);
+          if (event.type === "delta") flushStream(event.text);
+          if (event.type === "failure") { setError(event.message); resetStream(); }
           if (event.type === "complete") {
             generated = true;
             const plan: Plan = {
@@ -267,7 +286,7 @@ export function StudioApp() {
             };
             savePlan(plan);
             setRequest(event.request);
-            setStream(""); setActiveTab("all"); setRevision("");
+            resetStream(); setActiveTab("all"); setRevision("");
             requestAnimationFrame(() => document.getElementById("proposal")?.scrollIntoView({behavior:"smooth",block:"start"}));
           }
         },
@@ -298,7 +317,7 @@ export function StudioApp() {
   }
 
   const shownAnswer = busy ? stream : result?.answer ?? "";
-  const sections = splitSections(shownAnswer);
+  const sections = useMemo(() => splitSections(shownAnswer), [shownAnswer]);
   const selectedContent = activeTab === "all" ? shownAnswer
     : activeTab === "sources" ? result?.sources ?? "" : sections[Number(activeTab)]?.content ?? shownAnswer;
   const visibleScene = SCENES.find((item) => item.key === request.scene) ?? SCENES[0];
@@ -376,11 +395,11 @@ export function StudioApp() {
             </div>
             <div className="composer-actions">
               <span className="keyboard-hint">Ctrl / ⌘ + Enter 生成</span>
-              {busy ? <button className="button button-stop" type="button" onClick={() => { controller.current?.abort(); setBusy(false); setStage("已取消生成"); }}><X size={17}/> 取消生成</button>
+              {busy ? <button className="button button-stop" type="button" onClick={() => { controller.current?.abort(); resetStream(); setBusy(false); setStage("已取消生成"); setNotice("已停止接收内容；模型服务端可能已产生部分用量。"); }}><X size={17}/> 取消生成</button>
                 : <button id="generate-submit" className="button button-dark generate-button" type="submit" disabled={model.mode === "auto" && status?.platform_ready === false}>生成方案 <Send size={17} aria-hidden="true"/></button>}
             </div>
-            {statusError && <div className="service-inline-notice" role="status">连接状态检测暂时失败，请刷新重试；个人 API 仍可在设置中配置。</div>}
-            {model.mode === "auto" && status?.platform_ready === false && <div className="service-inline-notice" role="status">平台服务暂不可用，你可以在 <button type="button" onClick={() => setShowSettings(true)}>AI 设置</button> 中使用个人 API。</div>}
+            {statusError && <div className="service-inline-notice" role="status">连接状态检测暂时失败，草稿会保留。<button type="button" onClick={() => void refreshStatus()}>重新检查连接</button></div>}
+            {model.mode === "auto" && status?.platform_ready === false && <div className="service-inline-notice" role="status">平台服务暂不可用，你可以在 <button type="button" onClick={() => setShowSettings(true)}>AI 设置</button> 中使用个人 API，或 <button type="button" onClick={() => void refreshStatus()}>重新检查状态</button>。</div>}
             {error && <div className="studio-error" id="studio-error" role="alert"><CircleHelp size={17} aria-hidden="true"/><span>{error}</span><button type="button" onClick={() => setError("")} aria-label="关闭错误提示"><X size={17}/></button></div>}
           </form>
 
