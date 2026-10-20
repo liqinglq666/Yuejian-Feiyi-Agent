@@ -437,7 +437,10 @@ def retrieve(
         )
         # Prefer the traceable primary registry when topical similarity exists.
         if score >= 0.10 and chunk.source_path.endswith("heritage_records.json"):
-            score += 0.12
+            # Exact cultural-topic matches deserve priority over generic
+            # unsourced itinerary templates, but not over unrelated content.
+            topical_match = any(term in cleaned_query and term in chunk.content for term in DOMAIN_TERMS)
+            score += 0.38 if topical_match else 0.12
         # Do not hand vague, off-topic snippets to the generative model.
         if score >= 0.10:
             ranked.append((score, chunk))
