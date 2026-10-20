@@ -8,6 +8,7 @@ from urllib.parse import urlparse
 from dotenv import load_dotenv
 
 from core.models import ModelConfig
+from core.quotas import shared_quota_ready
 
 DEFAULT_BASE_URL = "https://dashscope.aliyuncs.com/compatible-mode/v1"
 DEFAULT_MODEL_NAME = "qwen3.7-flash"
@@ -55,7 +56,7 @@ def platform_api_enabled() -> bool:
 
 def platform_service_ready() -> bool:
     """Return whether the shared platform API can be selected."""
-    return platform_api_enabled() and bool(os.getenv("OPENAI_API_KEY", "").strip())
+    return platform_api_enabled() and shared_quota_ready() and bool(os.getenv("OPENAI_API_KEY", "").strip())
 
 
 def user_api_configured(state: Mapping[str, Any] | None) -> bool:

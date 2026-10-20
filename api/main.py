@@ -29,6 +29,7 @@ from core.models import (
     TaskRequest,
     TaskType,
 )
+from core.quotas import reserve_platform_request, shared_quota_ready
 from core.revisions import REVISION_PRESETS, plan_custom_revision, plan_quick_revision
 from services.export import build_docx, build_markdown, build_plain_text
 from services.llm import ModelGatewayError, collect_stream_with_safe_fallback
@@ -199,6 +200,7 @@ def status() -> dict:
     return {
         "service": "ok",
         "platform_ready": platform_service_ready(),
+        "platform_quota_protected": shared_quota_ready(),
         "scenes": ["游客路线", "学生研学", "亲子体验", "内容创作", "非遗问答"],
         "revision_presets": list(REVISION_PRESETS),
     }
@@ -208,6 +210,8 @@ def status() -> dict:
 def generate(body: GenerateInput, request: Request) -> StreamingResponse:
     _rate_limit(request)
     config, task, revision = _prepare_generation(body, revise=False)
+    if config.credential_source == "platform":
+        reserve_platform_request(request)
     return StreamingResponse(
         _generation_events(config, task, revision, body.model.temperature),
         media_type="text/event-stream; charset=utf-8",
@@ -219,6 +223,8 @@ def generate(body: GenerateInput, request: Request) -> StreamingResponse:
 def revise(body: ReviseInput, request: Request) -> StreamingResponse:
     _rate_limit(request)
     config, task, revision = _prepare_generation(body, revise=True)
+    if config.credential_source == "platform":
+        reserve_platform_request(request)
     return StreamingResponse(
         _generation_events(config, task, revision, body.model.temperature),
         media_type="text/event-stream; charset=utf-8",
