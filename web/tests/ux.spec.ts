@@ -72,12 +72,15 @@ for (const width of [375, 768, 1440]) {
     await page.setViewportSize({ width, height: 900 });
     await mockService(page);
     await page.goto("/");
-    await expect(page.getByRole("heading", { name: "找到适合你的非遗体验" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: /把岭南的/ })).toBeVisible();
     await checkNoHorizontalOverflow(page);
-    await page.getByRole("button", { name: /亲子体验/ }).first().click();
-    await expect(page.getByRole("button", { name: /亲子体验/ }).first()).toHaveAttribute("aria-pressed", "true");
-    await page.getByLabel("你希望体验什么？").fill(draftText);
-    await page.getByRole("button", { name: /下一步：生成方案/ }).click();
+    const heroAsset = await page.request.get(width <= 760 ? "/heritage/hero-mobile.webp" : "/heritage/hero-desktop.webp");
+    expect(heroAsset.ok()).toBeTruthy();
+    expect(heroAsset.headers()["content-type"]).toContain("image/webp");
+    await page.getByRole("button", { name: "亲子探索" }).click();
+    await expect(page.getByRole("button", { name: "亲子探索" })).toHaveAttribute("aria-pressed", "true");
+    await page.getByLabel("说说你的想法").fill(draftText);
+    await page.getByRole("button", { name: /生成我的方案/ }).click();
     await expect(page).toHaveURL(/\/studio$/);
     await expect(page.locator("#request-input")).toHaveValue(draftText);
     await checkNoHorizontalOverflow(page);
@@ -125,4 +128,16 @@ test("generation, editing, exporting and empty-field error", async ({ page }) =>
 
   await page.getByRole("button", { name: "更适合亲子" }).click();
   await expect(page.getByText("已调整的亲子体验路线。")).toBeVisible();
+});
+
+
+test("inspiration selection fills a usable task draft", async ({ page }) => {
+  await mockService(page);
+  await page.goto("/");
+  await page.getByRole("button", { name: /使用灵感：听见龙舟鼓点/ }).click();
+  await expect(page.getByRole("button", { name: "亲子探索" })).toHaveAttribute("aria-pressed", "true");
+  await expect(page.getByLabel("说说你的想法")).toContainText("龙舟文化");
+  await expect(page.locator("#festival-city")).toHaveValue("广州");
+  await page.getByRole("button", { name: "生成我的方案" }).click();
+  await expect(page.locator("#request-input")).toContainText("龙舟文化");
 });
