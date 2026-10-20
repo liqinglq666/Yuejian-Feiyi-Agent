@@ -268,6 +268,7 @@ export function StudioApp() {
         model,
         kind === "revise" && previous ? { current_answer:previous.answer, ...(preset ? {preset} : {instruction:revision.trim()}) } : null,
         (event: StreamEvent) => {
+          if (abortController.signal.aborted || controller.current !== abortController) return;
           if (event.type === "stage") setStage(event.label);
           if (event.type === "snapshot") flushStream(event.text, true);
           if (event.type === "delta") flushStream(event.text);
@@ -298,7 +299,10 @@ export function StudioApp() {
     } catch (err) {
       if (!abortController.signal.aborted) setError(err instanceof Error ? err.message : "请求失败，请稍后重试。");
     } finally {
-      setBusy(false); controller.current = null;
+      if (controller.current === abortController) {
+        setBusy(false);
+        controller.current = null;
+      }
     }
   }
 
