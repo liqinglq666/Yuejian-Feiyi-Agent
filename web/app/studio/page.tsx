@@ -8,7 +8,7 @@ export const metadata = {
 
 export default function StudioPage() {
   return (
-    <Suspense fallback={<div className="studio-loading">正在打开粤见文化工作台…</div>}>
+    <Suspense fallback={<div className="studio-loading" role="status"><span className="loading-indicator" aria-hidden="true"/>正在打开工作台…</div>}>
       <StudioApp />
     </Suspense>
   );

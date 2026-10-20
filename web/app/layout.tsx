@@ -18,7 +18,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="zh-CN">
-      <body>{children}</body>
+      <body><a href="#main-content" className="skip-link">跳转到主要内容</a>{children}</body>
     </html>
   );
 }

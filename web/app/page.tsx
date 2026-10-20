@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowRight, ArrowUpRight, BookOpen, Compass, GraduationCap, HeartHandshake, PenLine, Sparkles, MapPin, ShieldCheck } from "lucide-react";
+import { ArrowRight, BookOpen, Compass, GraduationCap, HeartHandshake, PenLine, Sparkles, MapPin } from "lucide-react";
 import { SiteHeader } from "@/components/site-header";
 import { CITIES, type Scene, type TaskRequest, DEFAULT_REQUEST } from "@/lib/types";
 
@@ -24,7 +24,7 @@ export default function HomePage() {
   const selected = tasks.find((item) => item.key === scene) ?? tasks[0];
 
   function start() {
-    if (!prompt.trim()) { setError("先简单描述你的需求，或者使用下面的示例。"); return; }
+    if (!prompt.trim()) { setError("先写一句你的需求，也可以点击下方示例。"); document.getElementById("fast-request")?.focus(); return; }
     const draft: TaskRequest = {
       ...DEFAULT_REQUEST, scene, raw_request:prompt.trim(), city,
       task_type:scene === "内容创作" ? "social" : null,
@@ -43,63 +43,57 @@ export default function HomePage() {
   return (
     <>
       <SiteHeader />
-      <main className="fast-main">
-        <section className="fast-hero">
-          <div className="fast-hero-inner container">
-            <div className="fast-intro">
-              <span className="fast-eyebrow"><span className="fast-mark"/> 广东非遗 · AI 文化体验</span>
-              <h1>想了解岭南文化，<br/><em>从这里开始。</em></h1>
-              <p>路线规划、研学、亲子体验或内容创作。<br/>告诉我们你的想法，生成一份可使用的方案。</p>
-              <div className="fast-confidence"><ShieldCheck size={16}/> 五种体验方式 · 结果可修改、可导出</div>
+      <main className="fast-main" id="main-content">
+        <div className="container fast-workspace" id="start">
+          <header className="fast-heading">
+            <div>
+              <p className="fast-overline">粤见非遗 / 广东文化体验</p>
+              <h1>找到适合你的非遗体验</h1>
+              <p className="fast-subhead">选一个方向，说说你的想法。路线、研学、亲子活动和内容创作，都能从这里开始。</p>
             </div>
-            <div className="fast-hero-art" role="img" aria-label="广东传统文化与非遗主题插画"><span>YUEJIAN · 发现广东非遗</span></div>
-          </div>
-        </section>
-
-        <section className="fast-workspace container" id="start">
-          <div className="fast-workspace-heading">
-            <div><span className="fast-step">开始体验</span><h2>你今天想做什么？</h2></div>
-            <Link href="/studio" className="fast-text-link">直接打开工作台 <ArrowUpRight size={16}/></Link>
-          </div>
-          <div className="fast-task-grid" role="group" aria-label="选择体验方式">
-            {tasks.map((task) => {
-              const Icon = task.icon;
-              return <button type="button" key={task.key}
-                aria-pressed={scene === task.key}
-                className={`fast-task ${scene === task.key ? "is-active" : ""}`}
-                onClick={() => {setScene(task.key);setError("");}}>
-                <Icon size={21} strokeWidth={1.7}/>
-                <strong>{task.label}</strong>
-                <span>{task.desc}</span>
-              </button>;
-            })}
-          </div>
-
-          <form className="fast-prompt-box" onSubmit={(event) => {event.preventDefault();start();}}>
-            <label htmlFor="fast-request">描述你的想法</label>
-            <textarea id="fast-request" maxLength={1200} rows={3} value={prompt} onChange={(event)=>{setPrompt(event.target.value);setError("");}}
-              placeholder={selected.example}/>
-            <div className="fast-form-bottom">
-              <div className="fast-city"><MapPin size={16}/><label htmlFor="fast-city">城市</label>
-                <select id="fast-city" value={city} onChange={(event)=>setCity(event.target.value)}>
-                  {CITIES.map((item)=><option key={item} value={item}>{item}</option>)}
-                </select>
+            <div className="fast-aside"><span>从想法到方案</span><strong>几分钟，认识一座城里的手艺。</strong></div>
+          </header>
+          <section aria-labelledby="fast-scene-heading" className="fast-scene-section">
+            <h2 id="fast-scene-heading" className="fast-section-label">1. 选择体验方式</h2>
+            <div className="fast-task-grid" role="group" aria-label="选择体验方式">
+              {tasks.map((task) => {
+                const Icon = task.icon;
+                return <button type="button" key={task.key} aria-pressed={scene === task.key}
+                  className={"fast-task " + (scene === task.key ? "is-active" : "")}
+                  onClick={() => {setScene(task.key);setError("");}}>
+                  <Icon size={22} strokeWidth={1.8} aria-hidden="true"/>
+                  <strong>{task.label}</strong><span>{task.desc}</span>
+                </button>;
+              })}
+            </div>
+          </section>
+          <section aria-labelledby="fast-prompt-heading" className="fast-request-section">
+            <h2 id="fast-prompt-heading" className="fast-section-label">2. 描述你的需求</h2>
+            <form className="fast-prompt-box" onSubmit={(event) => {event.preventDefault();start();}}>
+              <label htmlFor="fast-request" className="fast-label">你希望体验什么？</label>
+              <textarea id="fast-request" name="request" autoComplete="off" maxLength={1200} rows={4} value={prompt}
+                aria-invalid={!!error} aria-describedby={error ? "fast-form-error" : "fast-prompt-help"}
+                onChange={(event)=>{setPrompt(event.target.value);setError("");}}
+                placeholder={selected.example + "…"}/>
+              {error && <p id="fast-form-error" className="fast-form-error" role="alert">{error}</p>}
+              <div className="fast-form-bottom">
+                <div className="fast-city"><MapPin size={17} aria-hidden="true"/><label htmlFor="fast-city">城市（可选）</label>
+                  <select id="fast-city" name="city" value={city} onChange={(event)=>setCity(event.target.value)}>
+                    {CITIES.map((item)=><option key={item} value={item}>{item}</option>)}
+                  </select>
+                </div>
+                <p id="fast-prompt-help" className="fast-help">{prompt.length}/1200 字</p>
+                <button type="submit" className="fast-submit">下一步：生成方案 <ArrowRight size={18} aria-hidden="true"/></button>
               </div>
-              <button type="submit" className="fast-submit">开始生成 <ArrowRight size={18}/></button>
+            </form>
+            <div className="fast-examples" aria-label="示例需求">
+              <span><Sparkles size={15} aria-hidden="true"/> 没有思路？</span>
+              {tasks.slice(0,3).map((task)=><button key={task.key} type="button" onClick={()=>{setScene(task.key);setPrompt(task.example);setCity("自动判断");setError("");document.getElementById("fast-request")?.focus();}}>{task.label}示例</button>)}
             </div>
-            {error && <p className="fast-form-error" role="alert">{error}</p>}
-          </form>
-          <div className="fast-examples">
-            <span><Sparkles size={15}/> 没有思路？试试</span>
-            {tasks.slice(0,3).map((task)=><button key={task.key} type="button" onClick={()=>{setScene(task.key);setPrompt(task.example);setCity("自动判断");setError("");}}>{task.label}示例 <ArrowUpRight size={13}/></button>)}
-          </div>
-        </section>
-
-        <section className="fast-about container" aria-label="关于结果">
-          <div><strong>一份方案，持续完善</strong><span>生成后可按需要调整行程、修改文字，或保存为 Word。</span></div>
-          <Link href="/studio">查看工作台 <ArrowRight size={17}/></Link>
-        </section>
-        <footer className="fast-footer"><div className="container"><span>粤见非遗 · YUEJIAN</span><span>文化内容辅助生成；开放时间与票价请以官方信息为准。</span></div></footer>
+          </section>
+          <p className="fast-hint">生成结果支持继续修改及导出 Word；开放时间、票价等实时信息请以官方公告为准。</p>
+        </div>
+        <footer className="fast-footer"><div className="container"><strong>粤见非遗</strong><span>让文化更易走近。</span></div></footer>
       </main>
     </>
   );
