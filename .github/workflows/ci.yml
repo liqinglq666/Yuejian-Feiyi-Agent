@@ -11,7 +11,7 @@ permissions:
 
 jobs:
   python-test:
-    name: backend + legacy tests (Python ${{ matrix.python-version }})
+    name: FastAPI and agent tests (Python ${{ matrix.python-version }})
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
