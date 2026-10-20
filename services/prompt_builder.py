@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from core.models import RetrievalBundle, RevisionRequest, TaskRequest, TaskType
+from services.planner import build_task_plan
 
 SYSTEM_PROMPT = """
 你是“粤见非遗”，一个面向广东文旅导览、研学教育与城市文化传播的 AI 智能体。
@@ -106,6 +107,9 @@ def build_initial_messages(
 
 {TASK_INSTRUCTIONS[task_type]}
 
+【内部任务规划】
+{build_task_plan(request, retrieval)}
+
 【广东非遗知识库检索结果】
 {retrieval.formatted_context()}
 
@@ -149,6 +153,9 @@ def build_revision_messages(
 {revision.current_answer.strip()}
 
 {TASK_INSTRUCTIONS[revision.target_task_type]}
+
+【内部任务规划】
+{build_task_plan(request.with_updates(task_type=revision.target_task_type), retrieval)}
 
 【广东非遗知识库检索结果】
 {retrieval.formatted_context()}

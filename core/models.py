@@ -225,8 +225,12 @@ class RetrievalBundle:
             if key in seen:
                 continue
             seen.add(key)
-            suffix = f"（{chunk.source_url}）" if chunk.source_url else ""
-            lines.append(f"- {chunk.citation_label}{suffix}")
+            name = f"{chunk.title}｜{chunk.citation_label}"
+            name = name.replace("[", "［").replace("]", "］")
+            if chunk.source_url.startswith("https://"):
+                lines.append(f"- [{name}]({chunk.source_url})")
+            else:
+                lines.append(f"- {name}")
         return "\n".join(lines)
 
 
