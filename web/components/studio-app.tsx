@@ -3,12 +3,12 @@
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import {
-  ArrowLeft, ArrowRight, ArrowUpRight, BookOpen, Check, ChevronDown, CircleHelp,
+  ArrowLeft, ArrowRight, BookOpen, Check, ChevronDown, CircleHelp, Copy,
   Clock3, Compass, Download, FileText, GraduationCap, HeartHandshake, LoaderCircle,
   MapPin, Menu, MessageCircle, PencilLine, Plus, RefreshCw, Send, Settings2,
   ShieldCheck, Sparkles, WandSparkles, X,
 } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { SiteHeader } from "@/components/site-header";
@@ -52,23 +52,42 @@ function ModelSettings({ model, setModel, onClose, platformReady }: {
   model: ModelOptions; setModel: (model: ModelOptions) => void; onClose: () => void; platformReady?: boolean;
 }) {
   const patch = (values: Partial<ModelOptions>) => setModel({ ...model, ...values });
-  return <div className="modal-backdrop" onMouseDown={onClose}>
-    <section className="settings-dialog" role="dialog" aria-modal="true" aria-labelledby="settings-title" onMouseDown={(event) => event.stopPropagation()}>
-      <div className="dialog-heading"><div><span className="eyebrow">AI CONNECTION</span><h2 id="settings-title">模型与服务设置</h2></div><button type="button" className="icon-btn" onClick={onClose} aria-label="关闭设置"><X size={20}/></button></div>
-      <p className="settings-description">你可以使用平台服务，也可以手动连接自己的 OpenAI-compatible API。切换个人 API 后才会消耗你的个人额度。</p>
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const dialogRef = useRef<HTMLElement>(null);
+  useEffect(() => {
+    const previous = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    closeButtonRef.current?.focus();
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") { event.preventDefault(); onClose(); return; }
+      if (event.key !== "Tab" || !dialogRef.current) return;
+      const items = Array.from(dialogRef.current.querySelectorAll<HTMLElement>(
+        'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+      ));
+      if (!items.length) return;
+      const first = items[0], last = items[items.length - 1];
+      if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+      else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+    };
+    document.addEventListener("keydown", onKey);
+    return () => { document.removeEventListener("keydown", onKey); previous?.focus(); };
+  }, [onClose]);
+  return <div className="modal-backdrop" onMouseDown={(event) => {if (event.target === event.currentTarget) onClose();}}>
+    <section ref={dialogRef} className="settings-dialog" role="dialog" aria-modal="true" aria-labelledby="settings-title" onMouseDown={(event) => event.stopPropagation()}>
+      <div className="dialog-heading"><h2 id="settings-title">AI 服务设置</h2><button ref={closeButtonRef} type="button" className="icon-btn" onClick={onClose} aria-label="关闭设置"><X size={20}/></button></div>
+      <p className="settings-description">优先使用平台服务，也可以自行连接 API。</p>
       <div className="settings-segments" role="group" aria-label="AI 模型来源">
         <button type="button" className={model.mode === "auto" ? "selected" : ""} onClick={() => patch({ mode:"auto" })}>平台服务</button>
         <button type="button" className={model.mode === "user" ? "selected" : ""} onClick={() => patch({ mode:"user" })}>使用我的 API</button>
       </div>
       {model.mode === "auto" ? <div className={`service-notice ${platformReady ? "service-ok" : "service-warn"}`}><ShieldCheck size={19}/><div><strong>{platformReady ? "平台服务已就绪" : "平台免费额度暂未开放"}</strong><p>{platformReady ? "可直接返回工作台生成方案。" : "平台额度保护尚未启用，暂不能使用共享模型。你可以使用自己的 API。"}</p></div></div> : <>
         <Choice label="服务商" value={model.provider} values={Object.keys(MODEL_PROVIDERS)} onChange={(provider) => patch({ provider, ...MODEL_PROVIDERS[provider as keyof typeof MODEL_PROVIDERS] })}/>
-        <label className="field"><span>API Key（不会保存到浏览器存储）</span><input type="password" autoComplete="off" value={model.api_key} placeholder="sk-••••••••••" onChange={(e) => patch({ api_key:e.target.value })}/></label>
-        <label className="field"><span>Base URL</span><input value={model.base_url} placeholder="https://api.example.com/v1" onChange={(e) => patch({ base_url:e.target.value })}/></label>
-        <label className="field"><span>模型名称</span><input value={model.model_name} placeholder="模型 ID" onChange={(e) => patch({ model_name:e.target.value })}/></label>
+        <label className="field"><span>API Key（仅保留在当前页面）</span><input type="password" name="private_api_key" autoComplete="new-password" spellCheck={false} value={model.api_key} placeholder="sk-••••••••••" onChange={(e) => patch({ api_key:e.target.value })}/></label>
+        <label className="field"><span>Base URL</span><input name="private_base_url" type="url" autoComplete="off" spellCheck={false} value={model.base_url} placeholder="https://api.example.com/v1" onChange={(e) => patch({ base_url:e.target.value })}/></label>
+        <label className="field"><span>模型名称</span><input name="private_model_name" autoComplete="off" spellCheck={false} value={model.model_name} placeholder="模型 ID" onChange={(e) => patch({ model_name:e.target.value })}/></label>
         <button className="clear-key" type="button" onClick={() => patch({ api_key:"", mode:"auto" })}>清除 API Key 并返回平台服务</button>
       </>}
       <label className="field"><span>生成语言灵活度 <b>{model.temperature.toFixed(2)}</b></span><input type="range" min=".1" max="1" step=".05" value={model.temperature} onChange={(e) => patch({temperature:Number(e.target.value)})}/></label>
-      <div className="settings-security"><ShieldCheck size={17}/> 个人密钥仅在当前页面内存中保存，并在明确发起请求时传至后端。请通过 HTTPS 部署。</div>
+      <div className="settings-security"><ShieldCheck size={17} aria-hidden="true"/> 个人 API Key 不会存入浏览器本地存储。</div>
       <button className="button button-dark settings-done" type="button" onClick={onClose}>完成设置 <Check size={17}/></button>
     </section>
   </div>;
@@ -106,7 +125,10 @@ export function StudioApp() {
   const [activeTab, setActiveTab] = useState("all");
   const [revision, setRevision] = useState("");
   const [downloadBusy, setDownloadBusy] = useState(false);
+  const [notice, setNotice] = useState("");
+  const inputRef = useRef<HTMLTextAreaElement>(null);
   const controller = useRef<AbortController | null>(null);
+  const closeSettings = useCallback(() => setShowSettings(false), []);
 
   useEffect(() => {
     fetch("/api/v1/status", { cache:"no-store" }).then((res) => res.ok ? res.json() : Promise.reject())
@@ -156,9 +178,11 @@ export function StudioApp() {
     setError("");
   }
   function startNew() {
+    if ((request.raw_request.trim() || result) && !window.confirm("开始新方案？当前编辑内容将清空，已生成的方案仍可在最近记录中查看。")) return;
     controller.current?.abort();
     setBusy(false); setRequest(DEFAULT_REQUEST); setResult(null); setStream(""); setError("");
-    setRevision(""); setActiveTab("all"); setDrawerOpen(false);
+    setRevision(""); setActiveTab("all"); setDrawerOpen(false); setNotice("");
+    requestAnimationFrame(() => inputRef.current?.focus());
   }
   function savePlan(plan: Plan) {
     setRecents((prev) => [plan, ...prev.filter((entry) => entry.id !== plan.id)].slice(0, MAX_RECENTS));
@@ -168,9 +192,9 @@ export function StudioApp() {
   async function run(kind: "generate" | "revise", preset?: string) {
     if (busy) return;
     if (kind === "revise" && !result) return;
-    if (kind === "generate" && !request.raw_request.trim()) { setError("请先描述想体验的非遗内容。"); return; }
+    if (kind === "generate" && !request.raw_request.trim()) { setError("请先写下你的需求，或者使用示例。"); inputRef.current?.focus(); return; }
     if (model.mode === "user" && (!model.api_key.trim() || !model.base_url.trim() || !model.model_name.trim())) { setError("请先在 AI 服务设置中填写完整的个人 API 信息。"); setShowSettings(true); return; }
-    setBusy(true); setError(""); setStream(""); setStage("正在准备你的文化提案…");
+    setBusy(true); setError(""); setNotice(""); setStream(""); setStage("正在准备你的方案…");
     const abortController = new AbortController();
     controller.current = abortController;
     const previous = result;
@@ -215,13 +239,19 @@ export function StudioApp() {
 
   async function download(format: "md" | "txt" | "docx") {
     if (!result || downloadBusy) return;
-    setDownloadBusy(true); setError("");
-    try { await exportProposal(result.request, result.answer, result.sources, format); }
+    setDownloadBusy(true); setError(""); setNotice("");
+    try { await exportProposal(result.request, result.answer, result.sources, format); setNotice(`已开始下载 ${format === "docx" ? "Word" : format.toUpperCase()} 文件。`); }
     catch (err) { setError(err instanceof Error ? err.message : "导出失败。"); }
     finally { setDownloadBusy(false); }
   }
 
-  const shownAnswer = busy && stream ? stream : result?.answer ?? "";
+  async function copyResult() {
+    if (!result) return;
+    try { await navigator.clipboard.writeText(result.answer); setNotice("方案已复制到剪贴板。"); }
+    catch { setNotice("复制失败，请使用下方导出功能保存。"); }
+  }
+
+  const shownAnswer = busy ? stream : result?.answer ?? "";
   const sections = splitSections(shownAnswer);
   const selectedContent = activeTab === "all" ? shownAnswer
     : activeTab === "sources" ? result?.sources ?? "" : sections[Number(activeTab)]?.content ?? shownAnswer;
@@ -229,12 +259,12 @@ export function StudioApp() {
 
   return <>
     <SiteHeader />
-    <main className="studio-background">
+    <main className="studio-background" id="main-content">
       <div className="studio-top container">
         <div className="studio-breadcrumb"><Link href="/"><ArrowLeft size={15}/> 返回首页</Link><span>/</span><span>智能文化工作台</span></div>
         <div className="studio-top-actions">
           <span className={`studio-service-dot ${status?.platform_ready ? "is-live" : ""}`}/>
-          <span className="studio-service-label">{model.mode === "user" ? "个人模型模式" : status?.platform_ready ? "AI 服务已就绪" : "平台额度未开放"}</span>
+          <span className="studio-service-label">{model.mode === "user" ? "个人 API" : status === null ? "正在检查服务…" : status.platform_ready ? "平台服务可用" : "平台服务暂不可用"}</span>
           <button className="toolbar-button" type="button" onClick={() => setShowSettings(true)}><Settings2 size={16}/> AI 设置</button>
         </div>
       </div>
@@ -325,7 +355,7 @@ export function StudioApp() {
       </div>
     </main>
     <footer className="studio-footer"><div className="container"><span>粤见非遗 · YUEJIAN HERITAGE STUDIO</span><Link href="/">返回品牌首页 <ArrowUpRight size={15}/></Link></div></footer>
-    {showSettings && <ModelSettings model={model} setModel={setModel} platformReady={status?.platform_ready} onClose={() => setShowSettings(false)}/>}
+    {showSettings && <ModelSettings model={model} setModel={setModel} platformReady={status?.platform_ready} onClose={closeSettings}/>}
     {drawerOpen && <button aria-label="关闭侧边栏" className="mobile-side-overlay" onClick={() => setDrawerOpen(false)} type="button"/>}
   </>;
 }
