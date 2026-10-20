@@ -314,7 +314,7 @@ export function StudioApp() {
         </aside>
 
         <div className="studio-main">
-          <div className="studio-heading"><div><h1>生成非遗体验方案</h1><p>选择类型、描述需求，即可开始。</p></div><button type="button" className="studio-new-button" onClick={startNew} disabled={busy}><Plus size={17} aria-hidden="true"/> 新方案</button></div>
+          <div className="studio-heading"><div><h1>生成非遗体验方案</h1><p>选择体验类型、描述需求，即可开始。</p></div><div className="studio-heading__art" aria-hidden="true"/><button type="button" className="studio-new-button" onClick={startNew} disabled={busy}><Plus size={17} aria-hidden="true"/> 新方案</button></div>
           <div className="mobile-scene-bar"><button type="button" onClick={() => setDrawerOpen(true)} aria-expanded={drawerOpen} aria-controls="studio-scenes"><Menu size={17}/> {visibleScene.name} <ChevronDown size={15}/></button><button type="button" onClick={startNew}><Plus size={17}/> 新方案</button></div>
 
           <form className="composer-panel" aria-labelledby="composer-title" onSubmit={(event) => {event.preventDefault();void run("generate");}}>

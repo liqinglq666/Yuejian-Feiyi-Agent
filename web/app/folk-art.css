@@ -1,0 +1,244 @@
+/* 粤见非遗 · 民俗插画视觉语言
+   Brand: festival vermilion / pale citron / river blue
+   Illustrations live under /heritage/, distinct from the input and result UI. */
+:root{
+  --canvas:#fffaf1;
+  --surface:#fffefa;
+  --surface-alt:#fff6e5;
+  --ink:#24242a;
+  --forest:#e72451;
+  --forest-hover:#bb1941;
+  --subtle:#6d6970;
+  --accent:#e72451;
+  --line:#efe6dd;
+  --line-strong:#e1d3c7;
+  --danger:#b62442;
+  --danger-bg:#fff1f2;
+  --success:#297a58;
+  --shadow:0 15px 42px #b25f5a12;
+  --folk-pink:#e72451;
+  --folk-yellow:#fef97b;
+  --folk-blue:#78c3fe;
+  --folk-cream:#fffaf1;
+  --folk-ink:#24242a;
+}
+html{scroll-padding-top:100px}
+body{background:var(--folk-cream);color:var(--folk-ink)}
+::selection{background:#ffe4a4;color:#332335}
+:focus-visible{outline-color:var(--folk-pink)}
+.site-header{background:#fffdf8f5;border-bottom:1px solid #efe8dd;box-shadow:0 4px 24px #603a2010}
+.nav-inner{height:76px}
+.brand-seal{width:39px;height:39px;background:var(--folk-pink);border-radius:12px 12px 10px 3px;color:#fff;font-weight:700;box-shadow:3px 3px 0 var(--folk-yellow)}
+.brand-words strong{font-weight:750;font-size:20px;letter-spacing:.075em}
+.brand-words small{font-size:9px;letter-spacing:.115em;color:#898185}
+.main-nav{gap:32px}
+.main-nav>a:not(.nav-cta){color:#4e4a4d;font-weight:600}
+.main-nav>a:not(.nav-cta):hover,.main-nav>a.nav-active{color:var(--folk-pink)}
+.main-nav>a.nav-active{position:relative}
+.main-nav>a.nav-active:after{content:"";position:absolute;height:3px;left:0;right:0;bottom:3px;background:var(--folk-pink);border-radius:4px}
+.nav-cta{background:var(--folk-pink);border-radius:999px;color:#fff;padding:11px 19px}
+.nav-cta:hover{background:#bc1643}
+.nav-menu-toggle{background:#fff;color:var(--folk-pink)}
+
+/* Hand-painted home hero with proper space for actual copy */
+.folk-home{background:radial-gradient(circle at 85% 24%,#fff6df 0,transparent 45%),var(--folk-cream);min-height:100vh}
+.folk-hero{background:linear-gradient(100deg,#fffaf1 0%,#fffaf1 32%,#fff8df 73%,#effaff 100%);position:relative;isolation:isolate;overflow:hidden;border-bottom:1px solid #f0e2d4}
+.folk-hero__inner{position:relative;min-height:410px;display:flex;align-items:center;padding-top:48px;padding-bottom:57px}
+.folk-hero__copy{position:relative;z-index:2;max-width:650px;width:55%;padding:12px 0}
+.folk-eyebrow{font-size:12px;color:#7a6672;letter-spacing:.15em;font-weight:750;display:inline-flex;gap:10px;align-items:center;margin:0 0 21px}
+.folk-eyebrow__dot{width:8px;height:8px;background:var(--folk-pink);border-radius:100%;box-shadow:12px 0 0 var(--folk-yellow)}
+.folk-hero h1{font-family:var(--serif);font-size:clamp(36px,4.45vw,63px);line-height:1.26;letter-spacing:-.027em;font-weight:760;color:#24232b;margin:0 0 21px;text-wrap:balance}
+.folk-hero h1 span{color:var(--folk-pink);position:relative;white-space:nowrap}
+.folk-hero h1 span:after{content:"";position:absolute;bottom:-5px;left:4%;right:1%;height:7px;border-radius:50%;border-bottom:3px solid var(--folk-pink);transform:rotate(-2deg);opacity:.7}
+.folk-hero__copy>p{font-size:15px;color:#605f63;line-height:1.95;max-width:440px;margin:0}
+.folk-hero__actions{display:flex;align-items:center;flex-wrap:wrap;gap:12px;margin-top:29px}
+.folk-primary,.folk-secondary{font-size:14px;font-weight:750;border-radius:999px;display:inline-flex;justify-content:center;align-items:center;gap:12px;min-height:49px;padding:11px 22px;border:1px solid transparent}
+.folk-primary{background:var(--folk-pink);color:#fff;border:none;box-shadow:0 9px 20px #e7245130}
+.folk-primary:hover{background:#bd163e;transform:translateY(-1px)}
+.folk-secondary{color:#372a30;background:var(--folk-yellow)}
+.folk-secondary:hover{background:#ffef4a}
+.folk-hero__visual{position:absolute;z-index:0;pointer-events:none;top:-5%;bottom:-10%;left:35%;right:-7%;background:url('/heritage/lingnan-festival-hero-desktop.webp') 58% 52%/cover no-repeat;opacity:.96;
+ -webkit-mask-image:linear-gradient(to right,transparent 0%,#000 27%,#000 100%);
+ mask-image:linear-gradient(to right,transparent 0%,#000 27%,#000 100%)}
+.folk-hero__caption{position:absolute;right:12px;bottom:20px;z-index:1;font-size:9px;letter-spacing:.17em;color:#8c697c;background:#fffef6d6;padding:5px 8px;border-radius:5px}
+/* Main content: one primary input, three optional jumping-off points */
+.folk-creation{padding-top:43px;padding-bottom:53px;max-width:1180px;scroll-margin-top:99px}
+.folk-creation__heading{display:flex;justify-content:space-between;gap:20px;align-items:flex-end;margin-bottom:20px}
+.folk-section-kicker{font-size:10px;font-weight:750;letter-spacing:.19em;color:#c33758}
+.folk-creation__heading h2{font-family:var(--serif);font-size:clamp(24px,2.6vw,35px);letter-spacing:-.02em;line-height:1.45;margin:6px 0 0;font-weight:760}
+.folk-creation__side{font-size:12px;color:#89818a;margin-bottom:8px}
+.folk-creation__layout{display:grid;grid-template-columns:minmax(0,1.78fr) minmax(260px,.92fr);gap:17px;align-items:stretch}
+.folk-composer,.folk-inspiration{background:#fffefa;border:1px solid #eee2d6;border-radius:19px;box-shadow:0 15px 36px #8153440c}
+.folk-composer{padding:24px 27px 18px;min-width:0}
+.folk-field-label{font-size:13px;font-weight:750;margin:0 0 11px;color:#343035}
+.folk-scenario-tabs{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:7px;padding-bottom:19px;border-bottom:1px solid #f0ebe4}
+.folk-scenario{min-height:58px;min-width:0;display:flex;align-items:center;justify-content:center;gap:6px;flex-direction:column;background:#fff9f3;color:#69636b;border:1px solid #efe6dd;border-radius:11px;padding:6px 3px;font-weight:700;font-size:12px;transition:background .2s,transform .2s,border-color .2s}
+.folk-scenario svg{color:#a28b91}
+.folk-scenario:hover{border-color:#f1a3ae;background:#fff2f4;transform:translateY(-1px)}
+.folk-scenario.is-active{color:var(--folk-pink);background:#fff0f3;border:2px solid var(--folk-pink)}
+.folk-scenario.is-active svg{color:var(--folk-pink)}
+.folk-input-head{display:flex;justify-content:space-between;gap:10px;align-items:center;margin:18px 0 9px;font-size:13px;font-weight:650;color:#473b43}
+.folk-input-head span{font-size:11px;color:#99919a;font-weight:400;font-variant-numeric:tabular-nums}
+.folk-composer textarea{display:block;width:100%;resize:vertical;min-height:136px;line-height:1.75;padding:15px 16px;font-size:15px;border:1px solid #e3d9d0;border-radius:12px;background:#fffdfa;color:#333039;outline-offset:1px}
+.folk-composer textarea::placeholder{color:#9a9292;opacity:1}
+.folk-composer textarea:focus{border-color:var(--folk-pink);box-shadow:0 0 0 3px #e724510e;outline:none}
+.folk-composer textarea[aria-invalid=true]{border-color:#b62442}
+.folk-error{font-size:12px;color:#b62442;margin:9px 0 0}
+.folk-compose-footer{display:flex;align-items:center;justify-content:space-between;gap:15px;margin-top:14px}
+.folk-city-field{display:flex;align-items:center;gap:9px;font-size:12px;color:#67616a}
+.folk-city-field>svg{color:var(--folk-pink)}
+.folk-city-field select{border:1px solid #e9dfd8;min-height:44px;max-width:163px;border-radius:10px;padding:8px 13px;background:#fff9ed;color:#3a3538;font-size:13px}
+.folk-submit{display:inline-flex;align-items:center;justify-content:center;gap:12px;border:none;min-height:48px;border-radius:999px;padding:11px 22px;background:var(--folk-pink);color:#fff;font-size:14px;font-weight:750;white-space:nowrap;box-shadow:0 7px 17px #e7245124}
+.folk-submit:hover{background:#bd163e;transform:translateY(-1px)}
+.folk-form-note{margin:16px 0 0;color:#99919a;font-size:11px}
+.folk-inspiration{padding:24px 21px 20px;min-width:0}
+.folk-inspiration__head h3{font-family:var(--serif);margin:5px 0 3px;font-size:20px;display:flex;align-items:center;gap:7px;font-weight:760}
+.folk-inspiration__head h3 svg{color:var(--folk-pink)}
+.folk-inspiration__head p{margin:0 0 18px;font-size:12px;color:#93878f}
+.folk-inspiration__list{display:flex;flex-direction:column;gap:8px}
+.folk-inspiration__item{border:1px solid #f0e8df;background:#fffaf5;padding:6px 9px 6px 6px;border-radius:12px;display:flex;align-items:center;min-width:0;width:100%;gap:13px;min-height:76px;text-align:left;transition:border-color .2s,background .2s}
+.folk-inspiration__item:hover{background:#fff1e2;border-color:#f3bca6}
+.folk-inspiration__image{display:block;position:relative;width:88px;height:63px;border-radius:8px;overflow:hidden;flex-shrink:0;background:#f7ece4}
+.folk-inspiration__image img{object-fit:cover}
+.folk-inspiration__text{display:flex;flex:1;flex-direction:column;min-width:0;gap:4px}
+.folk-inspiration__text strong{font-size:14px;color:#28262c;font-weight:700}
+.folk-inspiration__text small{font-size:11px;color:#81777f}
+.folk-inspiration__arrow{color:var(--folk-pink);font-size:20px;margin-right:5px}
+.folk-disclaimer{font-size:11px;color:#97898e;margin:17px 0 0;line-height:1.8}
+.folk-footer-ornament{height:47px;pointer-events:none;background:url('/heritage/lingnan-floral-divider.webp') center 42%/auto 135px no-repeat;opacity:.38}
+.folk-footer{background:#fff6df;border-top:1px solid #f3e5d3;color:#7f6a70}
+.folk-footer .container{display:flex;justify-content:space-between;align-items:center;gap:15px;min-height:60px;font-size:12px}
+.folk-footer strong{font-family:var(--serif);font-size:17px;color:#433036}
+.folk-creation button,.folk-hero button{touch-action:manipulation}
+@media(max-width:1050px){
+ .folk-hero__visual{left:38%;right:-19%;opacity:.9}
+ .folk-creation__layout{grid-template-columns:minmax(0,1.55fr) minmax(238px,1fr)}
+ .folk-composer{padding:22px}
+ .folk-inspiration{padding:20px 14px}
+ .folk-scenario{font-size:11px}
+}
+@media(max-width:760px){
+ .nav-inner{height:65px}
+ .main-nav{top:65px}
+ .folk-hero__inner{min-height:380px;padding-top:38px;padding-bottom:39px}
+ .folk-hero__copy{width:76%;max-width:530px}
+ .folk-hero h1{font-size:clamp(35px,6.5vw,50px)}
+ .folk-hero__visual{left:32%;right:-40%;opacity:.66}
+ .folk-hero__copy>p{max-width:390px;font-size:14px}
+ .folk-creation__layout{display:block}
+ .folk-inspiration{margin-top:17px}
+ .folk-inspiration__list{display:grid;grid-template-columns:repeat(3,minmax(0,1fr))}
+ .folk-inspiration__item{display:flex;flex-direction:column;padding:5px;text-align:left;gap:7px}
+ .folk-inspiration__image{height:92px;width:100%}
+ .folk-inspiration__text{width:100%;padding:2px 7px 8px}
+ .folk-inspiration__arrow{display:none}
+ .folk-inspiration__head p{margin-bottom:14px}
+}
+@media(max-width:540px){
+ .folk-hero__inner{min-height:470px;align-items:flex-start;padding-top:29px;padding-bottom:205px}
+ .folk-hero__copy{width:100%}
+ .folk-hero__visual{top:auto;bottom:-40px;left:8%;right:-10%;height:290px;background-image:url('/heritage/lingnan-festival-hero-mobile.webp');background-size:cover;background-position:center 70%;opacity:.9;-webkit-mask-image:linear-gradient(to bottom,transparent 0,#000 40%,#000 95%);mask-image:linear-gradient(to bottom,transparent 0,#000 40%,#000 95%)}
+ .folk-hero h1{font-size:36px;line-height:1.27;margin:0 0 14px}
+ .folk-hero h1 span{white-space:normal}
+ .folk-hero__copy>p{max-width:340px;font-size:13px;line-height:1.75}
+ .folk-eyebrow{margin-bottom:14px;font-size:11px}
+ .folk-hero__actions{margin-top:17px;gap:9px}
+ .folk-primary,.folk-secondary{padding:9px 13px;min-height:44px;font-size:12px;gap:6px}
+ .folk-hero__caption{display:none}
+ .folk-creation{padding-top:29px;padding-bottom:22px}
+ .folk-creation__heading{margin-bottom:14px}
+ .folk-creation__heading h2{font-size:23px}
+ .folk-creation__side{display:none}
+ .folk-composer{padding:17px 14px 16px;border-radius:15px}
+ .folk-scenario-tabs{grid-template-columns:repeat(6,minmax(0,1fr));gap:6px}
+ .folk-scenario{grid-column:span 2;min-height:62px;border-radius:9px;font-size:11px;gap:3px}
+ .folk-scenario:nth-child(4),.folk-scenario:nth-child(5){grid-column:span 3}
+ .folk-composer textarea{font-size:16px;min-height:115px}
+ .folk-compose-footer{gap:7px}
+ .folk-city-field{gap:5px;font-size:11px}
+ .folk-city-field select{font-size:12px;max-width:123px;padding:7px 8px}
+ .folk-submit{min-height:44px;padding:8px 12px;font-size:12px;gap:5px}
+ .folk-inspiration{padding:18px 12px}
+ .folk-inspiration__list{gap:8px}
+ .folk-inspiration__image{height:78px}
+ .folk-inspiration__text strong{font-size:12px}
+ .folk-inspiration__text small{font-size:10px}
+ .folk-disclaimer{margin-top:12px}
+ .folk-footer .container{flex-direction:column;align-items:flex-start;gap:3px;justify-content:center;padding:13px 0}
+}
+/* Workbench: preserve functionality while adopting one consistent design language */
+.studio-background{background:radial-gradient(ellipse at 75% 2%,#eaf6ff 0,transparent 38%),#fffaf1}
+.studio-top{padding-top:20px;padding-bottom:14px}
+.studio-breadcrumb a{color:var(--folk-pink)}
+.studio-service-dot.is-live{background:#32a278}
+.toolbar-button,.studio-new-button{border-color:#e9dcd2;background:#fffefa;color:#4c3741;border-radius:999px;box-shadow:0 3px 12px #692c2410}
+.toolbar-button:hover,.studio-new-button:hover{background:#fff0f2;color:var(--folk-pink)}
+.studio-shell{grid-template-columns:205px minmax(0,1fr);gap:19px}
+.studio-sidebar{border-radius:17px;border-color:#eee0d2;background:#fffefb;padding:18px 11px;box-shadow:0 8px 25px #71402009}
+.sidebar-heading{color:#383139;font-size:15px}
+.sidebar-scene{border-radius:10px}
+.sidebar-scene.selected{border-color:#ffbbca;background:#fff0f3;color:#c2244a}
+.sidebar-scene.selected strong{color:#c2244a}
+.sidebar-selected-mark{background:var(--folk-pink)}
+.sidebar-scene:hover,.recent-plan:hover{background:#fff2e8}
+.sidebar-library{border-top-color:#f1e4dc}
+.studio-heading{position:relative;min-height:104px;margin:0 0 15px;padding:21px 25px 19px;border-radius:16px;background:linear-gradient(99deg,#fff4c7 0%,#fff9eb 64%,#dff2fe 100%);border:1px solid #f1e3c8;overflow:hidden}
+.studio-heading h1{position:relative;z-index:1;font-family:var(--serif);font-weight:750;font-size:28px;color:#30262d}
+.studio-heading p{position:relative;z-index:1;color:#74656d}
+.studio-heading__art{position:absolute;right:60px;top:-60px;bottom:-20px;width:235px;opacity:.55;background:url('/heritage/lingnan-roof-floral-corner.webp') center/contain no-repeat;pointer-events:none}
+.studio-heading .studio-new-button{z-index:1;position:relative}
+.composer-panel,.output-panel,.revision-panel{background:#fffefa;border-color:#eee2d5;border-radius:17px;box-shadow:0 13px 29px #8748390a}
+.composer-panel{padding:27px 30px}
+.panel-heading h2{color:#302b30;font-size:20px}
+.field-head,.interest-toggle{color:#3b3439}
+.composer-primary textarea,.revision-compose textarea{border-radius:12px;border-color:#e6dcd4;background:#fffefa}
+.composer-primary textarea:focus,.revision-compose textarea:focus{border-color:var(--folk-pink);box-shadow:0 0 0 3px #e724510d;outline:none}
+.inspiration-list button{border-color:#f2e6da;background:#fff8ee;color:#7b3850}
+.inspiration-list button:hover{background:#fff0d6;border-color:#ffbdc7}
+.interest-chips button{color:#734754;border-color:#ebd9d8;background:#fff9ed}
+.interest-chips button.active{background:#ffe7eb;border-color:#e72451;color:#b92046}
+.composer-preferences{background:#fffaf4;border-color:#efe3d8;border-radius:11px}
+.composer-actions{border-top-color:#f2e9df}
+.button-dark{background:var(--folk-pink);border-radius:999px;color:#fff;box-shadow:0 7px 17px #e724511a}
+.button-dark:hover{background:#bd163e}
+.button-muted{background:#fff5e5;border-color:#e9ded0;color:#723748}
+.button-muted:hover{background:#fff1d9}
+.revision-chips button{border-color:#f2e1dc;background:#fff4f4;color:#b12b4c}
+.revision-chips button:hover{background:#ffe9eb}
+.result-summary{border-color:#f8dbdf;background:#fff4ef}
+.result-summary-badge{color:#a82042;background:#ffe1e8;border-color:#f6bbcb}
+.result-tabs button.active{border-bottom-color:var(--folk-pink);color:var(--folk-pink)}
+.result-tabs button:hover{color:var(--folk-pink);background:#fff5eb}
+.markdown-document a{color:#cc2151}
+.markdown-document h2{border-bottom-color:#f3e6da}
+.result-downloads button{border-color:#e6d5cb;color:#bc234c;border-radius:999px}
+.result-downloads button:hover{background:#fff0ed}
+.stream-stage{background:#fff6e6;border-color:#f2e2c7;color:#7a344a}
+.stream-stage span{color:#776871}
+.service-inline-notice{background:#fff7de;border-color:#f0e2b8}
+.settings-dialog{border-radius:18px;background:#fffdf7}
+.icon-btn{border-radius:10px}
+.settings-segments{background:#fff1e6}
+.settings-segments button.selected{color:var(--folk-pink)}
+.studio-footer{background:#fff7e7;border-color:#f0e4d8}
+.studio-footer a{color:var(--folk-pink)}
+@media(max-width:960px){
+ .studio-shell{grid-template-columns:185px minmax(0,1fr);gap:12px}
+}
+@media(max-width:760px){
+ .studio-shell{display:block}
+ .studio-heading{padding:17px 20px}
+ .studio-heading__art{right:-12px;opacity:.38;width:200px}
+ .studio-sidebar{border-radius:0;z-index:95}
+ .mobile-scene-bar button{border-color:#eadad6;color:var(--folk-pink)}
+}
+@media(max-width:540px){
+ .studio-heading{padding:16px;min-height:86px}
+ .studio-heading h1{font-size:23px}
+ .studio-heading__art{right:-33px;width:155px;opacity:.25}
+ .composer-panel,.output-panel,.revision-panel{padding:20px 16px}
+ .studio-heading .studio-new-button{display:none}
+}
+@media(prefers-reduced-motion:reduce){
+ .folk-primary:hover,.folk-submit:hover,.folk-scenario:hover{transform:none}
+}
