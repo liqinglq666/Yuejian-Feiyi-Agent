@@ -1,41 +1,27 @@
 from __future__ import annotations
-
 import json
 from pathlib import Path
-
 from core.models import TaskRequest
 from services.retrieval import KnowledgeBaseError, retrieve
-
-ROOT = Path(__file__).resolve().parents[1]
-
-
-def main() -> None:
-    cases = json.loads((ROOT / "evaluation" / "benchmark.json").read_text(encoding="utf-8"))
-    routing_passed = 0
-    retrieval_passed = 0
-
-    for case in cases:
-        request = TaskRequest(scene=case["scene"], raw_request=case["query"])
-        routing_ok = request.task_type.value == case["expected_task_type"]
-        routing_passed += int(routing_ok)
-
+ROOT=Path(__file__).resolve().parents[1]
+def main():
+    cases=json.loads((ROOT/"evaluation"/"benchmark.json").read_text(encoding="utf-8"))
+    counts={"routing":0,"retrieval":0,"official":0}
+    for item in cases:
+        req=TaskRequest(scene=item["scene"],raw_request=item["query"],city=item.get("city","自动判断"))
+        ok=req.task_type.value==item["expected_task_type"]
+        counts["routing"]+=int(ok)
         try:
-            bundle = retrieve(request.retrieval_query)
-            combined = " ".join(chunk.content for chunk in bundle.chunks)
-            retrieval_ok = any(term in combined for term in case["expected_terms"])
+            chunks=retrieve(req.retrieval_query).chunks
+            term=item["expected_terms"][0]
+            rel=any(term in c.content for c in chunks)
+            official=any(term in c.title+" "+c.content and c.source_url.startswith("https://www.ihchina.cn/") for c in chunks)
         except KnowledgeBaseError:
-            retrieval_ok = False
-        retrieval_passed += int(retrieval_ok)
-
-        print(
-            f"{case['id']}: routing={'PASS' if routing_ok else 'FAIL'} "
-            f"retrieval={'PASS' if retrieval_ok else 'FAIL'}"
-        )
-
-    total = len(cases)
-    print(f"Routing: {routing_passed}/{total}")
-    print(f"Retrieval: {retrieval_passed}/{total}")
-
-
-if __name__ == "__main__":
+            rel=official=False
+        counts["retrieval"]+=int(rel); counts["official"]+=int(official)
+        print(item["id"],"PASS" if ok and rel and official else "FAIL",f"routing={ok} retrieval={rel} official={official}")
+    print("Summary:",counts,"of",len(cases))
+    if any(value!=len(cases) for value in counts.values()):
+        raise SystemExit(1)
+if __name__=="__main__":
     main()
