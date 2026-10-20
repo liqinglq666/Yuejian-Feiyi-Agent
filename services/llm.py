@@ -109,6 +109,13 @@ def validate_base_url(
         raise ModelGatewayError("模型服务地址不能包含 query 或 fragment。")
 
     host = parsed.hostname.lower()
+    if not enforce_server_allowlist and os.getenv("VERCEL") == "1":
+        # BYOK must not turn our publicly deployed backend into a generic SSRF proxy.
+        # A deliberately configured extra host preserves custom provider support.
+        defaults = {"dashscope.aliyuncs.com", "api.deepseek.com", "api.openai.com"}
+        additional = {v.strip().lower() for v in os.getenv("BYOK_ALLOWED_HOSTS", "").split(",") if v.strip()}
+        if host not in defaults | additional:
+            raise ModelGatewayError("此自定义 API 域名尚未获本站允许，请联系管理员添加可信域名。")
     if enforce_server_allowlist:
         allowed_hosts = {
             item.strip().lower()
@@ -242,6 +249,7 @@ def stream_chat(
     temperature: float = 0.62,
     max_tokens: int = 1600,
 ) -> Generator[str, None, None]:
+    stream = None
     try:
         stream = build_client(config).chat.completions.create(
             **_completion_request_kwargs(
@@ -260,6 +268,15 @@ def stream_chat(
                 yield delta.content
     except Exception as exc:
         raise _public_error(exc, config=config, streaming=True) from exc
+    finally:
+        # Ensure closing an aborted SSE stream also closes the provider stream.
+        # Network disconnect cannot guarantee refunded provider billing.
+        close = getattr(stream, "close", None)
+        if callable(close):
+            try:
+                close()
+            except Exception:
+                logger.debug("Provider stream close failed", exc_info=True)
 
 
 def complete_chat(

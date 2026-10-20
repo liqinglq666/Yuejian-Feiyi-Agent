@@ -100,3 +100,12 @@ def test_uncached_dns_validation_still_resolves_every_time(
         ("api.example.com", 443),
         ("api.example.com", 443),
     ]
+
+def test_vercel_byok_blocks_unapproved_public_hosts(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("VERCEL","1")
+    monkeypatch.delenv("BYOK_ALLOWED_HOSTS",raising=False)
+    with pytest.raises(ModelGatewayError,match="允许"):
+        validate_base_url("https://example.com/v1",resolve_dns=False,enforce_server_allowlist=False)
+    assert validate_base_url("https://api.deepseek.com",resolve_dns=False,enforce_server_allowlist=False)=="https://api.deepseek.com"
+    monkeypatch.setenv("BYOK_ALLOWED_HOSTS","example.com")
+    assert validate_base_url("https://example.com/v1",resolve_dns=False,enforce_server_allowlist=False)=="https://example.com/v1"

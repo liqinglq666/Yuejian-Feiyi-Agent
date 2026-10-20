@@ -27,7 +27,8 @@ async function mockService(page: import("@playwright/test").Page) {
   const mockStream = (answer: string, request: RequestInput) =>
     [
       "event: stage\ndata: " + JSON.stringify({ value: "generating", label: "正在整理文化方案…" }),
-      "event: snapshot\ndata: " + JSON.stringify({ text: answer }),
+      "event: snapshot\ndata: " + JSON.stringify({ text: answer.slice(0, 12) }),
+      "event: delta\ndata: " + JSON.stringify({ text: answer.slice(12) }),
       "event: complete\ndata: " + JSON.stringify({ answer, sources: "广东文化知识库", request }),
       "",
       "",
@@ -140,4 +141,43 @@ test("inspiration is actionable, not a fake event or booking feature", async ({ 
   await expect(page.getByRole("button",{name:"非遗问答"})).toHaveAttribute("aria-pressed","true");
   await expect(page.locator("#fast-city")).toHaveValue("汕尾");
   await checkNoHorizontalOverflow(page);
+});
+
+
+test("status retry keeps the input draft intact after temporary outage", async ({ page }) => {
+  let attempts = 0;
+  await page.route("**/api/v1/status", (route) => {
+    attempts += 1;
+    if (attempts <= 3) {
+      return route.fulfill({status:503,contentType:"application/json",body:'{"detail":"temporarily unavailable"}'});
+    }
+    return route.fulfill({status:200,contentType:"application/json",body:JSON.stringify(getStatus)});
+  });
+  await page.goto("/studio");
+  await page.locator("#request-input").fill("想了解潮州木雕的工艺特色");
+  await expect(page.getByRole("button",{name:"重新检查连接"})).toBeVisible();
+  await page.getByRole("button",{name:"重新检查连接"}).click();
+  await expect(page.getByText("平台服务可用")).toBeVisible();
+  await expect(page.locator("#request-input")).toHaveValue("想了解潮州木雕的工艺特色");
+});
+
+
+test("CRLF SSE frames are accepted by the real browser event parser", async ({ page }) => {
+  await mockService(page);
+  await page.route("**/api/v1/generate", async (route) => {
+    const body = route.request().postDataJSON() as { request: RequestInput };
+    const text = "## 方案总览\n\n粤剧源自岭南传统戏剧。";
+    const content = [
+      "event: snapshot\ndata: " + JSON.stringify({ text: text.slice(0, 9) }),
+      "event: delta\ndata: " + JSON.stringify({ text: text.slice(9) }),
+      "event: complete\ndata: " + JSON.stringify({ answer:text, sources:"国级项目资料", request:body.request }),
+      "",
+      "",
+    ].join("\n\n").replace(/\n/g,"\r\n");
+    await route.fulfill({ status:200, contentType:"text/event-stream; charset=utf-8", body:content });
+  });
+  await page.goto("/studio");
+  await page.locator("#request-input").fill("请介绍粤剧");
+  await page.getByRole("button",{name:"生成方案",exact:true}).click();
+  await expect(page.getByText("粤剧源自岭南传统戏剧。")).toBeVisible();
 });

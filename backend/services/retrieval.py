@@ -1,12 +1,14 @@
 from __future__ import annotations
 
 import hashlib
+import json
 import math
 import re
 from collections import Counter
 from dataclasses import dataclass
 from functools import lru_cache
 from pathlib import Path
+from urllib.parse import urlparse
 
 from core.models import GUANGDONG_CITIES, RetrievalBundle, RetrievedChunk
 
@@ -216,7 +218,7 @@ def _document_signature(data_dir: Path) -> tuple[tuple[str, int, int], ...]:
         return ()
     records: list[tuple[str, int, int]] = []
     for path in sorted(data_dir.rglob("*")):
-        if path.is_file() and path.suffix.lower() in SUPPORTED_EXTENSIONS:
+        if path.is_file() and (path.suffix.lower() in SUPPORTED_EXTENSIONS or path.name == "heritage_records.json"):
             stat = path.stat()
             records.append((path.as_posix(), stat.st_mtime_ns, stat.st_size))
     return tuple(records)
@@ -231,8 +233,10 @@ def build_index(data_dir: Path = DEFAULT_DATA_DIR) -> SearchIndex:
         for path in sorted(data_dir.rglob("*"))
         if path.is_file() and path.suffix.lower() in SUPPORTED_EXTENSIONS
     ]
-    if not files:
-        raise KnowledgeBaseError("知识库目录中没有 Markdown 或 TXT 文件。")
+    # A fully structured knowledge base should not require keeping a dummy
+    # Markdown file around merely for the registry records to be indexed.
+    if not files and not (data_dir / "heritage_records.json").is_file():
+        raise KnowledgeBaseError("知识库目录中没有 Markdown、TXT 或结构化名录。")
 
     indexed: list[IndexedChunk] = []
     for path in files:
@@ -272,6 +276,49 @@ def build_index(data_dir: Path = DEFAULT_DATA_DIR) -> SearchIndex:
                     char_ngrams=char_ngrams(searchable_text),
                 )
             )
+
+    # Curated records are a second, explicitly sourced lane. Ordinary Markdown
+    # remains available for creative templates but is never labelled verified.
+    registry_file = data_dir / "heritage_records.json"
+    if registry_file.is_file():
+        try:
+            registry_records = json.loads(registry_file.read_text(encoding="utf-8"))
+            if not isinstance(registry_records, list):
+                raise ValueError("registry must be a list")
+            for record in registry_records:
+                if not isinstance(record, dict):
+                    raise ValueError("registry record must be an object")
+                required = ("id", "name", "cities", "category", "facts", "source_name", "source_url", "verified_on")
+                if any(not record.get(field) for field in required):
+                    raise ValueError("registry record missing required metadata")
+                parsed = urlparse(str(record["source_url"]))
+                if parsed.scheme != "https" or parsed.hostname not in {"www.ihchina.cn","ihchina.cn"}:
+                    raise ValueError("registry source must be the checked national register")
+                aliases = "、".join(record.get("aliases", []))
+                cities = "、".join(record["cities"])
+                description = "\n".join([
+                    f"项目：{record['name']}（{aliases}）",
+                    f"所属城市：{cities}；类别：{record['category']}；编号：{record.get('registry_code','')}",
+                    "官方名录核验的文化信息：" + "；".join(record["facts"]),
+                    "建议体验（项目策划建议，非官方活动信息）：" + "；".join(record.get("experience", [])),
+                    "适合人群：" + "、".join(record.get("audiences", [])),
+                    "现场信息提示：" + record.get("notice", "请核实实时信息。"),
+                    f"来源核验日期：{record['verified_on']}",
+                ])
+                indexed.append(IndexedChunk(
+                    chunk_id="registry:"+str(record["id"]),
+                    content=description,
+                    source_path="data/heritage_records.json",
+                    title=str(record["name"]),
+                    city=str(record["cities"][0]),
+                    category=str(record["category"]),
+                    source_name=str(record["source_name"]),
+                    source_url=str(record["source_url"]),
+                    tokens=tuple(tokenize(description)),
+                    char_ngrams=char_ngrams(description),
+                ))
+        except (OSError, json.JSONDecodeError, ValueError, KeyError, TypeError) as exc:
+            raise KnowledgeBaseError("结构化非遗名录无效，请核对官方来源字段。") from exc
 
     if not indexed:
         raise KnowledgeBaseError("知识库文件为空，无法建立检索索引。")
@@ -390,7 +437,14 @@ def retrieve(
             + 0.30 * ngram_values[position]
             + 0.15 * metadata_normalized[position]
         )
-        if score > 0.02:
+        # Prefer the traceable primary registry when topical similarity exists.
+        if score >= 0.10 and chunk.source_path.endswith("heritage_records.json"):
+            # Exact cultural-topic matches deserve priority over generic
+            # unsourced itinerary templates, but not over unrelated content.
+            topical_match = any(term in cleaned_query and term in chunk.content for term in DOMAIN_TERMS)
+            score += 0.38 if topical_match else 0.12
+        # Do not hand vague, off-topic snippets to the generative model.
+        if score >= 0.10:
             ranked.append((score, chunk))
     ranked.sort(key=lambda item: item[0], reverse=True)
 

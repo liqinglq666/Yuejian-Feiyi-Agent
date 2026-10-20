@@ -44,9 +44,10 @@ export async function streamProposal(
     const value = JSON.parse(payload) as Record<string, unknown>;
     if (kind === "stage") onEvent({ type: "stage", value: String(value.value), label: String(value.label) });
     if (kind === "snapshot") onEvent({ type: "snapshot", text: String(value.text) });
+    if (kind === "delta") onEvent({ type: "delta", text: String(value.text) });
     if (kind === "complete") {
       completed = true;
-      onEvent({ type: "complete", answer: String(value.answer), sources: String(value.sources), request: value.request as unknown as TaskRequest });
+      onEvent({ type: "complete", answer: String(value.answer), sources: String(value.sources), request: value.request as unknown as TaskRequest, metrics: value.metrics as {first_token_ms:number|null;total_ms:number}|undefined, quality: value.quality as {sections_complete:boolean;missing_sections:string[];official_source_count:number;needs_fact_verification:boolean}|undefined });
     }
     if (kind === "failure") {
       completed = true;
@@ -58,7 +59,9 @@ export async function streamProposal(
     while (true) {
       const { value, done } = await reader.read();
       if (done) break;
-      buffer += decoder.decode(value, { stream: true }).replace(/\r\n/g, "\n");
+      // Normalize AFTER appending: CRLF can be split between network chunks.
+      buffer += decoder.decode(value, { stream: true });
+      buffer = buffer.replace(/\r\n/g, "\n");
       let boundary: number;
       while ((boundary = buffer.indexOf("\n\n")) >= 0) {
         processFrame(buffer.slice(0, boundary));
@@ -66,6 +69,7 @@ export async function streamProposal(
       }
     }
     buffer += decoder.decode();
+    buffer = buffer.replace(/\r\n/g, "\n");
     if (buffer.trim()) processFrame(buffer.trim());
   } finally {
     reader.releaseLock();

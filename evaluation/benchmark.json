@@ -1,23 +1,662 @@
 [
   {
-    "id": "route-guangzhou-001",
+    "id": "yueju-route",
     "scene": "游客路线",
-    "query": "广州一天体验粤剧、醒狮和岭南建筑",
+    "query": "广州一天的粤剧文化路线",
+    "city": "广州",
     "expected_task_type": "route",
-    "expected_terms": ["广州", "粤剧", "醒狮"]
+    "expected_terms": [
+      "粤剧"
+    ],
+    "expect_official_source": true
   },
   {
-    "id": "study-001",
+    "id": "yueju-study",
     "scene": "学生研学",
-    "query": "设计一份广绣研学任务卡和采访问题",
+    "query": "粤剧研学观察任务",
+    "city": "广州",
     "expected_task_type": "study",
-    "expected_terms": ["广绣", "研学"]
+    "expected_terms": [
+      "粤剧"
+    ],
+    "expect_official_source": true
   },
   {
-    "id": "social-001",
+    "id": "yueju-family",
+    "scene": "亲子体验",
+    "query": "粤剧亲子服饰体验",
+    "city": "广州",
+    "expected_task_type": "route",
+    "expected_terms": [
+      "粤剧"
+    ],
+    "expect_official_source": true
+  },
+  {
+    "id": "yueju-social",
     "scene": "内容创作",
-    "query": "写一篇英歌舞小红书，并给短视频延展建议",
+    "query": "写粤剧文化的小红书文案",
+    "city": "广州",
     "expected_task_type": "social",
-    "expected_terms": ["英歌舞"]
+    "expected_terms": [
+      "粤剧"
+    ],
+    "expect_official_source": true
+  },
+  {
+    "id": "yueju-qa",
+    "scene": "非遗问答",
+    "query": "粤剧是什么",
+    "city": "广州",
+    "expected_task_type": "qa",
+    "expected_terms": [
+      "粤剧"
+    ],
+    "expect_official_source": true
+  },
+  {
+    "id": "lion-route",
+    "scene": "游客路线",
+    "query": "佛山醒狮文化路线",
+    "city": "佛山",
+    "expected_task_type": "route",
+    "expected_terms": [
+      "醒狮"
+    ],
+    "expect_official_source": true
+  },
+  {
+    "id": "lion-study",
+    "scene": "学生研学",
+    "query": "广东醒狮研学任务",
+    "city": "佛山",
+    "expected_task_type": "study",
+    "expected_terms": [
+      "醒狮"
+    ],
+    "expect_official_source": true
+  },
+  {
+    "id": "lion-family",
+    "scene": "亲子体验",
+    "query": "亲子观察醒狮鼓点",
+    "city": "佛山",
+    "expected_task_type": "route",
+    "expected_terms": [
+      "醒狮"
+    ],
+    "expect_official_source": true
+  },
+  {
+    "id": "lion-social",
+    "scene": "内容创作",
+    "query": "醒狮文化介绍文案",
+    "city": "佛山",
+    "expected_task_type": "social",
+    "expected_terms": [
+      "醒狮"
+    ],
+    "expect_official_source": true
+  },
+  {
+    "id": "lion-qa",
+    "scene": "非遗问答",
+    "query": "广东醒狮的寓意是什么",
+    "city": "佛山",
+    "expected_task_type": "qa",
+    "expected_terms": [
+      "醒狮"
+    ],
+    "expect_official_source": true
+  },
+  {
+    "id": "guangxiu-route",
+    "scene": "游客路线",
+    "query": "广州广绣传统工艺路线",
+    "city": "广州",
+    "expected_task_type": "route",
+    "expected_terms": [
+      "广绣"
+    ],
+    "expect_official_source": true
+  },
+  {
+    "id": "guangxiu-study",
+    "scene": "学生研学",
+    "query": "广绣针法研学记录",
+    "city": "广州",
+    "expected_task_type": "study",
+    "expected_terms": [
+      "广绣"
+    ],
+    "expect_official_source": true
+  },
+  {
+    "id": "guangxiu-family",
+    "scene": "亲子体验",
+    "query": "亲子观察广绣纹样",
+    "city": "广州",
+    "expected_task_type": "route",
+    "expected_terms": [
+      "广绣"
+    ],
+    "expect_official_source": true
+  },
+  {
+    "id": "guangxiu-social",
+    "scene": "内容创作",
+    "query": "广绣技艺图文",
+    "city": "广州",
+    "expected_task_type": "social",
+    "expected_terms": [
+      "广绣"
+    ],
+    "expect_official_source": true
+  },
+  {
+    "id": "guangxiu-qa",
+    "scene": "非遗问答",
+    "query": "广绣传统美术介绍",
+    "city": "广州",
+    "expected_task_type": "qa",
+    "expected_terms": [
+      "广绣"
+    ],
+    "expect_official_source": true
+  },
+  {
+    "id": "yingge-route",
+    "scene": "游客路线",
+    "query": "汕头潮阳英歌文化路线",
+    "city": "汕头",
+    "expected_task_type": "route",
+    "expected_terms": [
+      "潮阳英歌"
+    ],
+    "expect_official_source": true
+  },
+  {
+    "id": "yingge-study",
+    "scene": "学生研学",
+    "query": "潮阳英歌队形研学",
+    "city": "汕头",
+    "expected_task_type": "study",
+    "expected_terms": [
+      "潮阳英歌"
+    ],
+    "expect_official_source": true
+  },
+  {
+    "id": "yingge-family",
+    "scene": "亲子体验",
+    "query": "亲子了解潮阳英歌",
+    "city": "汕头",
+    "expected_task_type": "route",
+    "expected_terms": [
+      "潮阳英歌"
+    ],
+    "expect_official_source": true
+  },
+  {
+    "id": "yingge-social",
+    "scene": "内容创作",
+    "query": "潮阳英歌文化传播文案",
+    "city": "汕头",
+    "expected_task_type": "social",
+    "expected_terms": [
+      "潮阳英歌"
+    ],
+    "expect_official_source": true
+  },
+  {
+    "id": "yingge-qa",
+    "scene": "非遗问答",
+    "query": "潮阳英歌的历史特色",
+    "city": "汕头",
+    "expected_task_type": "qa",
+    "expected_terms": [
+      "潮阳英歌"
+    ],
+    "expect_official_source": true
+  },
+  {
+    "id": "puning-route",
+    "scene": "游客路线",
+    "query": "揭阳普宁英歌路线",
+    "city": "揭阳",
+    "expected_task_type": "route",
+    "expected_terms": [
+      "普宁英歌"
+    ],
+    "expect_official_source": true
+  },
+  {
+    "id": "puning-study",
+    "scene": "学生研学",
+    "query": "普宁英歌舞研学",
+    "city": "揭阳",
+    "expected_task_type": "study",
+    "expected_terms": [
+      "普宁英歌"
+    ],
+    "expect_official_source": true
+  },
+  {
+    "id": "puning-family",
+    "scene": "亲子体验",
+    "query": "孩子观察普宁英歌",
+    "city": "揭阳",
+    "expected_task_type": "route",
+    "expected_terms": [
+      "普宁英歌"
+    ],
+    "expect_official_source": true
+  },
+  {
+    "id": "puning-social",
+    "scene": "内容创作",
+    "query": "普宁英歌推广文案",
+    "city": "揭阳",
+    "expected_task_type": "social",
+    "expected_terms": [
+      "普宁英歌"
+    ],
+    "expect_official_source": true
+  },
+  {
+    "id": "puning-qa",
+    "scene": "非遗问答",
+    "query": "普宁英歌是什么",
+    "city": "揭阳",
+    "expected_task_type": "qa",
+    "expected_terms": [
+      "普宁英歌"
+    ],
+    "expect_official_source": true
+  },
+  {
+    "id": "tea-route",
+    "scene": "游客路线",
+    "query": "潮州工夫茶体验路线",
+    "city": "潮州",
+    "expected_task_type": "route",
+    "expected_terms": [
+      "工夫茶"
+    ],
+    "expect_official_source": true
+  },
+  {
+    "id": "tea-study",
+    "scene": "学生研学",
+    "query": "潮州工夫茶艺研学观察",
+    "city": "潮州",
+    "expected_task_type": "study",
+    "expected_terms": [
+      "工夫茶"
+    ],
+    "expect_official_source": true
+  },
+  {
+    "id": "tea-family",
+    "scene": "亲子体验",
+    "query": "亲子体验潮州工夫茶礼仪",
+    "city": "潮州",
+    "expected_task_type": "route",
+    "expected_terms": [
+      "工夫茶"
+    ],
+    "expect_official_source": true
+  },
+  {
+    "id": "tea-social",
+    "scene": "内容创作",
+    "query": "潮州工夫茶文化科普",
+    "city": "潮州",
+    "expected_task_type": "social",
+    "expected_terms": [
+      "工夫茶"
+    ],
+    "expect_official_source": true
+  },
+  {
+    "id": "tea-qa",
+    "scene": "非遗问答",
+    "query": "潮州工夫茶有哪些茶具",
+    "city": "潮州",
+    "expected_task_type": "qa",
+    "expected_terms": [
+      "工夫茶"
+    ],
+    "expect_official_source": true
+  },
+  {
+    "id": "shiwan-route",
+    "scene": "游客路线",
+    "query": "佛山石湾陶塑文化路线",
+    "city": "佛山",
+    "expected_task_type": "route",
+    "expected_terms": [
+      "石湾陶塑"
+    ],
+    "expect_official_source": true
+  },
+  {
+    "id": "shiwan-study",
+    "scene": "学生研学",
+    "query": "石湾陶塑研学任务",
+    "city": "佛山",
+    "expected_task_type": "study",
+    "expected_terms": [
+      "石湾陶塑"
+    ],
+    "expect_official_source": true
+  },
+  {
+    "id": "shiwan-family",
+    "scene": "亲子体验",
+    "query": "亲子认识石湾陶塑",
+    "city": "佛山",
+    "expected_task_type": "route",
+    "expected_terms": [
+      "石湾陶塑"
+    ],
+    "expect_official_source": true
+  },
+  {
+    "id": "shiwan-social",
+    "scene": "内容创作",
+    "query": "石湾陶塑推广文案",
+    "city": "佛山",
+    "expected_task_type": "social",
+    "expected_terms": [
+      "石湾陶塑"
+    ],
+    "expect_official_source": true
+  },
+  {
+    "id": "shiwan-qa",
+    "scene": "非遗问答",
+    "query": "石湾陶塑工艺介绍",
+    "city": "佛山",
+    "expected_task_type": "qa",
+    "expected_terms": [
+      "石湾陶塑"
+    ],
+    "expect_official_source": true
+  },
+  {
+    "id": "xiangyunsha-route",
+    "scene": "游客路线",
+    "query": "顺德香云纱文化路线",
+    "city": "佛山",
+    "expected_task_type": "route",
+    "expected_terms": [
+      "香云纱"
+    ],
+    "expect_official_source": true
+  },
+  {
+    "id": "xiangyunsha-study",
+    "scene": "学生研学",
+    "query": "香云纱染整研学",
+    "city": "佛山",
+    "expected_task_type": "study",
+    "expected_terms": [
+      "香云纱"
+    ],
+    "expect_official_source": true
+  },
+  {
+    "id": "xiangyunsha-family",
+    "scene": "亲子体验",
+    "query": "亲子了解香云纱",
+    "city": "佛山",
+    "expected_task_type": "route",
+    "expected_terms": [
+      "香云纱"
+    ],
+    "expect_official_source": true
+  },
+  {
+    "id": "xiangyunsha-social",
+    "scene": "内容创作",
+    "query": "香云纱非遗文化图文",
+    "city": "佛山",
+    "expected_task_type": "social",
+    "expected_terms": [
+      "香云纱"
+    ],
+    "expect_official_source": true
+  },
+  {
+    "id": "xiangyunsha-qa",
+    "scene": "非遗问答",
+    "query": "香云纱染整工艺是什么",
+    "city": "佛山",
+    "expected_task_type": "qa",
+    "expected_terms": [
+      "香云纱"
+    ],
+    "expect_official_source": true
+  },
+  {
+    "id": "guangdong-music-route",
+    "scene": "游客路线",
+    "query": "广州广东音乐文化体验路线",
+    "city": "广州",
+    "expected_task_type": "route",
+    "expected_terms": [
+      "广东音乐"
+    ],
+    "expect_official_source": true
+  },
+  {
+    "id": "guangdong-music-study",
+    "scene": "学生研学",
+    "query": "广东音乐代表性曲目研学任务",
+    "city": "广州",
+    "expected_task_type": "study",
+    "expected_terms": [
+      "广东音乐"
+    ],
+    "expect_official_source": true
+  },
+  {
+    "id": "guangdong-music-family",
+    "scene": "亲子体验",
+    "query": "亲子欣赏广东音乐活动",
+    "city": "广州",
+    "expected_task_type": "route",
+    "expected_terms": [
+      "广东音乐"
+    ],
+    "expect_official_source": true
+  },
+  {
+    "id": "guangdong-music-social",
+    "scene": "内容创作",
+    "query": "广东音乐科普社交文案",
+    "city": "广州",
+    "expected_task_type": "social",
+    "expected_terms": [
+      "广东音乐"
+    ],
+    "expect_official_source": true
+  },
+  {
+    "id": "guangdong-music-qa",
+    "scene": "非遗问答",
+    "query": "广东音乐有什么艺术特色",
+    "city": "广州",
+    "expected_task_type": "qa",
+    "expected_terms": [
+      "广东音乐"
+    ],
+    "expect_official_source": true
+  },
+  {
+    "id": "chaozhou-woodcarving-route",
+    "scene": "游客路线",
+    "query": "潮州木雕文化漫游路线",
+    "city": "潮州",
+    "expected_task_type": "route",
+    "expected_terms": [
+      "潮州木雕"
+    ],
+    "expect_official_source": true
+  },
+  {
+    "id": "chaozhou-woodcarving-study",
+    "scene": "学生研学",
+    "query": "潮州木雕装饰工艺研学",
+    "city": "潮州",
+    "expected_task_type": "study",
+    "expected_terms": [
+      "潮州木雕"
+    ],
+    "expect_official_source": true
+  },
+  {
+    "id": "chaozhou-woodcarving-family",
+    "scene": "亲子体验",
+    "query": "潮州木雕亲子观察体验",
+    "city": "潮州",
+    "expected_task_type": "route",
+    "expected_terms": [
+      "潮州木雕"
+    ],
+    "expect_official_source": true
+  },
+  {
+    "id": "chaozhou-woodcarving-social",
+    "scene": "内容创作",
+    "query": "写潮州木雕的宣传介绍",
+    "city": "潮州",
+    "expected_task_type": "social",
+    "expected_terms": [
+      "潮州木雕"
+    ],
+    "expect_official_source": true
+  },
+  {
+    "id": "chaozhou-woodcarving-qa",
+    "scene": "非遗问答",
+    "query": "潮州木雕有什么代表性特征",
+    "city": "潮州",
+    "expected_task_type": "qa",
+    "expected_terms": [
+      "潮州木雕"
+    ],
+    "expect_official_source": true
+  },
+  {
+    "id": "lufeng-shadow-play-route",
+    "scene": "游客路线",
+    "query": "汕尾陆丰皮影戏文化路线",
+    "city": "汕尾",
+    "expected_task_type": "route",
+    "expected_terms": [
+      "陆丰皮影"
+    ],
+    "expect_official_source": true
+  },
+  {
+    "id": "lufeng-shadow-play-study",
+    "scene": "学生研学",
+    "query": "陆丰皮影戏的学生研学任务",
+    "city": "汕尾",
+    "expected_task_type": "study",
+    "expected_terms": [
+      "陆丰皮影"
+    ],
+    "expect_official_source": true
+  },
+  {
+    "id": "lufeng-shadow-play-family",
+    "scene": "亲子体验",
+    "query": "陆丰皮影亲子手工观察",
+    "city": "汕尾",
+    "expected_task_type": "route",
+    "expected_terms": [
+      "陆丰皮影"
+    ],
+    "expect_official_source": true
+  },
+  {
+    "id": "lufeng-shadow-play-social",
+    "scene": "内容创作",
+    "query": "陆丰皮影戏介绍文案",
+    "city": "汕尾",
+    "expected_task_type": "social",
+    "expected_terms": [
+      "陆丰皮影"
+    ],
+    "expect_official_source": true
+  },
+  {
+    "id": "lufeng-shadow-play-qa",
+    "scene": "非遗问答",
+    "query": "陆丰皮影戏是什么",
+    "city": "汕尾",
+    "expected_task_type": "qa",
+    "expected_terms": [
+      "陆丰皮影"
+    ],
+    "expect_official_source": true
+  },
+  {
+    "id": "dragon-boat-storytelling-route",
+    "scene": "游客路线",
+    "query": "佛山顺德龙舟说唱文化路线",
+    "city": "佛山",
+    "expected_task_type": "route",
+    "expected_terms": [
+      "龙舟说唱"
+    ],
+    "expect_official_source": true
+  },
+  {
+    "id": "dragon-boat-storytelling-study",
+    "scene": "学生研学",
+    "query": "龙舟说唱曲艺研学",
+    "city": "佛山",
+    "expected_task_type": "study",
+    "expected_terms": [
+      "龙舟说唱"
+    ],
+    "expect_official_source": true
+  },
+  {
+    "id": "dragon-boat-storytelling-family",
+    "scene": "亲子体验",
+    "query": "亲子了解龙舟说唱",
+    "city": "佛山",
+    "expected_task_type": "route",
+    "expected_terms": [
+      "龙舟说唱"
+    ],
+    "expect_official_source": true
+  },
+  {
+    "id": "dragon-boat-storytelling-social",
+    "scene": "内容创作",
+    "query": "写一篇龙舟说唱文化文案",
+    "city": "佛山",
+    "expected_task_type": "social",
+    "expected_terms": [
+      "龙舟说唱"
+    ],
+    "expect_official_source": true
+  },
+  {
+    "id": "dragon-boat-storytelling-qa",
+    "scene": "非遗问答",
+    "query": "龙舟说唱与龙舟竞渡不同在哪里",
+    "city": "佛山",
+    "expected_task_type": "qa",
+    "expected_terms": [
+      "龙舟说唱"
+    ],
+    "expect_official_source": true
   }
 ]

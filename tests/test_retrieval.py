@@ -87,3 +87,29 @@ def test_retrieval_returns_warning_for_unmatched_query(tmp_path: Path) -> None:
     result = retrieve("量子计算芯片", data_dir=data_dir)
     assert result.is_empty
     assert result.warnings
+
+
+def test_registry_only_knowledge_base_can_be_indexed(tmp_path: Path) -> None:
+    import json
+
+    data_dir = tmp_path / "data"
+    data_dir.mkdir()
+    record = {
+        "id": "registry-only",
+        "name": "粤剧",
+        "aliases": ["广府大戏"],
+        "cities": ["广州"],
+        "category": "传统戏剧",
+        "facts": ["粤剧是广东传统戏剧"],
+        "source_name": "国家级名录",
+        "source_url": "https://www.ihchina.cn/project_details/13221/",
+        "verified_on": "2026-10-20",
+    }
+    (data_dir / "heritage_records.json").write_text(
+        json.dumps([record], ensure_ascii=False),
+        encoding="utf-8",
+    )
+    clear_cache()
+    indexed = get_index(data_dir)
+    assert len(indexed.chunks) == 1
+    assert indexed.chunks[0].title == "粤剧"

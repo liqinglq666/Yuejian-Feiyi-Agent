@@ -1,0 +1,375 @@
+[
+  {
+    "id": "cantonese-opera",
+    "name": "粤剧",
+    "aliases": [
+      "广府大戏"
+    ],
+    "cities": [
+      "广州",
+      "佛山"
+    ],
+    "category": "传统戏剧",
+    "registry_code": "Ⅳ-36",
+    "verified_on": "2026-10-20",
+    "source_name": "中国非物质文化遗产网·国家级名录",
+    "source_url": "https://www.ihchina.cn/project_details/13221/",
+    "audiences": [
+      "游客",
+      "学生研学",
+      "亲子家庭"
+    ],
+    "facts": [
+      "粤剧主要流行于广东及粤语使用地区，是融合唱念做打的地方戏曲。",
+      "粤剧舞台表演、传统服饰、音乐唱腔具有岭南文化特征。"
+    ],
+    "experience": [
+      "观察粤剧服装纹饰及行当与表演关系",
+      "在实际开放的文化场馆了解唱腔和乐器"
+    ],
+    "notice": "演出场次、场馆开放与票价需要现场或官方平台核实。"
+  },
+  {
+    "id": "guangdong-lion-dance",
+    "name": "狮舞（广东醒狮）",
+    "aliases": [
+      "广东醒狮",
+      "醒狮",
+      "南狮"
+    ],
+    "cities": [
+      "广州",
+      "佛山"
+    ],
+    "category": "传统舞蹈",
+    "registry_code": "Ⅲ-5",
+    "verified_on": "2026-10-20",
+    "source_name": "中国非物质文化遗产网·国家级名录",
+    "source_url": "https://www.ihchina.cn/project_details/12869.html",
+    "audiences": [
+      "游客",
+      "学生研学",
+      "亲子家庭"
+    ],
+    "facts": [
+      "狮舞常见于年节、庆典，具有祈福纳吉等民俗寓意。",
+      "南狮结合武术与舞蹈动作，讲究鼓乐与身体姿态配合。"
+    ],
+    "experience": [
+      "观察狮头造型、鼓点和步法",
+      "以鼓点变化和造型细节设计亲子观察题"
+    ],
+    "notice": "实际演出场次与地点需核实，不应默认每日可观看。"
+  },
+  {
+    "id": "guangxiu",
+    "name": "粤绣（广绣）",
+    "aliases": [
+      "广绣",
+      "粤绣"
+    ],
+    "cities": [
+      "广州"
+    ],
+    "category": "传统美术",
+    "registry_code": "Ⅶ-20",
+    "verified_on": "2026-10-20",
+    "source_name": "中国非物质文化遗产网·国家级名录",
+    "source_url": "https://www.ihchina.cn/project_details/13983/",
+    "audiences": [
+      "学生研学",
+      "亲子家庭",
+      "创作者"
+    ],
+    "facts": [
+      "广绣是粤绣的重要组成部分，以绣线、材料及多种针法见长。",
+      "广绣代表了岭南传统刺绣的美术工艺与装饰表达。"
+    ],
+    "experience": [
+      "观察丝线、金银线和不同针法形成的质感",
+      "设计纹样、工序或材料比较记录卡"
+    ],
+    "notice": "可参与的体验课程需查看具体场馆当期安排。"
+  },
+  {
+    "id": "chaoyang-yingge",
+    "name": "英歌（潮阳英歌）",
+    "aliases": [
+      "潮阳英歌",
+      "潮汕英歌舞",
+      "英歌舞",
+      "英歌"
+    ],
+    "cities": [
+      "汕头"
+    ],
+    "category": "传统舞蹈",
+    "registry_code": "Ⅲ-8",
+    "verified_on": "2026-10-20",
+    "source_name": "中国非物质文化遗产网·国家级名录",
+    "source_url": "https://www.ihchina.cn/project_details/12901/",
+    "audiences": [
+      "游客",
+      "学生研学",
+      "创作者"
+    ],
+    "facts": [
+      "潮阳英歌融合舞蹈、武术和戏剧表演，强调队列及鼓乐节奏。",
+      "表演常见于民俗节庆，具有浓厚的集体性与地方特色。"
+    ],
+    "experience": [
+      "观察双槌动作与阵形变化",
+      "记录面谱、节奏和队伍协作"
+    ],
+    "notice": "英歌演出具有活动属性，不可假定固定每日演出。"
+  },
+  {
+    "id": "puning-yingge",
+    "name": "英歌（普宁英歌）",
+    "aliases": [
+      "普宁英歌",
+      "英歌舞",
+      "英歌"
+    ],
+    "cities": [
+      "揭阳"
+    ],
+    "category": "传统舞蹈",
+    "registry_code": "Ⅲ-8",
+    "verified_on": "2026-10-20",
+    "source_name": "中国非物质文化遗产网·国家级名录",
+    "source_url": "https://www.ihchina.cn/project_details/12902/",
+    "audiences": [
+      "游客",
+      "学生研学",
+      "创作者"
+    ],
+    "facts": [
+      "普宁英歌是广东揭阳普宁地区具有代表性的传统舞蹈。",
+      "英歌将舞蹈、武术和戏剧人物表现结合，具节庆巡游特色。"
+    ],
+    "experience": [
+      "观察舞队排列和动作节奏",
+      "辨析普宁与潮阳英歌的地区背景"
+    ],
+    "notice": "表演时间与场地需要官方活动公告核实。"
+  },
+  {
+    "id": "chaozhou-tea",
+    "name": "茶艺（潮州工夫茶艺）",
+    "aliases": [
+      "潮汕工夫茶",
+      "潮州工夫茶",
+      "工夫茶"
+    ],
+    "cities": [
+      "潮州",
+      "汕头"
+    ],
+    "category": "民俗",
+    "registry_code": "Ⅹ-107",
+    "verified_on": "2026-10-20",
+    "source_name": "中国非物质文化遗产网·国家级名录",
+    "source_url": "https://www.ihchina.cn/art/detail/id/15247.html",
+    "audiences": [
+      "游客",
+      "学生研学",
+      "亲子家庭"
+    ],
+    "facts": [
+      "潮州工夫茶艺包含茶具、温杯、冲泡、分茶及敬茶等礼仪程序。",
+      "它是广东潮汕地区具有代表性的饮茶和待客习俗。"
+    ],
+    "experience": [
+      "记录主要茶具与沏茶次序",
+      "观察礼仪与家庭交往的联系"
+    ],
+    "notice": "体验点是否提供讲解或课程需提前确认。"
+  },
+  {
+    "id": "shiwan-pottery",
+    "name": "石湾陶塑技艺",
+    "aliases": [
+      "石湾陶塑",
+      "佛山陶塑",
+      "石湾公仔"
+    ],
+    "cities": [
+      "佛山"
+    ],
+    "category": "传统技艺",
+    "registry_code": "Ⅷ-3",
+    "verified_on": "2026-10-20",
+    "source_name": "中国非物质文化遗产网·国家级名录",
+    "source_url": "https://www.ihchina.cn/project_details/14263.html",
+    "audiences": [
+      "亲子家庭",
+      "学生研学",
+      "游客"
+    ],
+    "facts": [
+      "石湾陶塑技艺集中分布于佛山石湾地区，代表性作品包括人物、动物及瓦脊陶塑。",
+      "制作涉及泥料、造型、装饰、上釉和烧制等工艺环节。"
+    ],
+    "experience": [
+      "观察陶塑人物神态、釉色和成型痕迹",
+      "设计陶塑工序观察记录"
+    ],
+    "notice": "烧制和亲子手作开放安排以实际体验机构为准。"
+  },
+  {
+    "id": "xiangyunsha",
+    "name": "香云纱染整技艺",
+    "aliases": [
+      "香云纱",
+      "晒莨"
+    ],
+    "cities": [
+      "佛山"
+    ],
+    "category": "传统技艺",
+    "registry_code": "Ⅷ-107",
+    "verified_on": "2026-10-20",
+    "source_name": "中国非物质文化遗产网·国家级名录",
+    "source_url": "https://www.ihchina.cn/project_details/14496",
+    "audiences": [
+      "游客",
+      "学生研学",
+      "创作者"
+    ],
+    "facts": [
+      "香云纱染整技艺又称晒莨，与佛山顺德等地的传统丝绸染整有关。",
+      "工序利用薯莨等天然材料，呈现独特的色泽与面料质感。"
+    ],
+    "experience": [
+      "比较晒莨工艺中材料、色泽和纹理的变化",
+      "围绕自然材料与传统技艺设计文化科普内容"
+    ],
+    "notice": "参访生产场所与体验操作需联系机构确认。"
+  },
+  {
+    "id": "guangdong-music",
+    "name": "广东音乐",
+    "aliases": [
+      "广府音乐",
+      "岭南丝竹"
+    ],
+    "cities": [
+      "广州",
+      "江门"
+    ],
+    "category": "传统音乐",
+    "registry_code": "Ⅱ-49",
+    "verified_on": "2026-10-20",
+    "source_name": "中国非物质文化遗产网·国家级名录",
+    "source_url": "https://www.ihchina.cn/project_details/12551",
+    "audiences": [
+      "游客",
+      "学生研学",
+      "创作者"
+    ],
+    "facts": [
+      "广东音乐是主要流传于广州及珠江三角洲广府方言区的传统丝竹乐种。",
+      "代表性曲目包括《雨打芭蕉》《旱天雷》《步步高》等。"
+    ],
+    "experience": [
+      "对比传统丝竹乐器音色与曲调",
+      "围绕代表性曲目设计乐器听辨任务"
+    ],
+    "notice": "音乐会与体验课程请以演出机构公布的最新时间为准。"
+  },
+  {
+    "id": "chaozhou-woodcarving",
+    "name": "潮州木雕",
+    "aliases": [
+      "潮汕木雕",
+      "潮州金漆木雕"
+    ],
+    "cities": [
+      "潮州"
+    ],
+    "category": "传统美术",
+    "registry_code": "Ⅶ-40",
+    "verified_on": "2026-10-20",
+    "source_name": "中国非物质文化遗产网·国家级名录",
+    "source_url": "https://www.ihchina.cn/project_details/14020",
+    "audiences": [
+      "游客",
+      "学生研学",
+      "亲子家庭",
+      "创作者"
+    ],
+    "facts": [
+      "潮州木雕是潮州地区的传统雕刻艺术，常用于建筑、家具和祭祀器具装饰。",
+      "潮州木雕与潮州建筑装饰、民俗生活紧密相连。"
+    ],
+    "experience": [
+      "观察门窗和梁架的木雕纹样及题材",
+      "比较镂雕、浮雕等装饰效果并记录"
+    ],
+    "notice": "参观建筑及手工作坊须以开放公告为准。"
+  },
+  {
+    "id": "lufeng-shadow-play",
+    "name": "皮影戏（陆丰皮影戏）",
+    "aliases": [
+      "陆丰皮影",
+      "陆丰皮影戏",
+      "皮影戏"
+    ],
+    "cities": [
+      "汕尾"
+    ],
+    "category": "传统戏剧",
+    "registry_code": "Ⅳ-91",
+    "verified_on": "2026-10-20",
+    "source_name": "中国非物质文化遗产网·国家级名录",
+    "source_url": "https://www.ihchina.cn/project_details/13399/",
+    "audiences": [
+      "游客",
+      "学生研学",
+      "亲子家庭",
+      "创作者"
+    ],
+    "facts": [
+      "皮影戏借助灯光照射兽皮或纸板制成的人物形象来表演故事。",
+      "陆丰皮影戏是广东汕尾地区传承的传统戏剧，具有地方演出与制作特色。"
+    ],
+    "experience": [
+      "观察皮影人物的轮廓、关节与舞台光影",
+      "用剪纸与光源演示皮影投影原理"
+    ],
+    "notice": "演出安排及教育体验需向实际机构查询。"
+  },
+  {
+    "id": "dragon-boat-storytelling",
+    "name": "龙舟说唱",
+    "aliases": [
+      "龙舟歌",
+      "唱龙舟",
+      "龙舟说唱"
+    ],
+    "cities": [
+      "佛山"
+    ],
+    "category": "曲艺",
+    "registry_code": "Ⅴ-31",
+    "verified_on": "2026-10-20",
+    "source_name": "中国非物质文化遗产网·国家级名录",
+    "source_url": "https://www.ihchina.cn/project_details/13637/",
+    "audiences": [
+      "游客",
+      "学生研学",
+      "创作者"
+    ],
+    "facts": [
+      "龙舟说唱又称龙舟歌，是广东珠三角地区的一种曲艺形式，与龙舟竞渡不是同一种项目。",
+      "传统表演常以小锣或小鼓辅助说唱，唱词具有叙事与抒情特色。"
+    ],
+    "experience": [
+      "聆听七言唱词的叙事节奏",
+      "辨析龙舟说唱与端午龙舟竞渡的文化差异"
+    ],
+    "notice": "当用户询问赛龙舟或龙舟竞渡时，不要将本项目当成水上竞赛。"
+  }
+]
