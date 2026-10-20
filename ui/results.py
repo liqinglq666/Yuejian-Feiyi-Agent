@@ -200,8 +200,8 @@ def _queue_quick_revision(request: TaskRequest, action: str) -> None:
 
 def _render_revision_panel(request: TaskRequest) -> None:
     with st.container(border=True):
-        st.markdown("### ✨ 继续打磨")
-        st.caption("快捷调整会同步更新当前方案的场景、时间和输出类型。")
+        st.markdown("### 精修这份提案")
+        st.caption("选择一个方向继续优化，或提出你的个性化修改要求。")
         for action in REVISION_PRESETS:
             if st.button(
                 action,
@@ -235,7 +235,7 @@ def _render_revision_panel(request: TaskRequest) -> None:
 
 
 def _render_downloads(request: TaskRequest, answer: str, sources: str) -> None:
-    st.markdown("#### 保存这份方案")
+    st.markdown("#### 保存你的文化提案")
     markdown = build_markdown(request, answer, sources)
     plain_text = build_plain_text(request, answer, sources)
     docx = build_docx(request, answer, sources)
@@ -268,9 +268,9 @@ def _render_downloads(request: TaskRequest, answer: str, sources: str) -> None:
 
 def render_results() -> None:
     render_section_heading(
-        "RESULT",
-        "你的非遗方案",
-        "生成结果会根据任务类型自动拆成更适合阅读和使用的视图。",
+        "CHAPTER 03 / YOUR EXPERIENCE",
+        "你的岭南文化提案",
+        "内容按体验场景精心整理，可继续调整、查看资料并保存。",
     )
 
     root_payload = st.session_state.get("root_request")
