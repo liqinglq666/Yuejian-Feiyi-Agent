@@ -10,8 +10,8 @@ permissions:
   contents: read
 
 jobs:
-  test:
-    name: test (Python ${{ matrix.python-version }})
+  python-test:
+    name: backend + legacy tests (Python ${{ matrix.python-version }})
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -39,3 +39,23 @@ jobs:
           path: pytest-report.xml
           if-no-files-found: warn
           retention-days: 3
+
+  web-build:
+    name: Next.js lint, types and production build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install web dependencies
+        run: npm install --no-audit --no-fund
+      - name: Typecheck
+        run: npm run typecheck
+      - name: ESLint
+        run: npm run lint
+      - name: Production build
+        run: npm run build
