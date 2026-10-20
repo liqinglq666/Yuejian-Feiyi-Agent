@@ -218,7 +218,7 @@ def _document_signature(data_dir: Path) -> tuple[tuple[str, int, int], ...]:
         return ()
     records: list[tuple[str, int, int]] = []
     for path in sorted(data_dir.rglob("*")):
-        if path.is_file() and path.suffix.lower() in SUPPORTED_EXTENSIONS:
+        if path.is_file() and (path.suffix.lower() in SUPPORTED_EXTENSIONS or path.name == "heritage_records.json"):
             stat = path.stat()
             records.append((path.as_posix(), stat.st_mtime_ns, stat.st_size))
     return tuple(records)
