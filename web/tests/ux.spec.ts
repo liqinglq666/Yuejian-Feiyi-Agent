@@ -59,6 +59,13 @@ async function mockService(page: import("@playwright/test").Page) {
   );
 }
 
+async function captureForVisualReview(page: import("@playwright/test").Page, name: string) {
+  const bytes = await page.screenshot({ type: "jpeg", quality: 39, animations: "disabled" });
+  const content = bytes.toString("base64");
+  const chunks = content.match(/.{1,14000}/g) || [];
+  for (let i=0;i<chunks.length;i++) console.log("UISNAP:"+name+":"+i+"/"+chunks.length+":"+chunks[i]);
+}
+
 async function checkNoHorizontalOverflow(page: import("@playwright/test").Page) {
   const sizes = await page.evaluate(() => ({
     scroll: document.documentElement.scrollWidth,
@@ -74,6 +81,7 @@ for (const width of [375, 768, 1440]) {
     await page.goto("/");
     await expect(page.getByRole("heading", { name: "找到适合你的非遗体验" })).toBeVisible();
     await checkNoHorizontalOverflow(page);
+    if (width === 375 || width === 1440) await captureForVisualReview(page, "home-"+width);
     await page.getByRole("button", { name: /亲子体验/ }).first().click();
     await expect(page.getByRole("button", { name: /亲子体验/ }).first()).toHaveAttribute("aria-pressed", "true");
     await page.getByLabel("你希望体验什么？").fill(draftText);
@@ -81,6 +89,7 @@ for (const width of [375, 768, 1440]) {
     await expect(page).toHaveURL(/\/studio$/);
     await expect(page.locator("#request-input")).toHaveValue(draftText);
     await checkNoHorizontalOverflow(page);
+    if (width === 375 || width === 1440) await captureForVisualReview(page, "studio-"+width);
 
     if (width <= 760) {
       await page.locator(".mobile-scene-bar button").first().click();
