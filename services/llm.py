@@ -109,6 +109,13 @@ def validate_base_url(
         raise ModelGatewayError("模型服务地址不能包含 query 或 fragment。")
 
     host = parsed.hostname.lower()
+    if not enforce_server_allowlist and os.getenv("VERCEL") == "1":
+        # BYOK must not turn our publicly deployed backend into a generic SSRF proxy.
+        # A deliberately configured extra host preserves custom provider support.
+        defaults = {"dashscope.aliyuncs.com", "api.deepseek.com", "api.openai.com"}
+        additional = {v.strip().lower() for v in os.getenv("BYOK_ALLOWED_HOSTS", "").split(",") if v.strip()}
+        if host not in defaults | additional:
+            raise ModelGatewayError("此自定义 API 域名尚未获本站允许，请联系管理员添加可信域名。")
     if enforce_server_allowlist:
         allowed_hosts = {
             item.strip().lower()

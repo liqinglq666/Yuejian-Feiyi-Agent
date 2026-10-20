@@ -34,6 +34,7 @@ from core.revisions import REVISION_PRESETS, plan_custom_revision, plan_quick_re
 from services.export import build_docx, build_markdown, build_plain_text
 from services.llm import ModelGatewayError, collect_stream_with_safe_fallback
 from services.output import sanitize_model_output
+from services.quality import inspect_answer
 from services.prompt_builder import build_initial_messages, build_revision_messages
 from services.retrieval import KnowledgeBaseError, retrieve
 
@@ -181,6 +182,7 @@ def _generation_events(config, task: TaskRequest, revision: RevisionRequest | No
                     "answer": cleaned,
                     "sources": bundle.source_markdown(),
                     "request": task.to_dict(),
+                    "quality": inspect_answer(cleaned, task.task_type, bundle),
                     "metrics": {
                         "first_token_ms": first_token_ms,
                         "total_ms": round((now - began_at) * 1000),
