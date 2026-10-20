@@ -29,15 +29,15 @@ def render_sidebar() -> None:
         st.markdown(
             """
             <div class="brand-card">
-                <div class="brand-title">🦁 粤见非遗</div>
-                <div class="brand-sub">把广东非遗知识转化为可出发、可学习、可发布的真实方案。</div>
-                <div class="brand-badge">LINGNAN CULTURE AGENT</div>
+                <div class="brand-title">粤见非遗 · YUEJIAN</div>
+                <div class="brand-sub">让传统可触，让岭南可见。用智能体验，重新走近鲜活的非遗文化。</div>
+                <div class="brand-badge">LINGNAN CULTURAL ATELIER</div>
             </div>
             """,
             unsafe_allow_html=True,
         )
 
-        if st.button("＋ 新建方案", type="primary", use_container_width=True):
+        if st.button("＋ 开启新体验", type="primary", use_container_width=True):
             start_new_plan(st.session_state)
             set_toast(st.session_state, "已打开一张新的非遗灵感纸", "🪭")
             st.rerun()
@@ -224,10 +224,10 @@ def _render_model_settings() -> None:
 
 
 def _render_recent_plans() -> None:
-    st.markdown("### 最近方案")
+    st.markdown("### 我的文化提案")
     recent = st.session_state.get("recent_plans", [])
     if not recent:
-        st.caption("生成后的方案会保留在当前会话中。")
+        st.caption("完成首次生成后，你的提案会暂存在本次会话中。")
         return
 
     for index, item in enumerate(recent):
