@@ -57,9 +57,11 @@ body{background:var(--folk-cream);color:var(--folk-ink)}
 .folk-primary:hover{background:#bd163e;transform:translateY(-1px)}
 .folk-secondary{color:#372a30;background:var(--folk-yellow)}
 .folk-secondary:hover{background:#ffef4a}
-.folk-hero__visual{position:absolute;z-index:0;pointer-events:none;top:-5%;bottom:-10%;left:35%;right:-7%;background:url('/heritage/lingnan-festival-hero-desktop.webp') 58% 52%/cover no-repeat;opacity:.96;
- -webkit-mask-image:linear-gradient(to right,transparent 0%,#000 27%,#000 100%);
- mask-image:linear-gradient(to right,transparent 0%,#000 27%,#000 100%)}
+.folk-hero__visual{position:absolute;z-index:0;pointer-events:none;top:-5%;bottom:-10%;left:35%;right:-7%;background:url('/heritage/lingnan-festival-hero-desktop.webp') 58% 52%/cover no-repeat;opacity:1;
+ /* The illustration already has cream-colored breathing room for copy.
+    Keep only a narrow edge blend to avoid washing out the artwork. */
+ -webkit-mask-image:linear-gradient(to right,transparent 0%,#000 9%,#000 100%);
+ mask-image:linear-gradient(to right,transparent 0%,#000 9%,#000 100%)}
 .folk-hero__caption{position:absolute;right:12px;bottom:20px;z-index:1;font-size:9px;letter-spacing:.17em;color:#8c697c;background:#fffef6d6;padding:5px 8px;border-radius:5px}
 /* Main content: one primary input, three optional jumping-off points */
 .folk-creation{padding-top:43px;padding-bottom:53px;max-width:1180px;scroll-margin-top:99px}
@@ -111,7 +113,7 @@ body{background:var(--folk-cream);color:var(--folk-ink)}
 .folk-footer strong{font-family:var(--serif);font-size:17px;color:#433036}
 .folk-creation button,.folk-hero button{touch-action:manipulation}
 @media(max-width:1050px){
- .folk-hero__visual{left:38%;right:-19%;opacity:.9}
+ .folk-hero__visual{left:38%;right:-19%;opacity:1}
  .folk-creation__layout{grid-template-columns:minmax(0,1.55fr) minmax(238px,1fr)}
  .folk-composer{padding:22px}
  .folk-inspiration{padding:20px 14px}
@@ -123,7 +125,7 @@ body{background:var(--folk-cream);color:var(--folk-ink)}
  .folk-hero__inner{min-height:380px;padding-top:38px;padding-bottom:39px}
  .folk-hero__copy{width:76%;max-width:530px}
  .folk-hero h1{font-size:clamp(35px,6.5vw,50px)}
- .folk-hero__visual{left:32%;right:-40%;opacity:.66}
+ .folk-hero__visual{left:39%;right:-40%;opacity:.97}
  .folk-hero__copy>p{max-width:390px;font-size:14px}
  .folk-creation__layout{display:block}
  .folk-inspiration{margin-top:17px}
@@ -137,7 +139,7 @@ body{background:var(--folk-cream);color:var(--folk-ink)}
 @media(max-width:540px){
  .folk-hero__inner{min-height:470px;align-items:flex-start;padding-top:29px;padding-bottom:205px}
  .folk-hero__copy{width:100%}
- .folk-hero__visual{top:auto;bottom:-40px;left:8%;right:-10%;height:290px;background-image:url('/heritage/lingnan-festival-hero-mobile.webp');background-size:cover;background-position:center 70%;opacity:.9;-webkit-mask-image:linear-gradient(to bottom,transparent 0,#000 40%,#000 95%);mask-image:linear-gradient(to bottom,transparent 0,#000 40%,#000 95%)}
+ .folk-hero__visual{top:auto;bottom:-40px;left:8%;right:-10%;height:290px;background-image:url('/heritage/lingnan-festival-hero-mobile.webp');background-size:cover;background-position:center 70%;opacity:1;-webkit-mask-image:linear-gradient(to bottom,transparent 0,#000 15%,#000 100%);mask-image:linear-gradient(to bottom,transparent 0,#000 15%,#000 100%)}
  .folk-hero h1{font-size:36px;line-height:1.27;margin:0 0 14px}
  .folk-hero h1 span{white-space:normal}
  .folk-hero__copy>p{max-width:340px;font-size:13px;line-height:1.75}

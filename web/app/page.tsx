@@ -132,7 +132,7 @@ export default function HomePage() {
               </div>
               <div className="folk-inspiration__list">
                 {inspiration.map(item=><button className="folk-inspiration__item" key={item.title} type="button" onClick={()=>chooseExample(item)}>
-                  <span className="folk-inspiration__image"><Image src={item.image} alt="" fill sizes="(max-width: 720px) 90px, 112px"/></span>
+                  <span className="folk-inspiration__image"><Image src={item.image} alt="" fill unoptimized sizes="(max-width: 720px) 90px, 112px"/></span>
                   <span className="folk-inspiration__text"><strong>{item.title}</strong><small>{item.note}</small></span>
                   <span className="folk-inspiration__arrow" aria-hidden="true">↗</span>
                 </button>)}
