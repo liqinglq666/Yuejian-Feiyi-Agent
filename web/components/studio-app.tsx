@@ -183,7 +183,7 @@ export function StudioApp() {
   }, [drawerOpen]);
 
   useEffect(() => {
-    void refreshStatus();
+    queueMicrotask(() => void refreshStatus());
     // Defer hydration to a callback; initial render stays SSR-safe.
     queueMicrotask(() => {
       try {
