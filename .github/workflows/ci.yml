@@ -32,7 +32,7 @@ jobs:
       - name: Pytest
         run: pytest --junitxml=pytest-report.xml
       - name: RAG grounded benchmark (40 task cases)
-        run: python scripts/run_benchmark.py
+        run: python -m scripts.run_benchmark
       - name: Upload test report on failure
         if: failure()
         uses: actions/upload-artifact@v4
