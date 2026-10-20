@@ -16,7 +16,7 @@ from ui.components import (
     render_section_heading,
 )
 
-WORKSPACE_UI_BUILD_ID = "2026.08.19.6"
+WORKSPACE_UI_BUILD_ID = "2026.10.20.editorial"
 
 SCENES: dict[str, tuple[str, str]] = {
     "游客路线": ("🧭", "自动规划非遗路线"),
@@ -143,17 +143,20 @@ def _select_scene_callback(scene: str) -> None:
 
 def _render_scene_selector() -> str:
     render_section_heading(
-        "STEP 01",
-        "选择你想做什么",
-        "不同场景会使用不同的输出结构，生成结果不再只是同一种长文。",
+        "CHAPTER 01 / DISCOVER",
+        "选择一种，打开岭南的方式",
+        "从漫游、研学到内容创作，选择你此刻最想开启的体验。",
     )
     selected = str(st.session_state.selected_scene)
     columns = st.columns(len(SCENES), gap="small")
-    for column, (scene, (icon, description)) in zip(columns, SCENES.items(), strict=True):
+    for index, (column, (scene, (_, description))) in enumerate(
+        zip(columns, SCENES.items(), strict=True), start=1
+    ):
         with column:
             public_name = SCENE_PUBLIC_NAMES.get(scene, scene)
+            st.html(f'<div class="scene-card-index">{index:02d} / EXPLORE</div>')
             st.button(
-                f"{icon} {public_name}",
+                public_name,
                 key=f"scene_{scene}",
                 type="primary" if scene == selected else "secondary",
                 use_container_width=True,
@@ -162,12 +165,11 @@ def _render_scene_selector() -> str:
                 args=(scene,),
                 help=SCENE_DESCRIPTIONS.get(scene, description),
             )
-            st.caption(description)
+            st.html(f'<div class="scene-card-caption">{html.escape(description)}</div>')
     return selected
 
-
 def _render_examples() -> None:
-    st.html('<div class="prompt-hint">没有灵感？从这些常用需求开始：</div>')
+    st.html('<div class="prompt-hint">没有想好怎么写？试试以下灵感：</div>')
     columns = st.columns(len(EXAMPLES), gap="small")
     for column, (label, preset) in zip(columns, EXAMPLES.items(), strict=True):
         with column:
@@ -179,7 +181,6 @@ def _render_examples() -> None:
                 on_click=_apply_example_callback,
                 args=(preset,),
             )
-
 
 def _model_status_text() -> str:
     source = active_model_source(st.session_state)
@@ -213,21 +214,21 @@ def _workspace_aside_markup(
     return "".join(
         [
             f'<div class="workspace-aside" data-ui-build="{WORKSPACE_UI_BUILD_ID}">',
-            f'<div class="workspace-aside-title">本次将生成 · {html.escape(public_name)}</div>',
+            f'<div class="workspace-aside-title">你的专属文化提案 · {html.escape(public_name)}</div>',
             f'<div class="workspace-aside-copy">{html.escape(description)}</div>',
             '<div class="condition-strip">',
             *pills,
             "</div>",
             '<div class="aside-list">',
-            '<div class="aside-item"><div class="aside-icon">01</div><div class="aside-text"><strong>按场景组织结果</strong><span>不同任务使用不同输出结构</span></div></div>',
-            '<div class="aside-item"><div class="aside-icon">02</div><div class="aside-text"><strong>检索广东非遗知识</strong><span>文化事实优先结合项目知识库</span></div></div>',
-            '<div class="aside-item"><div class="aside-icon">03</div><div class="aside-text"><strong>生成后继续调整</strong><span>支持亲子、研学、图文和短视频转换</span></div></div>',
+            '<div class="aside-item"><div class="aside-icon">01</div><div class="aside-text"><strong>理解你的兴趣</strong><span>结合出行偏好与所选文化主题</span></div></div>',
+            '<div class="aside-item"><div class="aside-icon">02</div><div class="aside-text"><strong>检索非遗知识</strong><span>参考广东文化项目知识资料</span></div></div>',
+            '<div class="aside-item"><div class="aside-icon">03</div><div class="aside-text"><strong>生成可用提案</strong><span>按场景呈现，并可下载与修改</span></div></div>',
             "</div>",
-            f'<div class="aside-model-status"><span>模型服务</span><strong>{html.escape(api_text)}</strong></div>',
+            f'<div class="aside-model-status"><span>AI SERVICE STATUS</span><strong>{html.escape(api_text)}</strong></div>',
+            '<div class="editorial-aside-bottom">粤 · 见</div>',
             "</div>",
         ]
     )
-
 
 def _render_workspace_aside(
     scene: str,
@@ -257,10 +258,11 @@ def render_workspace() -> TaskRequest | None:
     with left:
         with st.container(border=True):
             render_section_heading(
-                "STEP 02",
-                "告诉我你想怎样体验岭南",
-                "需求写得越具体，路线、任务和成品就越贴近你的真实场景。",
+                "CHAPTER 02 / CUSTOMIZE",
+                "说说你的岭南故事",
+                "告诉我们同行的人、出行时间与心中的兴趣，余下交给智能策展。",
             )
+            st.html('<div class="editorial-input-label"><strong>体验灵感</strong><span>YOUR IDEA / 自由描述</span></div>')
 
             user_input = st.text_area(
                 "一句话需求",
@@ -284,7 +286,7 @@ def render_workspace() -> TaskRequest | None:
                     help="图文会生成可发布正文；短视频会生成 60 秒分镜、旁白和拍摄建议。",
                 )
 
-            st.markdown("#### 补充条件")
+            st.html('<div class="editorial-subheading"><strong>定制你的体验</strong><small>DETAILS / 可按需调整</small></div>')
             c1, c2, c3 = st.columns(3)
             with c1:
                 city = st.selectbox(
@@ -331,7 +333,7 @@ def render_workspace() -> TaskRequest | None:
             )
 
             if not pending and st.button(
-                "生成我的非遗方案 →",
+                "生成专属文化提案  ↗",
                 type="primary",
                 use_container_width=True,
             ):
