@@ -260,6 +260,7 @@ export function StudioApp() {
               request:event.request, answer:event.answer, sources:event.sources,
               createdAt:new Date().toLocaleString("zh-CN"),
               metrics:event.metrics,
+              quality:event.quality,
               revisions:kind === "revise" && previous
                 ? [...previous.revisions, {instruction:preset || revision, createdAt:new Date().toLocaleTimeString("zh-CN")}].slice(-10)
                 : [],

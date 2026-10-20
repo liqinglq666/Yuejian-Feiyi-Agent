@@ -249,6 +249,7 @@ def stream_chat(
     temperature: float = 0.62,
     max_tokens: int = 1600,
 ) -> Generator[str, None, None]:
+    stream = None
     try:
         stream = build_client(config).chat.completions.create(
             **_completion_request_kwargs(
@@ -267,6 +268,15 @@ def stream_chat(
                 yield delta.content
     except Exception as exc:
         raise _public_error(exc, config=config, streaming=True) from exc
+    finally:
+        # Ensure closing an aborted SSE stream also closes the provider stream.
+        # Network disconnect cannot guarantee refunded provider billing.
+        close = getattr(stream, "close", None)
+        if callable(close):
+            try:
+                close()
+            except Exception:
+                logger.debug("Provider stream close failed", exc_info=True)
 
 
 def complete_chat(

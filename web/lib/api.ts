@@ -47,7 +47,7 @@ export async function streamProposal(
     if (kind === "delta") onEvent({ type: "delta", text: String(value.text) });
     if (kind === "complete") {
       completed = true;
-      onEvent({ type: "complete", answer: String(value.answer), sources: String(value.sources), request: value.request as unknown as TaskRequest, metrics: value.metrics as {first_token_ms:number|null;total_ms:number}|undefined });
+      onEvent({ type: "complete", answer: String(value.answer), sources: String(value.sources), request: value.request as unknown as TaskRequest, metrics: value.metrics as {first_token_ms:number|null;total_ms:number}|undefined, quality: value.quality as {sections_complete:boolean;missing_sections:string[];official_source_count:number;needs_fact_verification:boolean}|undefined });
     }
     if (kind === "failure") {
       completed = true;
