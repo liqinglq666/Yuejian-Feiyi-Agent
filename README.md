@@ -2,6 +2,8 @@
 
 > 走近岭南，遇见非遗之美。一个面向广东文化探索、非遗研学、亲子体验与内容创作的全栈 AI 应用。
 
+**网站：** https://yuejian-feiyi.vercel.app/
+
 ![粤见非遗岭南文化插画](./assets/readme_hero_lingnan.png)
 
 ## 全新 Web 架构
@@ -79,7 +81,7 @@ app.py                      # 旧版 Streamlit（兼容参考）
 - 匿名演示环境必须在 API 网关配置共享限流与用量上限；如正式公开服务，建议增加登录、配额、请求审计和 Redis 限流。
 - 前端和后端为独立进程，**不能直接把仓库作为 Streamlit Cloud 项目部署成新 Web 版**。
 
-> 现有 Streamlit 演示站点： https://yuejian-feiyi-agent.streamlit.app/ （仅用于旧版参考，不代表 Next.js 新站已部署）。
+> 正式网站：https://yuejian-feiyi.vercel.app/ 。旧 Streamlit 页面仅作为兼容参考。
 
 ## 测试
 
