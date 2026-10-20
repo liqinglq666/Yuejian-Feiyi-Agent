@@ -19,6 +19,8 @@ def test_build_platform_config_reads_server_environment(
     monkeypatch.setenv("OPENAI_API_KEY", "server-secret")
     monkeypatch.setenv("OPENAI_BASE_URL", "https://api.example.com/v1")
     monkeypatch.setenv("MODEL_NAME", "example-model")
+    monkeypatch.setenv("UPSTASH_REDIS_REST_URL", "https://demo.upstash.io")
+    monkeypatch.setenv("UPSTASH_REDIS_REST_TOKEN", "demo-token")
 
     config = build_platform_model_config()
 
@@ -100,6 +102,8 @@ def test_auto_mode_never_silently_spends_user_quota(
 
 
 def test_auto_mode_uses_platform_when_available(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("UPSTASH_REDIS_REST_URL", "https://demo.upstash.io")
+    monkeypatch.setenv("UPSTASH_REDIS_REST_TOKEN", "demo-token")
     monkeypatch.setenv("PLATFORM_API_ENABLED", "true")
     monkeypatch.setenv("OPENAI_API_KEY", "server-secret")
     state = {

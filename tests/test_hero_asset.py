@@ -36,7 +36,7 @@ def test_readme_uses_the_png_hero_asset() -> None:
     readme = Path("README.md").read_text(encoding="utf-8")
 
     assert "./assets/readme_hero_lingnan.png" in readme
-    assert "https://yuejian-feiyi-agent.streamlit.app/" in readme
+    assert "https://yuejian-feiyi.vercel.app/" in readme
 
 
 def test_old_hero_assets_are_not_referenced() -> None:
