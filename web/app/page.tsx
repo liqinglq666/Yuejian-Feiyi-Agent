@@ -1,101 +1,106 @@
-import Link from "next/link";
-import { ArrowDown, ArrowRight, ArrowUpRight, BookOpen, Camera, Compass, Feather, Flower2, GraduationCap, HeartHandshake, MapPin, Sparkles, WandSparkles } from "lucide-react";
-import { SiteHeader } from "@/components/site-header";
+"use client";
 
-const journeys = [
-  { id:"01", title:"城市非遗漫游", en:"CITY WALK", icon:Compass, copy:"以街巷为线索，走进活着的文化遗产。发现粤剧、古建与手艺背后的城市记忆。", note:"路线 · 体验 · 攻略", scene:"游客路线" },
-  { id:"02", title:"文化研学课堂", en:"LEARNING JOURNEY", icon:GraduationCap, copy:"从观察任务到研学报告，把看见变成理解，让每一次探索都有真实收获。", note:"任务卡 · 观察 · 报告", scene:"学生研学" },
-  { id:"03", title:"亲子手作时光", en:"FAMILY EXPERIENCES", icon:HeartHandshake, copy:"让孩子触摸手艺的温度。在轻松有趣的节奏里，发现文化的另一种表达。", note:"互动 · 手作 · 陪伴", scene:"亲子体验" },
-  { id:"04", title:"非遗创意表达", en:"CULTURAL CREATION", icon:Camera, copy:"让文化素材生长成故事。生成图文灵感、短视频分镜与可分享的内容。", note:"图文 · 视频 · 传播", scene:"内容创作" },
-  { id:"05", title:"非遗百科问答", en:"HERITAGE STORIES", icon:BookOpen, copy:"从一道问题开始，认识工艺、风俗与传统表演，理解每一项技艺的来处。", note:"知识 · 故事 · 体验", scene:"非遗问答" },
-];
-const cities = [{name:"广州",tag:"广绣 · 粤剧"}, {name:"佛山",tag:"醒狮 · 陶塑"}, {name:"潮州",tag:"潮绣 · 工夫茶"}, {name:"汕头",tag:"英歌舞 · 潮汕"}, {name:"江门",tag:"侨乡 · 民俗"}];
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { ArrowRight, ArrowUpRight, BookOpen, Compass, GraduationCap, HeartHandshake, PenLine, Sparkles, MapPin, ShieldCheck } from "lucide-react";
+import { SiteHeader } from "@/components/site-header";
+import { CITIES, type Scene, type TaskRequest, DEFAULT_REQUEST } from "@/lib/types";
+
+const tasks = [
+  { key:"游客路线", label:"规划路线", desc:"一日游 · 城市漫游", icon: Compass, example:"帮我规划广州一天的粤剧和广绣体验路线，步行友好。" },
+  { key:"学生研学", label:"设计研学", desc:"课程 · 观察任务", icon: GraduationCap, example:"为初中生设计潮汕英歌舞主题的研学活动。" },
+  { key:"亲子体验", label:"亲子体验", desc:"亲子 · 手作活动", icon: HeartHandshake, example:"带孩子去佛山看醒狮和陶塑，安排轻松的半天体验。" },
+  { key:"内容创作", label:"内容创作", desc:"图文 · 视频脚本", icon: PenLine, example:"写一篇介绍香云纱制作工艺的小红书图文。" },
+  { key:"非遗问答", label:"了解非遗", desc:"知识 · 文化故事", icon: BookOpen, example:"广绣有哪些典型针法？适合怎样的初学者？" },
+] as const;
 
 export default function HomePage() {
+  const router = useRouter();
+  const [scene, setScene] = useState<Scene>("游客路线");
+  const [prompt, setPrompt] = useState("");
+  const [city, setCity] = useState("自动判断");
+  const [error, setError] = useState("");
+  const selected = tasks.find((item) => item.key === scene) ?? tasks[0];
+
+  function start() {
+    if (!prompt.trim()) { setError("先简单描述你的需求，或者使用下面的示例。"); return; }
+    const draft: TaskRequest = {
+      ...DEFAULT_REQUEST, scene, raw_request:prompt.trim(), city,
+      task_type:scene === "内容创作" ? "social" : null,
+    };
+    try {
+      sessionStorage.setItem("yuejian-launch-draft", JSON.stringify(draft));
+    } catch {
+      // Session storage is optional; the studio remains usable without it.
+      const query = new URLSearchParams({ scene, prompt:prompt.trim(), city });
+      router.push(`/studio?${query.toString()}`);
+      return;
+    }
+    router.push("/studio");
+  }
+
   return (
     <>
       <SiteHeader />
-      <main id="top">
-        <section className="home-hero" aria-labelledby="hero-title">
-          <div className="hero-image" role="img" aria-label="岭南传统文化与非遗插画，包括醒狮、粤剧与工艺" />
-          <div className="hero-overlay"/>
-          <div className="hero-content container">
-            <div className="hero-kicker"><span className="kicker-line"/>A LIVING HERITAGE JOURNEY · 岭南文化新体验</div>
-            <h1 id="hero-title">走近岭南，<br/><em>遇见</em>非遗之美<span className="hero-dot">。</span></h1>
-            <p className="hero-description">文化不应只停留在展柜里。<br/>从一条城市路线、一段非遗故事开始，让传统真正走入生活。</p>
-            <div className="hero-buttons">
-              <Link href="/studio" className="button button-accent">开启我的非遗探索 <ArrowUpRight size={18}/></Link>
-              <Link href="#experiences" className="button button-outline-light">浏览体验方式 <ArrowDown size={17}/></Link>
+      <main className="fast-main">
+        <section className="fast-hero">
+          <div className="fast-hero-inner container">
+            <div className="fast-intro">
+              <span className="fast-eyebrow"><span className="fast-mark"/> 广东非遗 · AI 文化体验</span>
+              <h1>想了解岭南文化，<br/><em>从这里开始。</em></h1>
+              <p>路线规划、研学、亲子体验或内容创作。<br/>告诉我们你的想法，生成一份可使用的方案。</p>
+              <div className="fast-confidence"><ShieldCheck size={16}/> 五种体验方式 · 结果可修改、可导出</div>
             </div>
-            <div className="hero-proof">
-              <div className="hero-proof-mark"><Flower2 size={28} strokeWidth={1.3}/></div>
-              <div><strong>五种文化探索方式</strong><span>非遗知识 × 个性化路线 × 智能创作</span></div>
-            </div>
-          </div>
-          <div className="hero-side-caption">GUANGDONG INTANGIBLE CULTURAL HERITAGE <span>01 — 05</span></div>
-          <div className="hero-scroll-cue">SCROLL TO EXPLORE <span/></div>
-        </section>
-
-        <section className="intro-section container" id="story">
-          <div className="intro-tag"><span className="eyebrow">OUR PHILOSOPHY</span><span className="intro-accent">见 · 闻 · 行 · 思</span></div>
-          <div className="intro-grid">
-            <h2 className="display-title">让文化被看见，<br/><span>更被亲身感受。</span></h2>
-            <div className="intro-copy"><p>非遗是镌刻在城市街巷里的生活美学，也是传承于手艺人与一代代家庭之间的共同记忆。</p><p>粤见非遗以广东文化知识为底色，将 AI 的理解与规划能力融入旅途，让每一个人都能找到贴近自己的探索方式。</p><Link href="/studio" className="text-link">从此刻开始你的文化旅程 <ArrowUpRight size={17}/></Link></div>
-          </div>
-          <div className="intro-metrics">
-            <div><strong>05</strong><span>多元体验场景</span></div>
-            <div><strong>21</strong><span>广东城市可选择</span></div>
-            <div><strong>AI</strong><span>智能文化体验生成</span></div>
-            <div className="metric-quote"><Feather size={20}/><span>让传统文化，以当代方式继续生长。</span></div>
+            <div className="fast-hero-art" role="img" aria-label="广东传统文化与非遗主题插画"><span>YUEJIAN · 发现广东非遗</span></div>
           </div>
         </section>
 
-        <section className="journeys-section" id="experiences">
-          <div className="container">
-            <div className="section-heading-row">
-              <div><div className="eyebrow">01 — CURATED EXPERIENCES</div><h2 className="display-title">你的岭南，<span>有无数种打开方式。</span></h2></div>
-              <p>无论是第一次到访，还是重新认识故乡，<br/>总有一种探索，适合此刻的你。</p>
-            </div>
-            <div className="journey-grid">
-              {journeys.map((journey) => {
-                const Icon = journey.icon;
-                return (
-                  <Link className="journey-card" key={journey.id} href={`/studio?scene=${encodeURIComponent(journey.scene)}`}>
-                    <div className="journey-card-top"><span>{journey.id} / {journey.en}</span><ArrowUpRight size={20}/></div>
-                    <div className="journey-icon"><Icon size={30} strokeWidth={1.35}/></div>
-                    <h3>{journey.title}</h3><p>{journey.copy}</p>
-                    <div className="journey-card-footer"><span>{journey.note}</span><span className="journey-circle"><ArrowRight size={16}/></span></div>
-                  </Link>
-                );
-              })}
-              <div className="journey-feature-card">
-                <div className="feature-pattern" aria-hidden="true">粤</div>
-                <Sparkles size={26} strokeWidth={1.4}/>
-                <div><span className="eyebrow">CREATE YOUR OWN JOURNEY</span><h3>不只是参观，<br/>更是一次与你有关的文化相遇。</h3><Link href="/studio">定制专属提案 <ArrowUpRight size={17}/></Link></div>
+        <section className="fast-workspace container" id="start">
+          <div className="fast-workspace-heading">
+            <div><span className="fast-step">开始体验</span><h2>你今天想做什么？</h2></div>
+            <Link href="/studio" className="fast-text-link">直接打开工作台 <ArrowUpRight size={16}/></Link>
+          </div>
+          <div className="fast-task-grid" role="group" aria-label="选择体验方式">
+            {tasks.map((task) => {
+              const Icon = task.icon;
+              return <button type="button" key={task.key}
+                aria-pressed={scene === task.key}
+                className={`fast-task ${scene === task.key ? "is-active" : ""}`}
+                onClick={() => {setScene(task.key);setError("");}}>
+                <Icon size={21} strokeWidth={1.7}/>
+                <strong>{task.label}</strong>
+                <span>{task.desc}</span>
+              </button>;
+            })}
+          </div>
+
+          <form className="fast-prompt-box" onSubmit={(event) => {event.preventDefault();start();}}>
+            <label htmlFor="fast-request">描述你的想法</label>
+            <textarea id="fast-request" maxLength={1200} rows={3} value={prompt} onChange={(event)=>{setPrompt(event.target.value);setError("");}}
+              placeholder={selected.example}/>
+            <div className="fast-form-bottom">
+              <div className="fast-city"><MapPin size={16}/><label htmlFor="fast-city">城市</label>
+                <select id="fast-city" value={city} onChange={(event)=>setCity(event.target.value)}>
+                  {CITIES.map((item)=><option key={item} value={item}>{item}</option>)}
+                </select>
               </div>
+              <button type="submit" className="fast-submit">开始生成 <ArrowRight size={18}/></button>
             </div>
+            {error && <p className="fast-form-error" role="alert">{error}</p>}
+          </form>
+          <div className="fast-examples">
+            <span><Sparkles size={15}/> 没有思路？试试</span>
+            {tasks.slice(0,3).map((task)=><button key={task.key} type="button" onClick={()=>{setScene(task.key);setPrompt(task.example);setCity("自动判断");setError("");}}>{task.label}示例 <ArrowUpRight size={13}/></button>)}
           </div>
         </section>
 
-        <section className="city-section container">
-          <div className="city-section-heading"><div><div className="eyebrow">02 — TRACES OF LINGNAN</div><h2 className="display-title">循着城市，<span>寻访文化印记。</span></h2></div><div className="city-note">从珠江水畔到潮汕街巷<br/>将好奇心交给下一站。</div></div>
-          <div className="city-list">{cities.map((city,index)=><Link href={`/studio?city=${encodeURIComponent(city.name)}`} key={city.name} className="city-row"><span className="city-index">0{index+1}</span><strong>{city.name}</strong><span>{city.tag}</span><ArrowUpRight size={19}/></Link>)}</div>
-          <div className="city-disclaimer"><MapPin size={15}/> 城市示例用于激发灵感，具体开放与预约信息请以官方平台公告为准。</div>
+        <section className="fast-about container" aria-label="关于结果">
+          <div><strong>一份方案，持续完善</strong><span>生成后可按需要调整行程、修改文字，或保存为 Word。</span></div>
+          <Link href="/studio">查看工作台 <ArrowRight size={17}/></Link>
         </section>
-
-        <section className="process-section">
-          <div className="container process-grid">
-            <div className="process-intro"><div className="eyebrow">03 — HOW IT WORKS</div><h2>从一句心愿，<br/>到一份<span>文化提案。</span></h2><p>复杂的资料检索与个性化规划，交给技术。把时间留给感受真正的文化。</p><Link className="button button-accent" href="/studio">进入体验工作台 <ArrowUpRight size={17}/></Link></div>
-            <div className="process-steps">
-              <div><span>01</span><div><h3>选择体验场景</h3><p>漫游、亲子、研学、创作或非遗问答。</p></div><Compass size={23}/></div>
-              <div><span>02</span><div><h3>告诉我们你的兴趣</h3><p>城市、时间、同行者与好奇的主题。</p></div><WandSparkles size={23}/></div>
-              <div><span>03</span><div><h3>生成并完善你的方案</h3><p>分场景呈现，支持持续修改和文档导出。</p></div><Feather size={23}/></div>
-            </div>
-          </div>
-        </section>
-        <section className="final-cta container"><div className="eyebrow">THE JOURNEY BEGINS HERE</div><h2>下一段非遗故事，<br/><em>由你开启。</em></h2><Link href="/studio" className="button button-dark">开始探索岭南 <ArrowUpRight size={18}/></Link><span className="cta-watermark">粤见</span></section>
+        <footer className="fast-footer"><div className="container"><span>粤见非遗 · YUEJIAN</span><span>文化内容辅助生成；开放时间与票价请以官方信息为准。</span></div></footer>
       </main>
-      <footer className="site-footer"><div className="container footer-inner"><div><strong>粤见非遗 YUEJIAN</strong><p>让岭南文化触手可及</p></div><div className="footer-links"><Link href="/">首页</Link><Link href="/#experiences">体验场景</Link><Link href="/studio">AI 工作台</Link></div><small>文化知识仅供参考 · 开放时间与预约信息请以官方公告为准</small></div></footer>
     </>
   );
 }
