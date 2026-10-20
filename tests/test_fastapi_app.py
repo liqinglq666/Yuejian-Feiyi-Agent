@@ -83,3 +83,28 @@ def test_export_has_separate_rate_control(monkeypatch: pytest.MonkeyPatch) -> No
     assert client.post("/v1/export",json=payload).status_code==200
     assert client.post("/v1/export",json=payload).status_code==429
     api_module._EXPORT_WINDOW.clear()
+
+
+def test_request_rate_limit_distinguishes_vercel_visitors(monkeypatch: pytest.MonkeyPatch) -> None:
+    from fastapi import HTTPException, Request
+    from api import main as api_module
+
+    monkeypatch.setenv("VERCEL", "1")
+    monkeypatch.setattr(api_module, "RATE_LIMIT", 1)
+    api_module._window.clear()
+
+    def visitor(address: str) -> Request:
+        return Request({
+            "type": "http",
+            "client": ("127.0.0.1", 1234),
+            "method": "GET",
+            "path": "/v1/generate",
+            "headers": [(b"x-vercel-forwarded-for", address.encode("ascii"))],
+        })
+
+    api_module._rate_limit(visitor("8.8.8.8"))
+    with pytest.raises(HTTPException) as err:
+        api_module._rate_limit(visitor("8.8.8.8"))
+    assert err.value.status_code == 429
+    api_module._rate_limit(visitor("1.1.1.1"))
+    api_module._window.clear()

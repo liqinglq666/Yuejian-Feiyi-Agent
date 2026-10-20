@@ -29,7 +29,7 @@ from core.models import (
     TaskRequest,
     TaskType,
 )
-from core.quotas import reserve_platform_request, shared_quota_ready
+from core.quotas import _visitor_fingerprint, reserve_platform_request, shared_quota_ready
 from core.revisions import REVISION_PRESETS, plan_custom_revision, plan_quick_revision
 from services.export import build_docx, build_markdown, build_plain_text
 from services.llm import ModelGatewayError, collect_stream_with_safe_fallback
@@ -117,9 +117,9 @@ def _sse(event: str, data: dict) -> str:
 
 
 def _rate_limit(request: Request) -> None:
-    # Behind a reverse proxy, REMOTE_ADDR must be set by trusted infrastructure.
-    # Never trust user-provided X-Forwarded-For directly.
-    client_ip = request.client.host if request.client else "unknown"
+    # The socket peer may be a shared proxy; only trust the edge-injected
+    # visitor header under Vercel, via the quota fingerprint helper.
+    client_ip = _visitor_fingerprint(request)
     now = time.monotonic()
     with _window_lock:
         queue = _window[client_ip]
@@ -252,7 +252,7 @@ def revise(body: ReviseInput, request: Request) -> StreamingResponse:
 def export(body: ExportInput, request: Request) -> Response:
     # Export is free, but document creation still needs resource protection.
     # This is a per-instance safeguard; API gateway/WAF provides global controls.
-    client_ip = request.client.host if request.client else "unknown"
+    client_ip = _visitor_fingerprint(request)
     now = time.monotonic()
     with _window_lock:
         queue = _EXPORT_WINDOW[client_ip]
