@@ -136,8 +136,8 @@ test("inspiration selection fills a usable task draft", async ({ page }) => {
   await page.goto("/");
   await page.getByRole("button", { name: /使用灵感：听见龙舟鼓点/ }).click();
   await expect(page.getByRole("button", { name: "亲子探索" })).toHaveAttribute("aria-pressed", "true");
-  await expect(page.getByLabel("说说你的想法")).toContainText("龙舟文化");
+  await expect(page.getByLabel("说说你的想法")).toHaveValue(/龙舟文化/);
   await expect(page.locator("#festival-city")).toHaveValue("广州");
   await page.getByRole("button", { name: "生成我的方案" }).click();
-  await expect(page.locator("#request-input")).toContainText("龙舟文化");
+  await expect(page.locator("#request-input")).toHaveValue(/龙舟文化/);
 });
