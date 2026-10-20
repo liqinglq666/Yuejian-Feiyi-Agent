@@ -6,7 +6,7 @@ import {
   ArrowLeft, ArrowRight, BookOpen, Check, ChevronDown, CircleHelp, Copy,
   Clock3, Compass, Download, FileText, GraduationCap, HeartHandshake, LoaderCircle,
   MapPin, Menu, MessageCircle, PencilLine, Plus, RefreshCw, Send, Settings2,
-  ShieldCheck, Sparkles, WandSparkles, X,
+  ShieldCheck, X,
 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
@@ -339,25 +339,25 @@ export function StudioApp() {
 
           {(busy || result) && <section className="output-panel ux-results" id="proposal" aria-labelledby="result-title">
             <div className="panel-heading output-heading">
-              <div><h2 id="result-title">生成结果</h2></div>
-              {result && <div className="result-ready"><Check size={14}/> 已生成</div>}
+              <div><h2 id="result-title">{busy ? "正在生成" : "生成结果"}</h2></div>
+              {result && !busy && <div className="result-ready"><Check size={14} aria-hidden="true"/> 已完成</div>}
             </div>
-            {error && <div className="studio-error" role="alert"><CircleHelp size={18}/>{error}<button type="button" onClick={() => setError("")} aria-label="关闭提示"><X size={16}/></button></div>}
-            {busy && <div className="stream-stage" role="status"><LoaderCircle className="spin" size={18}/><div><strong>{stage}</strong><span>正在为你整理值得亲身体验的文化细节…</span></div></div>}
+            {busy && <div className="stream-stage" role="status" aria-live="polite"><LoaderCircle className="spin" size={18} aria-hidden="true"/><div><strong>{stage}</strong><span>生成过程中可取消，内容将逐步显示。</span></div></div>}
             {shownAnswer ? <div className="result-view">
-              <div className="result-summary"><div className="result-summary-badge">{result?.request.scene || request.scene}</div><div className="result-summary-text"><h3>{result?.request.raw_request || request.raw_request}</h3><p><MapPin size={14}/>{result?.request.city || request.city}<span>·</span><Clock3 size={14}/>{result?.request.duration || request.duration}<span>·</span>{result?.request.identity || request.identity}</p></div></div>
-              <div className="result-tabs"><button className={activeTab === "all" ? "active" : ""} onClick={() => setActiveTab("all")} type="button">完整方案</button>{sections.slice(0,5).map((section,index)=><button key={index} type="button" className={activeTab === String(index) ? "active" : ""} onClick={() => setActiveTab(String(index))}>{section.title}</button>)}<button type="button" className={activeTab === "sources" ? "active" : ""} onClick={() => setActiveTab("sources")}>资料来源</button></div>
+              <div className="result-summary"><div className="result-summary-badge">{busy ? request.scene : result?.request.scene || request.scene}</div><div className="result-summary-text"><h3>{busy ? request.raw_request : result?.request.raw_request || request.raw_request}</h3><p><MapPin size={14}/>{result?.request.city || request.city}<span>·</span><Clock3 size={14}/>{result?.request.duration || request.duration}<span>·</span>{result?.request.identity || request.identity}</p></div></div>
+              <div className="result-tabs" role="group" aria-label="结果内容导航"><button aria-pressed={activeTab === "all"} className={activeTab === "all" ? "active" : ""} onClick={() => setActiveTab("all")} type="button">完整方案</button>{sections.slice(0,5).map((section,index)=><button key={index} type="button" aria-pressed={activeTab === String(index)} className={activeTab === String(index) ? "active" : ""} onClick={() => setActiveTab(String(index))}>{section.title}</button>)}<button type="button" aria-pressed={activeTab === "sources"} className={activeTab === "sources" ? "active" : ""} onClick={() => setActiveTab("sources")}>资料来源</button></div>
               <MarkdownDoc content={selectedContent || "暂无可展示的检索资料。"} />
-              {!busy && result && <div className="result-downloads"><span>保存这份提案</span><div>{(["md","txt","docx"] as const).map((format)=><button disabled={downloadBusy} type="button" onClick={() => void download(format)} key={format}><Download size={15}/>{format === "docx" ? "Word" : format.toUpperCase()}</button>)}</div></div>}
-            </div> : !busy ? <div className="ux-output-empty"><WandSparkles size={27}/><h3>等待你的第一个想法</h3><p>填写上方需求，生成结果会显示在这里。</p></div> : null}
+              {!busy && result && <div className="result-downloads"><span>保存结果</span><div><button type="button" onClick={() => void copyResult()}><Copy size={15} aria-hidden="true"/>复制正文</button>{(["docx","md","txt"] as const).map((format)=><button disabled={downloadBusy} type="button" onClick={() => void download(format)} key={format}><Download size={15} aria-hidden="true"/>{format === "docx" ? "Word" : format.toUpperCase()}</button>)}</div></div>}
+            </div> : busy ? <div className="result-skeleton" aria-hidden="true"><span/><span/><span/><span/></div> : null}
           </section>}
 
           {result && !busy && <section className="revision-panel ux-revision" aria-labelledby="revision-title"><div className="panel-heading"><div><h2 id="revision-title">调整这份方案</h2></div><RefreshCw size={21} strokeWidth={1.5}/></div><div className="revision-chips">{REVISIONS.map((item)=><button type="button" key={item} onClick={() => void run("revise",item)}>{item}<ArrowUpRight size={14}/></button>)}</div><div className="revision-compose"><textarea rows={2} maxLength={500} value={revision} onChange={(e) => setRevision(e.target.value)} placeholder="例如：减少景点数量、增加适合拍照的体验、加入更多岭南美食…" aria-label="自定义修改要求"/><button className="button button-dark" type="button" disabled={!revision.trim()} onClick={() => void run("revise")}><Send size={16}/> 提交修改</button></div>{result.revisions.length > 0 && <details className="revision-history"><summary>查看历史调整（{result.revisions.length} 次）</summary>{result.revisions.map((entry,i)=><p key={i}>{entry.createdAt} · {entry.instruction}</p>)}</details>}</section>}
-          <div className="studio-bottom-disclaimer"><BookOpen size={17}/><p>方案由 AI 辅助生成，开放时间、票价、预约和交通信息请以官方渠道为准。</p></div>
+          <div className="studio-bottom-disclaimer"><BookOpen size={16} aria-hidden="true"/><p>内容由 AI 辅助生成。开放时间、预约与票价请以官方信息为准。</p></div>
+          <p className="studio-notice" role="status" aria-live="polite">{notice}</p>
         </div>
       </div>
     </main>
-    <footer className="studio-footer"><div className="container"><span>粤见非遗 · YUEJIAN HERITAGE STUDIO</span><Link href="/">返回品牌首页 <ArrowUpRight size={15}/></Link></div></footer>
+    <footer className="studio-footer"><div className="container"><span>粤见非遗</span><Link href="/">返回首页 <ArrowLeft size={15} aria-hidden="true"/></Link></div></footer>
     {showSettings && <ModelSettings model={model} setModel={setModel} platformReady={status?.platform_ready} onClose={closeSettings}/>}
     {drawerOpen && <button aria-label="关闭侧边栏" className="mobile-side-overlay" onClick={() => setDrawerOpen(false)} type="button"/>}
   </>;
