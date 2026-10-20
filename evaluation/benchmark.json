@@ -438,5 +438,225 @@
       "香云纱"
     ],
     "expect_official_source": true
+  },
+  {
+    "id": "guangdong-music-route",
+    "scene": "游客路线",
+    "query": "广州广东音乐文化体验路线",
+    "city": "广州",
+    "expected_task_type": "route",
+    "expected_terms": [
+      "广东音乐"
+    ],
+    "expect_official_source": true
+  },
+  {
+    "id": "guangdong-music-study",
+    "scene": "学生研学",
+    "query": "广东音乐代表性曲目研学任务",
+    "city": "广州",
+    "expected_task_type": "study",
+    "expected_terms": [
+      "广东音乐"
+    ],
+    "expect_official_source": true
+  },
+  {
+    "id": "guangdong-music-family",
+    "scene": "亲子体验",
+    "query": "亲子欣赏广东音乐活动",
+    "city": "广州",
+    "expected_task_type": "route",
+    "expected_terms": [
+      "广东音乐"
+    ],
+    "expect_official_source": true
+  },
+  {
+    "id": "guangdong-music-social",
+    "scene": "内容创作",
+    "query": "广东音乐科普社交文案",
+    "city": "广州",
+    "expected_task_type": "social",
+    "expected_terms": [
+      "广东音乐"
+    ],
+    "expect_official_source": true
+  },
+  {
+    "id": "guangdong-music-qa",
+    "scene": "非遗问答",
+    "query": "广东音乐有什么艺术特色",
+    "city": "广州",
+    "expected_task_type": "qa",
+    "expected_terms": [
+      "广东音乐"
+    ],
+    "expect_official_source": true
+  },
+  {
+    "id": "chaozhou-woodcarving-route",
+    "scene": "游客路线",
+    "query": "潮州木雕文化漫游路线",
+    "city": "潮州",
+    "expected_task_type": "route",
+    "expected_terms": [
+      "潮州木雕"
+    ],
+    "expect_official_source": true
+  },
+  {
+    "id": "chaozhou-woodcarving-study",
+    "scene": "学生研学",
+    "query": "潮州木雕装饰工艺研学",
+    "city": "潮州",
+    "expected_task_type": "study",
+    "expected_terms": [
+      "潮州木雕"
+    ],
+    "expect_official_source": true
+  },
+  {
+    "id": "chaozhou-woodcarving-family",
+    "scene": "亲子体验",
+    "query": "潮州木雕亲子观察体验",
+    "city": "潮州",
+    "expected_task_type": "route",
+    "expected_terms": [
+      "潮州木雕"
+    ],
+    "expect_official_source": true
+  },
+  {
+    "id": "chaozhou-woodcarving-social",
+    "scene": "内容创作",
+    "query": "写潮州木雕的宣传介绍",
+    "city": "潮州",
+    "expected_task_type": "social",
+    "expected_terms": [
+      "潮州木雕"
+    ],
+    "expect_official_source": true
+  },
+  {
+    "id": "chaozhou-woodcarving-qa",
+    "scene": "非遗问答",
+    "query": "潮州木雕有什么代表性特征",
+    "city": "潮州",
+    "expected_task_type": "qa",
+    "expected_terms": [
+      "潮州木雕"
+    ],
+    "expect_official_source": true
+  },
+  {
+    "id": "lufeng-shadow-play-route",
+    "scene": "游客路线",
+    "query": "汕尾陆丰皮影戏文化路线",
+    "city": "汕尾",
+    "expected_task_type": "route",
+    "expected_terms": [
+      "陆丰皮影"
+    ],
+    "expect_official_source": true
+  },
+  {
+    "id": "lufeng-shadow-play-study",
+    "scene": "学生研学",
+    "query": "陆丰皮影戏的学生研学任务",
+    "city": "汕尾",
+    "expected_task_type": "study",
+    "expected_terms": [
+      "陆丰皮影"
+    ],
+    "expect_official_source": true
+  },
+  {
+    "id": "lufeng-shadow-play-family",
+    "scene": "亲子体验",
+    "query": "陆丰皮影亲子手工观察",
+    "city": "汕尾",
+    "expected_task_type": "route",
+    "expected_terms": [
+      "陆丰皮影"
+    ],
+    "expect_official_source": true
+  },
+  {
+    "id": "lufeng-shadow-play-social",
+    "scene": "内容创作",
+    "query": "陆丰皮影戏介绍文案",
+    "city": "汕尾",
+    "expected_task_type": "social",
+    "expected_terms": [
+      "陆丰皮影"
+    ],
+    "expect_official_source": true
+  },
+  {
+    "id": "lufeng-shadow-play-qa",
+    "scene": "非遗问答",
+    "query": "陆丰皮影戏是什么",
+    "city": "汕尾",
+    "expected_task_type": "qa",
+    "expected_terms": [
+      "陆丰皮影"
+    ],
+    "expect_official_source": true
+  },
+  {
+    "id": "dragon-boat-storytelling-route",
+    "scene": "游客路线",
+    "query": "佛山顺德龙舟说唱文化路线",
+    "city": "佛山",
+    "expected_task_type": "route",
+    "expected_terms": [
+      "龙舟说唱"
+    ],
+    "expect_official_source": true
+  },
+  {
+    "id": "dragon-boat-storytelling-study",
+    "scene": "学生研学",
+    "query": "龙舟说唱曲艺研学",
+    "city": "佛山",
+    "expected_task_type": "study",
+    "expected_terms": [
+      "龙舟说唱"
+    ],
+    "expect_official_source": true
+  },
+  {
+    "id": "dragon-boat-storytelling-family",
+    "scene": "亲子体验",
+    "query": "亲子了解龙舟说唱",
+    "city": "佛山",
+    "expected_task_type": "route",
+    "expected_terms": [
+      "龙舟说唱"
+    ],
+    "expect_official_source": true
+  },
+  {
+    "id": "dragon-boat-storytelling-social",
+    "scene": "内容创作",
+    "query": "写一篇龙舟说唱文化文案",
+    "city": "佛山",
+    "expected_task_type": "social",
+    "expected_terms": [
+      "龙舟说唱"
+    ],
+    "expect_official_source": true
+  },
+  {
+    "id": "dragon-boat-storytelling-qa",
+    "scene": "非遗问答",
+    "query": "龙舟说唱与龙舟竞渡不同在哪里",
+    "city": "佛山",
+    "expected_task_type": "qa",
+    "expected_terms": [
+      "龙舟说唱"
+    ],
+    "expect_official_source": true
   }
 ]
