@@ -30,7 +30,7 @@ export default function HomePage() {
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const current = tasks.find((task) => task.key === scene) ?? tasks[0];
 
-  const useInspiration = (item: typeof inspirations[number]) => {
+  const applyInspiration = (item: typeof inspirations[number]) => {
     setScene(item.scene);
     setCity(item.city);
     setPrompt(item.prompt);
@@ -118,7 +118,7 @@ export default function HomePage() {
           </div>
           <div className="festival-inspiration-grid">
             {inspirations.map((item) =>
-              <button key={item.title} className="festival-inspiration" type="button" onClick={() => useInspiration(item)}
+              <button key={item.title} className="festival-inspiration" type="button" onClick={() => applyInspiration(item)}
                 aria-label={"使用灵感：" + item.title}>
                 <div className="festival-inspiration-picture">
                   <Image src={item.image} alt={item.alt} fill sizes="(max-width: 700px) 90vw, (max-width: 1100px) 45vw, 370px" loading="lazy"/>
