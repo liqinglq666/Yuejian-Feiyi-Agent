@@ -104,7 +104,7 @@ test("generation, editing, exporting and empty-field error", async ({ page }) =>
   await mockService(page);
   await page.goto("/studio");
   await page.getByRole("button", { name: "生成方案", exact: true }).click();
-  await expect(page.getByRole("alert")).toContainText("请先写下你的需求");
+  await expect(page.locator("#studio-error")).toContainText("请先写下你的需求");
   await expect(page.locator("#request-input")).toBeFocused();
 
   await page.locator("#request-input").fill(draftText);

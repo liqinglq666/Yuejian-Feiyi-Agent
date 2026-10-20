@@ -127,8 +127,27 @@ export function StudioApp() {
   const [downloadBusy, setDownloadBusy] = useState(false);
   const [notice, setNotice] = useState("");
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const sidebarRef = useRef<HTMLElement>(null);
+  const sidebarCloseRef = useRef<HTMLButtonElement>(null);
   const controller = useRef<AbortController | null>(null);
   const closeSettings = useCallback(() => setShowSettings(false), []);
+
+  useEffect(() => {
+    if (!drawerOpen) return;
+    const previous = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    sidebarCloseRef.current?.focus();
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") { event.preventDefault(); setDrawerOpen(false); return; }
+      if (event.key !== "Tab" || !sidebarRef.current) return;
+      const elements = Array.from(sidebarRef.current.querySelectorAll<HTMLElement>("button:not([disabled]),a[href]"));
+      const first = elements[0], last = elements[elements.length - 1];
+      if (!first || !last) return;
+      if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+      else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+    };
+    document.addEventListener("keydown", onKey);
+    return () => { document.removeEventListener("keydown", onKey); previous?.focus(); };
+  }, [drawerOpen]);
 
   useEffect(() => {
     fetch("/api/v1/status", { cache:"no-store" }).then((res) => res.ok ? res.json() : Promise.reject())
@@ -269,8 +288,8 @@ export function StudioApp() {
         </div>
       </div>
       <div className="studio-shell container">
-        <aside id="studio-scenes" className={`studio-sidebar ${drawerOpen ? "sidebar-open" : ""}`}>
-          <div className="sidebar-topline"><div className="sidebar-brand">粤见非遗</div><button aria-label="关闭菜单" type="button" onClick={() => setDrawerOpen(false)} className="sidebar-close"><X size={19}/></button></div>
+        <aside ref={sidebarRef} id="studio-scenes" className={`studio-sidebar ${drawerOpen ? "sidebar-open" : ""}`}>
+          <div className="sidebar-topline"><div className="sidebar-brand">粤见非遗</div><button ref={sidebarCloseRef} aria-label="关闭菜单" type="button" onClick={() => setDrawerOpen(false)} className="sidebar-close"><X size={19}/></button></div>
           <h2 className="sidebar-heading">选择体验</h2>
           <div className="sidebar-section-label">体验类型</div>
           <div className="sidebar-scene-list">

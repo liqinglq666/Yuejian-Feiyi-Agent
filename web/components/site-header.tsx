@@ -3,16 +3,17 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ArrowUpRight, Menu, X } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 export function SiteHeader() {
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
+  const menuButtonRef = useRef<HTMLButtonElement>(null);
   useEffect(() => {
-    const onEscape = (event: KeyboardEvent) => { if (event.key === "Escape") setMenuOpen(false); };
+    const onEscape = (event: KeyboardEvent) => { if (event.key === "Escape" && menuOpen) { setMenuOpen(false); menuButtonRef.current?.focus(); } };
     window.addEventListener("keydown", onEscape);
     return () => window.removeEventListener("keydown", onEscape);
-  }, []);
+  }, [menuOpen]);
   return (
     <header className="site-header">
       <div className="nav-inner container">
@@ -24,7 +25,7 @@ export function SiteHeader() {
           <Link className={pathname === "/studio" ? "nav-active" : ""} href="/studio" onClick={() => setMenuOpen(false)}>AI 工作台</Link>
           <Link href={pathname === "/" ? "/#start" : "/studio"} className="nav-cta" onClick={() => setMenuOpen(false)}>开始体验 <ArrowUpRight size={16} aria-hidden="true"/></Link>
         </nav>
-        <button className="nav-menu-toggle" type="button" aria-controls="site-main-nav" aria-label={menuOpen ? "关闭菜单" : "打开菜单"} aria-expanded={menuOpen} onClick={() => setMenuOpen(!menuOpen)}>{menuOpen ? <X size={24}/> : <Menu size={24}/>}</button>
+        <button ref={menuButtonRef} className="nav-menu-toggle" type="button" aria-controls="site-main-nav" aria-label={menuOpen ? "关闭菜单" : "打开菜单"} aria-expanded={menuOpen} onClick={() => setMenuOpen(!menuOpen)}>{menuOpen ? <X size={24}/> : <Menu size={24}/>}</button>
       </div>
     </header>
   );
