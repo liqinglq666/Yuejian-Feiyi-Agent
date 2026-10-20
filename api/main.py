@@ -34,8 +34,8 @@ from core.revisions import REVISION_PRESETS, plan_custom_revision, plan_quick_re
 from services.export import build_docx, build_markdown, build_plain_text
 from services.llm import ModelGatewayError, collect_stream_with_safe_fallback
 from services.output import sanitize_model_output
-from services.quality import inspect_answer
 from services.prompt_builder import build_initial_messages, build_revision_messages
+from services.quality import inspect_answer
 from services.retrieval import KnowledgeBaseError, retrieve
 
 logger = logging.getLogger(__name__)

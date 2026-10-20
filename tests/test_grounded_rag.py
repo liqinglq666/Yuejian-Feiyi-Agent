@@ -1,10 +1,15 @@
 from __future__ import annotations
+
 import json
 from pathlib import Path
+
 import pytest
+
 from core.models import RetrievalBundle, RetrievedChunk, TaskType
 from services.quality import inspect_answer
-from services.retrieval import KnowledgeBaseError,clear_cache,get_index,retrieve
+from services.retrieval import KnowledgeBaseError, clear_cache, get_index, retrieve
+
+
 def test_registry_fields_and_sources():
     records=json.loads((Path(__file__).resolve().parents[1]/"data"/"heritage_records.json").read_text(encoding="utf-8"))
     assert len(records)>=8
