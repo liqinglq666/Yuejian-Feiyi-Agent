@@ -26,8 +26,8 @@ from services.output import sanitize_model_output
 from services.prompt_builder import build_initial_messages, build_revision_messages
 from services.retrieval import KnowledgeBaseError, retrieve
 from ui.components import render_request_summary, render_topbar_and_hero
-from ui.mobile_styles import apply_mobile_styles
 from ui.editorial_styles import apply_editorial_styles
+from ui.mobile_styles import apply_mobile_styles
 from ui.results import render_results
 from ui.sidebar import render_sidebar
 from ui.styles import apply_styles
