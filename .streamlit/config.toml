@@ -5,7 +5,7 @@ toolbarMode = "viewer"
 gatherUsageStats = false
 
 [theme]
-primaryColor = "#12b8b2"
-backgroundColor = "#ffffff"
-secondaryBackgroundColor = "#f4faff"
-textColor = "#101828"
+primaryColor = "#24493d"
+backgroundColor = "#f7f5ef"
+secondaryBackgroundColor = "#fdfcf8"
+textColor = "#202d29"
