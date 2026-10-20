@@ -27,6 +27,7 @@ from services.prompt_builder import build_initial_messages, build_revision_messa
 from services.retrieval import KnowledgeBaseError, retrieve
 from ui.components import render_request_summary, render_topbar_and_hero
 from ui.mobile_styles import apply_mobile_styles
+from ui.editorial_styles import apply_editorial_styles
 from ui.results import render_results
 from ui.sidebar import render_sidebar
 from ui.styles import apply_styles
@@ -34,7 +35,7 @@ from ui.workspace import WORKSPACE_UI_BUILD_ID, render_workspace
 
 logger = logging.getLogger(__name__)
 
-APP_BUILD_ID = "2026.08.24.1"
+APP_BUILD_ID = "2026.10.20.editorial"
 GENERATION_RETRIEVAL_TOP_K = 3
 GENERATION_RETRIEVAL_CHAR_BUDGET = 2200
 
@@ -277,7 +278,7 @@ def main() -> None:
     apply_pending_form_sync(st.session_state)
     apply_styles()
     apply_mobile_styles()
-    st.markdown(HERO_LAYER_FIX_CSS, unsafe_allow_html=True)
+    apply_editorial_styles()
     render_sidebar()
     if debug_ui_enabled():
         st.sidebar.caption(f"Build {APP_BUILD_ID} · UI {WORKSPACE_UI_BUILD_ID}")
@@ -297,6 +298,7 @@ def main() -> None:
 
     _process_pending_job()
     render_results()
+    st.html("""<div class="editorial-footer"><div><strong>粤见非遗 YUEJIAN</strong>　·　用数字连接岭南文化与当代生活</div><div>文化资料仅供参考 · 开放与预约信息请以官方公告为准</div></div>""")
 
 
 if __name__ == "__main__":
