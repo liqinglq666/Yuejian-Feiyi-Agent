@@ -37,6 +37,7 @@ from services.output import sanitize_model_output
 from services.prompt_builder import build_initial_messages, build_revision_messages
 from services.quality import inspect_answer
 from services.retrieval import KnowledgeBaseError, retrieve
+from services.scenarios import resolve_policy
 
 logger = logging.getLogger(__name__)
 app = FastAPI(title="粤见非遗 API", version="2.0.0", docs_url="/docs" if os.getenv("API_DOCS_ENABLED") == "1" else None)
@@ -148,6 +149,8 @@ def _prepare_generation(body: GenerateInput, revise: bool):
                 instruction=plan.instruction,
                 target_task_type=plan.target_task_type,
             )
+        # Fail invalid combinations before reserving the platform AI quota.
+        resolve_policy(task)
         return model_config, task, revision
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
@@ -182,7 +185,7 @@ def _generation_events(config, task: TaskRequest, revision: RevisionRequest | No
                     "answer": cleaned,
                     "sources": bundle.source_markdown(),
                     "request": task.to_dict(),
-                    "quality": inspect_answer(cleaned, task.task_type, bundle),
+                    "quality": inspect_answer(cleaned, task.task_type, bundle, request=task),
                     "metrics": {
                         "first_token_ms": first_token_ms,
                         "total_ms": round((now - began_at) * 1000),
