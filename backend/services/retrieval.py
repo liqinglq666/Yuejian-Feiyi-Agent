@@ -233,8 +233,10 @@ def build_index(data_dir: Path = DEFAULT_DATA_DIR) -> SearchIndex:
         for path in sorted(data_dir.rglob("*"))
         if path.is_file() and path.suffix.lower() in SUPPORTED_EXTENSIONS
     ]
-    if not files:
-        raise KnowledgeBaseError("知识库目录中没有 Markdown 或 TXT 文件。")
+    # A fully structured knowledge base should not require keeping a dummy
+    # Markdown file around merely for the registry records to be indexed.
+    if not files and not (data_dir / "heritage_records.json").is_file():
+        raise KnowledgeBaseError("知识库目录中没有 Markdown、TXT 或结构化名录。")
 
     indexed: list[IndexedChunk] = []
     for path in files:

@@ -104,3 +104,24 @@ def test_off_topic_queries_do_not_inherit_official_evidence(query):
     from services.quality import directly_supported_topic
     bundle=retrieve(query,top_k=3)
     assert not any(directly_supported_topic(chunk,bundle.query) for chunk in bundle.chunks)
+
+
+@pytest.mark.parametrize(
+    ("topic", "request"),
+    [
+        ("粤绣（广绣）", "我想认识粤绣的传统工艺"),
+        ("英歌（潮阳英歌）", "想了解英歌的文化背景"),
+        ("茶艺（潮州工夫茶艺）", "请介绍茶艺的特点"),
+    ],
+)
+def test_direct_project_name_without_variant_is_official_evidence(topic, request):
+    from services.quality import directly_supported_topic
+
+    chunk = RetrievedChunk(
+        chunk_id="registry",
+        title=topic,
+        content=f"项目：{topic}（相关别名）\n文化特点",
+        source_path="data/heritage_records.json",
+        source_url="https://www.ihchina.cn/project_details/12901/",
+    )
+    assert directly_supported_topic(chunk, request)

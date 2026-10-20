@@ -59,7 +59,9 @@ export async function streamProposal(
     while (true) {
       const { value, done } = await reader.read();
       if (done) break;
-      buffer += decoder.decode(value, { stream: true }).replace(/\r\n/g, "\n");
+      // Normalize AFTER appending: CRLF can be split between network chunks.
+      buffer += decoder.decode(value, { stream: true });
+      buffer = buffer.replace(/\r\n/g, "\n");
       let boundary: number;
       while ((boundary = buffer.indexOf("\n\n")) >= 0) {
         processFrame(buffer.slice(0, boundary));
@@ -67,6 +69,7 @@ export async function streamProposal(
       }
     }
     buffer += decoder.decode();
+    buffer = buffer.replace(/\r\n/g, "\n");
     if (buffer.trim()) processFrame(buffer.trim());
   } finally {
     reader.releaseLock();

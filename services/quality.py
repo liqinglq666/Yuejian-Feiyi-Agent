@@ -33,7 +33,10 @@ def directly_supported_topic(chunk: RetrievedChunk, query: str) -> bool:
     if match:
         alias_list = [name.strip() for name in match.group(1).split("、")]
 
-    names = [chunk.title, *alias_list]
+    # National-register titles often include a qualifier, e.g. "粤绣（广绣）"
+    # or "英歌（潮阳英歌）". Recognize both the base project and its variant.
+    base_name = re.split(r"[（(]", chunk.title, maxsplit=1)[0].strip()
+    names = [chunk.title, base_name, *alias_list]
     names.extend(re.findall(r"[（(]([^()（）]+)[）)]", chunk.title))
     names = [name for name in names if len(name) >= 2]
 
