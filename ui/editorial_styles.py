@@ -1,9 +1,9 @@
-from __future__ import annotations
-
 """Editorial visual system for the Lingnan heritage experience.
 
 Pure presentation: application logic and Streamlit widget keys remain untouched.
 """
+
+from __future__ import annotations
 
 import streamlit as st
 
