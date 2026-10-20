@@ -65,6 +65,36 @@ Markdown / TXT / Word 导出
 
 亲子体验不再简单沿用游客路线模板：会考虑儿童互动、监护和休息。研学任务强调可观察目标及记录方式；创作任务区分文化事实与创意表达。图文和视频属于「内容创作」的两个子模式。
 
+### V3 Scenario Router / 场景策略映射
+
+```mermaid
+flowchart TB
+    REQ["TaskRequest · 结构化需求"] --> S{"业务场景"}
+    S --> ROUTE["游客路线：城市、时长、行程节奏"]
+    S --> STUDY["学生研学：学习目标、任务卡、记录表"]
+    S --> FAMILY["亲子体验：适龄互动、监护与安全"]
+    S --> CONTENT["内容创作"]
+    S --> QA["非遗问答：直接回答、来源边界"]
+    CONTENT --> SOCIAL["图文：标题、正文、配图"]
+    CONTENT --> VIDEO["短视频：分镜、旁白、素材授权"]
+    ROUTE --> POLICY["V3 Scenario Policy · Task Planner"]
+    STUDY --> POLICY
+    FAMILY --> POLICY
+    SOCIAL --> POLICY
+    VIDEO --> POLICY
+    QA --> POLICY
+    POLICY --> OUT["统一生成、结果诊断与继续修改"]
+
+    classDef entry fill:#eaf3ef,stroke:#205d59,color:#203f3c;
+    classDef specialization fill:#fbf7ee,stroke:#b09c7b,color:#43382f;
+    classDef core fill:#205d59,stroke:#205d59,color:#ffffff;
+    class REQ,S entry;
+    class ROUTE,STUDY,FAMILY,CONTENT,QA,SOCIAL,VIDEO specialization;
+    class POLICY,OUT core;
+```
+
+> 五个对外入口，六种内部策略。内容创作分为图文和短视频；亲子体验有独立于普通路线的规则。场景诊断不是对事实、活动可行性或儿童安全的最终认证。
+
 ### 2. 有来源的广东非遗 RAG
 
 知识检索由 `services/retrieval.py` 实现，组合 BM25、中文字符 n-gram、城市/主题元数据权重、去重及上下文字符预算，不依赖额外向量数据库。
@@ -107,24 +137,105 @@ FastAPI 通过 SSE 提供 `stage / snapshot / delta / complete / failure` 事件
 
 ## 技术架构
 
+### System Architecture / 系统分层
+
+前端负责交互和结果阅读，FastAPI 负责安全、模型接入与 SSE，Agent V3 负责场景策略、知识检索和输出诊断。生产环境由 Vercel Services 将前后端映射到同一个域名。
+
 ```mermaid
 flowchart TB
-    UI["Next.js / React 前端"] --> API["FastAPI · 请求校验与 SSE"]
-    API --> MODE["五场景任务策略 / V3 Planner"]
-    MODE --> RAG["广东非遗混合检索"]
-    KB["Markdown / 结构化官方项目记录"] --> RAG
-    RAG --> PROMPT["Prompt Builder"]
-    MODE --> PROMPT
-    PROMPT --> GATE["模型网关"]
-    P["平台 AI · Redis 额度"] --> GATE
-    K["用户明确选择的 BYOK"] --> GATE
-    GATE --> LLM["OpenAI-compatible 模型"]
-    LLM --> CHECK["输出清洗与结构 / 来源诊断"]
-    CHECK --> UI
-    UI --> REV["继续修改"]
-    REV --> API
-    UI --> EXPORT["Markdown / TXT / DOCX"]
+    USER(["用户 / Browser"])
+
+    subgraph FRONTEND["01 · Presentation Layer / Next.js 16 + React 19"]
+        direction LR
+        HOME["五场景首页"]
+        STUDIO["任务工作台"]
+        REPORT["流式阅读、修改和导出"]
+        HOME --> STUDIO --> REPORT
+    end
+
+    subgraph BACKEND["02 · Application Layer / FastAPI"]
+        direction LR
+        VALIDATE["Pydantic 校验与速率限制"]
+        ROUTER["任务路由：平台 / BYOK"]
+        STREAM["SSE：stage / snapshot / delta / complete"]
+        VALIDATE --> ROUTER
+    end
+
+    subgraph AGENT["03 · Intelligence Layer / Agent V3"]
+        direction LR
+        POLICY["Scenario Policy：六种内部策略"]
+        RAG["Hybrid RAG：BM25 + n-gram + metadata"]
+        PLAN["Task Planner + Prompt Builder"]
+        GATEWAY["LLM Gateway"]
+        REVIEW["输出清洗、结构与来源诊断"]
+        POLICY --> RAG --> PLAN --> GATEWAY --> REVIEW
+    end
+
+    subgraph DATA["04 · Data & Infrastructure"]
+        direction LR
+        KB[("非遗知识库：JSON / MD / TXT")]
+        REDIS[("Upstash Redis：共享额度")]
+        PROVIDER["OpenAI-compatible 模型服务商"]
+    end
+
+    USER --> HOME
+    STUDIO -->|"同源 /api/v1/*"| VALIDATE
+    ROUTER --> POLICY
+    ROUTER -.->|"仅平台共享调用"| REDIS
+    KB --> RAG
+    GATEWAY <-->|"HTTPS · streaming"| PROVIDER
+    REVIEW --> STREAM
+    STREAM -->|"SSE events"| REPORT
+    REPORT -.->|"新一轮修改"| VALIDATE
+
+    classDef frontend fill:#eaf3ef,stroke:#205d59,color:#203f3c;
+    classDef engine fill:#fbf7ee,stroke:#b09c7b,color:#43382f;
+    classDef infrastructure fill:#edf2f5,stroke:#83949d,color:#263539;
+    class HOME,STUDIO,REPORT,VALIDATE,ROUTER,STREAM frontend;
+    class POLICY,RAG,PLAN,GATEWAY,REVIEW engine;
+    class KB,REDIS,PROVIDER infrastructure;
 ```
+
+### Request Lifecycle / 生成与修订链路
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor User as 用户
+    participant Web as Next.js 工作台
+    participant API as FastAPI
+    participant Quota as Upstash Redis
+    participant RAG as RAG Retriever
+    participant Planner as V3 Planner / Prompt
+    participant Model as LLM Gateway
+
+    User->>Web: 提交生成或修改
+    Web->>API: POST /api/v1/generate 或 revise
+    API->>API: 参数校验、场景检查与限流
+    alt 平台共享模型
+        API->>Quota: 原子预留平台额度
+        Quota-->>API: 通过或拒绝
+    else 个人 BYOK
+        API->>API: 检查 API 配置与地址安全
+    end
+    API-->>Web: SSE stage - retrieving
+    API->>RAG: 检索当前需求的非遗资料
+    RAG-->>API: RetrievalBundle 与来源信息
+    API->>Planner: 场景约束、知识与修订要求
+    Planner-->>API: 生成模型消息
+    API-->>Web: SSE stage - writing
+    API->>Model: 发起流式调用
+    loop 文本增量返回
+        Model-->>API: 文本片段
+        API-->>Web: SSE snapshot / delta
+    end
+    API->>API: 清洗、章节与来源主题诊断
+    API-->>Web: SSE complete - 答案、来源与耗时
+    Web-->>User: 阅读、修改或导出
+```
+
+**关键取舍：** 场景路由、轻量规划和部分质量诊断优先使用确定性 Python 逻辑，不为每个中间步骤额外调用模型。RAG 提供文化来源线索，不构成逐条事实认证；路线也不依赖实时地图或预约接口。
+
 
 | 层级 | 技术或模块 | 作用 |
 | --- | --- | --- |
