@@ -207,6 +207,9 @@ body{background:var(--folk-paper);color:var(--folk-ink)}
  .folk-scenario-tabs{gap:3px}
  .folk-scenario{min-height:40px;padding:8px 9px;font-size:11px}
  .folk-scenario svg{display:none}
+ .folk-scenario-tabs{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:5px}
+ .folk-scenario{grid-column:span 2}
+ .folk-scenario:nth-child(4),.folk-scenario:nth-child(5){grid-column:span 3}
  .folk-input-head{margin:11px 0 8px}
  .folk-composer textarea{min-height:90px;font-size:16px;padding:11px}
  .folk-compose-footer{align-items:stretch;gap:8px}

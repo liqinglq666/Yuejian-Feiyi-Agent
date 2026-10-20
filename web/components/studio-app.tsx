@@ -130,6 +130,7 @@ export function StudioApp() {
   const sidebarRef = useRef<HTMLElement>(null);
   const sidebarCloseRef = useRef<HTMLButtonElement>(null);
   const controller = useRef<AbortController | null>(null);
+  const pendingHomepageLaunch = useRef(false);
   const closeSettings = useCallback(() => setShowSettings(false), []);
 
   useEffect(() => {
@@ -156,6 +157,8 @@ export function StudioApp() {
     queueMicrotask(() => {
       try {
         const draft = sessionStorage.getItem("yuejian-launch-draft");
+        pendingHomepageLaunch.current = sessionStorage.getItem("yuejian-start-immediately") === "1";
+        sessionStorage.removeItem("yuejian-start-immediately");
         if (draft) {
           sessionStorage.removeItem("yuejian-launch-draft");
           const selected = JSON.parse(draft) as TaskRequest;
@@ -175,6 +178,12 @@ export function StudioApp() {
     });
     return () => controller.current?.abort();
   }, []);
+
+  useEffect(() => {
+    if (!hydrated || !status || !pendingHomepageLaunch.current) return;
+    pendingHomepageLaunch.current = false;
+    queueMicrotask(() => document.getElementById("generate-submit")?.click());
+  }, [hydrated, status]);
 
   useEffect(() => {
     if (!hydrated) return;
@@ -350,7 +359,7 @@ export function StudioApp() {
             <div className="composer-actions">
               <span className="keyboard-hint">Ctrl / ⌘ + Enter 生成</span>
               {busy ? <button className="button button-stop" type="button" onClick={() => { controller.current?.abort(); setBusy(false); setStage("已取消生成"); }}><X size={17}/> 取消生成</button>
-                : <button className="button button-dark generate-button" type="submit" disabled={model.mode === "auto" && status?.platform_ready === false}>生成方案 <Send size={17} aria-hidden="true"/></button>}
+                : <button id="generate-submit" className="button button-dark generate-button" type="submit" disabled={model.mode === "auto" && status?.platform_ready === false}>生成方案 <Send size={17} aria-hidden="true"/></button>}
             </div>
             {model.mode === "auto" && status?.platform_ready === false && <div className="service-inline-notice" role="status">平台服务暂不可用，你可以在 <button type="button" onClick={() => setShowSettings(true)}>AI 设置</button> 中使用个人 API。</div>}
             {error && <div className="studio-error" id="studio-error" role="alert"><CircleHelp size={17} aria-hidden="true"/><span>{error}</span><button type="button" onClick={() => setError("")} aria-label="关闭错误提示"><X size={17}/></button></div>}

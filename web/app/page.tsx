@@ -73,6 +73,7 @@ export default function HomePage() {
     };
     try {
       sessionStorage.setItem("yuejian-launch-draft", JSON.stringify(draft));
+      sessionStorage.setItem("yuejian-start-immediately", "1");
       router.push("/studio");
     } catch {
       const query = new URLSearchParams({ scene, city, prompt:prompt.trim() });
