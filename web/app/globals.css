@@ -52,48 +52,6 @@ input:focus-visible,textarea:focus-visible,select:focus-visible{outline:2px soli
 .nav-cta{display:flex;align-items:center;gap:9px;padding:10px 17px;min-height:42px;border-radius:var(--radius-sm);background:var(--forest);color:#fff;font-weight:650}
 .nav-cta:hover{background:var(--forest-hover)}
 .nav-menu-toggle{display:none;align-items:center;justify-content:center;width:44px;height:44px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--forest)}
-/* Homepage: task selection before prose */
-.fast-main{min-height:calc(100vh - 72px);display:flex;flex-direction:column}
-.fast-workspace{padding-top:clamp(32px,5vw,68px);padding-bottom:44px;max-width:1080px;flex:1}
-.fast-heading{display:flex;justify-content:space-between;align-items:flex-end;gap:50px;margin-bottom:38px}
-.fast-heading>div:first-child{max-width:790px;min-width:0}
-.fast-overline{color:var(--accent);font-size:13px;font-weight:700;margin:0 0 12px}
-.fast-heading h1{font:600 clamp(30px,3.3vw,46px)/1.35 var(--serif);letter-spacing:.006em;margin:0 0 12px;color:var(--ink)}
-.fast-subhead{margin:0;font-size:15px;color:var(--subtle);line-height:1.85}
-.fast-aside{width:186px;min-width:186px;border-left:3px solid #B95D4C;padding-left:18px;display:flex;flex-direction:column;gap:9px;color:var(--subtle);font-size:12px}
-.fast-aside strong{font-size:13px;font-weight:550;color:var(--ink);line-height:1.75}
-.fast-section-label{font-size:15px;color:var(--ink);font-weight:700;margin:0 0 15px}
-.fast-scene-section{margin-bottom:34px}
-.fast-task-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}
-.fast-task{position:relative;min-width:0;min-height:127px;padding:19px 17px;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--surface);text-align:left;display:flex;align-items:flex-start;flex-direction:column;gap:8px;color:#78948B;transition:background-color .18s,border-color .18s,box-shadow .18s}
-.fast-task:hover{border-color:#91B5A8;background:#F7FAF7}
-.fast-task:active{transform:translateY(1px)}
-.fast-task strong{font-size:15px;color:var(--ink);font-weight:700;margin-top:4px}
-.fast-task span{font-size:12px;color:var(--subtle);line-height:1.35}
-.fast-task.is-active{border-color:#3D8476;background:#EAF4F0;box-shadow:inset 0 0 0 1px #3D8476}
-.fast-task.is-active svg{color:var(--forest)}
-.fast-task[aria-pressed=true]:after{content:"";position:absolute;right:15px;top:15px;width:7px;height:7px;border-radius:50%;background:var(--forest)}
-.fast-prompt-box{padding:25px;border-radius:var(--radius);background:var(--surface);border:1px solid var(--line);box-shadow:var(--shadow)}
-.fast-label{display:block;font-size:14px;font-weight:700;color:var(--ink);margin-bottom:10px}
-.fast-prompt-box textarea{width:100%;min-height:119px;padding:16px;border:1px solid #CCDCD5;border-radius:var(--radius-sm);font-size:15px;line-height:1.8;color:var(--ink);background:#fff}
-.fast-prompt-box textarea::placeholder{color:#869A90;opacity:1}
-.fast-prompt-box textarea[aria-invalid=true]{border-color:var(--danger)}
-.fast-form-error{margin:8px 0 0;color:var(--danger);font-size:13px}
-.fast-form-bottom{display:flex;align-items:center;gap:18px;justify-content:space-between;margin-top:15px}
-.fast-city{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--subtle)}
-.fast-city label{white-space:nowrap}
-.fast-city select{height:43px;max-width:165px;border-radius:7px;padding:0 12px;background:var(--surface-alt);border:1px solid var(--line);color:var(--ink)}
-.fast-help{font-variant-numeric:tabular-nums;font-size:12px;color:var(--subtle);margin:0 auto 0 0}
-.fast-submit{display:inline-flex;align-items:center;justify-content:center;gap:16px;min-height:46px;white-space:nowrap;padding:10px 19px;border:0;border-radius:var(--radius-sm);background:var(--forest);color:#fff;font-size:14px;font-weight:700;transition:background-color .18s}
-.fast-submit:hover{background:var(--forest-hover)}
-.fast-examples{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:14px}
-.fast-examples>span{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--subtle)}
-.fast-examples button{font-size:12px;color:#396F63;min-height:40px;border:1px solid var(--line);padding:7px 13px;border-radius:20px;background:#EDF4EF}
-.fast-examples button:hover{border-color:#9BBBAE;background:#E5F1EC}
-.fast-hint{font-size:12px;color:var(--subtle);margin:22px 0 0;line-height:1.8}
-.fast-footer{border-top:1px solid var(--line);background:#F6F4EF}
-.fast-footer .container{min-height:68px;display:flex;align-items:center;justify-content:space-between;gap:16px;font-size:12px;color:var(--subtle)}
-.fast-footer strong{color:var(--ink);font-family:var(--serif);font-size:15px}
 /* Studio layout */
 .studio-background{min-height:calc(100vh - 72px);padding-bottom:60px}
 .studio-top{display:flex;align-items:center;justify-content:space-between;gap:15px;padding-top:21px;padding-bottom:16px}
@@ -264,7 +222,6 @@ input:focus-visible,textarea:focus-visible,select:focus-visible{outline:2px soli
  .studio-shell{grid-template-columns:194px minmax(0,1fr);gap:14px}
  .studio-sidebar{padding:17px 8px}
  .composer-panel,.output-panel,.revision-panel{padding:23px}
- .fast-aside{display:none}
 }
 @media(max-width:760px){
  .container{width:min(calc(100% - 32px),1180px)}
@@ -275,11 +232,6 @@ input:focus-visible,textarea:focus-visible,select:focus-visible{outline:2px soli
  .main-nav.is-open{display:flex}
  .main-nav>a:not(.nav-cta){padding:13px 14px;min-height:44px}
  .main-nav .nav-cta{justify-content:center;margin-top:7px}
- .fast-workspace{padding-top:31px}
- .fast-heading{margin-bottom:25px}
- .fast-heading h1{font-size:33px}
- .fast-task-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
- .fast-scene-section{margin-bottom:27px}
  .studio-shell{display:block}
  .studio-top{padding-top:15px}
  .studio-sidebar{visibility:hidden;pointer-events:none;display:block;position:fixed;left:0;top:0;bottom:0;width:min(325px,88vw);max-height:none;overflow:auto;z-index:95;border-radius:0;box-shadow:20px 0 60px #0002;transform:translateX(-105%);transition:transform .22s ease}
@@ -297,22 +249,6 @@ input:focus-visible,textarea:focus-visible,select:focus-visible{outline:2px soli
  .brand-seal{width:36px;height:36px;font-size:20px}
  .brand-words strong{font-size:17px}
  .brand-words small{font-size:9px}
- .fast-heading h1{font-size:29px}
- .fast-subhead{font-size:14px}
- .fast-overline{font-size:12px}
- .fast-task-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
- .fast-task{min-height:105px;padding:14px}
- .fast-task:last-child{grid-column:1/-1;min-height:76px;display:grid;grid-template-columns:28px 1fr;align-items:center;gap:0 12px}
- .fast-task:last-child span{grid-column:2}
- .fast-task strong{font-size:14px;margin-top:0}
- .fast-task span{font-size:11px}
- .fast-prompt-box{padding:17px}
- .fast-prompt-box textarea{min-height:128px}
- .fast-form-bottom{display:grid;grid-template-columns:1fr auto;gap:12px}
- .fast-city{grid-column:1/-1}
- .fast-help{grid-column:1;grid-row:2}
- .fast-submit{grid-column:2;grid-row:2}
- .fast-footer .container{min-height:58px}
  .studio-service-label{display:none}
  .studio-heading h1{font-size:23px}
  .studio-heading p{font-size:12px}
@@ -337,7 +273,7 @@ input:focus-visible,textarea:focus-visible,select:focus-visible{outline:2px soli
  .revision-compose .button{align-self:stretch}
  .modal-backdrop{padding:10px;padding-bottom:max(10px,env(safe-area-inset-bottom))}
  .settings-dialog{padding:20px 17px;max-height:calc(100dvh - 20px)}
- .fast-prompt-box textarea,.composer-primary textarea,.revision-compose textarea,.select-wrap select,.field input:not([type=range]),.fast-city select{font-size:16px}
+ .composer-primary textarea,.revision-compose textarea,.select-wrap select,.field input:not([type=range]){font-size:16px}
  .studio-footer .container{min-height:58px}
 }
 @media(prefers-reduced-motion:reduce){
@@ -345,18 +281,3 @@ input:focus-visible,textarea:focus-visible,select:focus-visible{outline:2px soli
  *,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}
 }
 
-/* Mobile task density: expose the primary form sooner, without shrinking tap areas */
-@media(max-width:540px){
- .fast-heading{margin-bottom:20px}
- .fast-heading h1{margin-bottom:8px}
- .fast-scene-section{margin-bottom:19px}
- .fast-task-grid{grid-template-columns:repeat(6,minmax(0,1fr))}
- .fast-task{grid-column:span 2;min-height:92px;padding:12px 10px;gap:6px}
- .fast-task:nth-child(4),.fast-task:nth-child(5){grid-column:span 3}
- .fast-task:last-child{display:flex;min-height:92px}
- .fast-task strong{font-size:13px}
- .fast-task span{display:none}
- .fast-task[aria-pressed=true]:after{right:9px;top:9px;width:6px;height:6px}
- .fast-prompt-box textarea{min-height:112px}
- .fast-request-section .fast-section-label{margin-bottom:11px}
-}
