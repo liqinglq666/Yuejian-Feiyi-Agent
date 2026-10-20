@@ -90,3 +90,17 @@ def test_planner_injects_no_false_realtime_venues():
     assert "缺少官方项目记录" in plan
     msgs=build_initial_messages(request,retrieved)
     assert "【内部任务规划】" in msgs[-1]["content"]
+
+
+@pytest.mark.parametrize("query", [
+    "量子计算芯片验证",
+    "纽约马拉松参赛报名",
+    "法国法语语法规则",
+    "全球卫星组网方案",
+    "2025年卫星图像识别",
+    "龙舟竞渡的水上比赛报名",
+])
+def test_off_topic_queries_do_not_inherit_official_evidence(query):
+    from services.quality import directly_supported_topic
+    bundle=retrieve(query,top_k=3)
+    assert not any(directly_supported_topic(chunk,bundle.query) for chunk in bundle.chunks)
