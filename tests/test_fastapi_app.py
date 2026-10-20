@@ -87,6 +87,7 @@ def test_export_has_separate_rate_control(monkeypatch: pytest.MonkeyPatch) -> No
 
 def test_request_rate_limit_distinguishes_vercel_visitors(monkeypatch: pytest.MonkeyPatch) -> None:
     from fastapi import HTTPException, Request
+
     from api import main as api_module
 
     monkeypatch.setenv("VERCEL", "1")
