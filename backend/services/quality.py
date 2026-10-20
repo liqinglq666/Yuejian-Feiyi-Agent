@@ -7,7 +7,8 @@ from __future__ import annotations
 
 import re
 
-from core.models import RetrievalBundle, RetrievedChunk, TaskType
+from core.models import RetrievalBundle, RetrievedChunk, TaskRequest, TaskType
+from services.scenarios import diagnostic_findings, resolve_policy
 
 REQUIRED: dict[TaskType, tuple[str, ...]] = {
     TaskType.QA: ("一句话认识", "文化背景", "核心看点", "如何体验", "核验提醒"),
@@ -45,7 +46,12 @@ def directly_supported_topic(chunk: RetrievedChunk, query: str) -> bool:
     return any(name in query for name in names)
 
 
-def inspect_answer(answer: str, task_type: TaskType, retrieval: RetrievalBundle) -> dict:
+def inspect_answer(
+    answer: str,
+    task_type: TaskType,
+    retrieval: RetrievalBundle,
+    request: TaskRequest | None = None,
+) -> dict:
     headings = {h.strip() for h in re.findall(r"^##\s+(.+?)\s*$", answer, flags=re.MULTILINE)}
     missing = [title for title in REQUIRED[task_type] if title not in headings]
     sources = {
@@ -53,11 +59,14 @@ def inspect_answer(answer: str, task_type: TaskType, retrieval: RetrievalBundle)
         for chunk in retrieval.chunks
         if directly_supported_topic(chunk, retrieval.query)
     }
-    # A deterministic check can identify incomplete headings, not truthfulness.
-    # Do not claim precision, supported accuracy or quote-level verification.
+    # Heuristic hints are advisory, never evidence of verified safety/accuracy.
+    policy = resolve_policy(request) if request is not None else None
+    hints = diagnostic_findings(answer, request) if request is not None else ()
     return {
         "sections_complete": not missing,
         "missing_sections": missing,
         "official_source_count": len(sources),
         "needs_fact_verification": not bool(sources),
+        "scenario": policy.key if policy is not None else None,
+        "scene_review_hints": list(hints),
     }
