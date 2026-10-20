@@ -72,12 +72,12 @@ for (const width of [375, 768, 1440]) {
     await page.setViewportSize({ width, height: 900 });
     await mockService(page);
     await page.goto("/");
-    await expect(page.getByRole("heading", { name: "找到适合你的非遗体验" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: /去广东，.*鲜活的非遗/ })).toBeVisible();
     await checkNoHorizontalOverflow(page);
     await page.getByRole("button", { name: /亲子体验/ }).first().click();
     await expect(page.getByRole("button", { name: /亲子体验/ }).first()).toHaveAttribute("aria-pressed", "true");
-    await page.getByLabel("你希望体验什么？").fill(draftText);
-    await page.getByRole("button", { name: /下一步：生成方案/ }).click();
+    await page.locator("#fast-request").fill(draftText);
+    await page.getByRole("button", { name: /前往生成/ }).click();
     await expect(page).toHaveURL(/\/studio$/);
     await expect(page.locator("#request-input")).toHaveValue(draftText);
     await checkNoHorizontalOverflow(page);
@@ -125,4 +125,16 @@ test("generation, editing, exporting and empty-field error", async ({ page }) =>
 
   await page.getByRole("button", { name: "更适合亲子" }).click();
   await expect(page.getByText("已调整的亲子体验路线。")).toBeVisible();
+});
+
+
+test("inspiration is actionable, not a fake event or booking feature", async ({ page }) => {
+  await page.setViewportSize({width:375,height:812});
+  await mockService(page);
+  await page.goto("/");
+  await page.getByRole("button",{name:/陆丰皮影/}).click();
+  await expect(page.locator("#fast-request")).toContainText("陆丰皮影戏");
+  await expect(page.getByRole("button",{name:"非遗问答"})).toHaveAttribute("aria-pressed","true");
+  await expect(page.locator("#fast-city")).toHaveValue("汕尾");
+  await checkNoHorizontalOverflow(page);
 });
