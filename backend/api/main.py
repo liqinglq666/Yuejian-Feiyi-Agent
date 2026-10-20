@@ -21,7 +21,6 @@ from fastapi.responses import Response, StreamingResponse
 from pydantic import BaseModel, Field, SecretStr
 
 from core.config import build_model_config, platform_service_ready
-from core.quotas import reserve_platform_request, shared_quota_ready
 from core.models import (
     MAX_RAW_REQUEST_CHARS,
     MAX_REVISION_INSTRUCTION_CHARS,
@@ -30,6 +29,7 @@ from core.models import (
     TaskRequest,
     TaskType,
 )
+from core.quotas import reserve_platform_request, shared_quota_ready
 from core.revisions import REVISION_PRESETS, plan_custom_revision, plan_quick_revision
 from services.export import build_docx, build_markdown, build_plain_text
 from services.llm import ModelGatewayError, collect_stream_with_safe_fallback

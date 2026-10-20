@@ -1,8 +1,5 @@
 from __future__ import annotations
 
-import os
-from unittest.mock import Mock
-
 import pytest
 from fastapi import HTTPException
 from fastapi.testclient import TestClient
@@ -52,12 +49,8 @@ def test_atomic_script_reserves_then_rejects(monkeypatch: pytest.MonkeyPatch) ->
         return httpx.Response(200, json={"result": 0 if state["count"] == 1 else 2})
 
     transport = httpx.MockTransport(handler)
-    class FakeClient:
-        def __init__(self, **kwargs): pass
-        def __enter__(self): return httpx.Client(transport=transport)
-        def __exit__(self, *args): pass
-
-    monkeypatch.setattr("core.quotas.httpx.Client", FakeClient)
+    real_client = httpx.Client
+    monkeypatch.setattr("core.quotas.httpx.Client", lambda **kw: real_client(transport=transport))
     reserve_platform_request(_request())
     with pytest.raises(HTTPException) as exc:
         reserve_platform_request(_request())
