@@ -6,7 +6,12 @@ from fastapi.testclient import TestClient
 from starlette.requests import Request
 
 from api.main import app
-from core.quotas import _redis_credentials, _visitor_fingerprint, reserve_platform_request, shared_quota_ready
+from core.quotas import (
+    _redis_credentials,
+    _visitor_fingerprint,
+    reserve_platform_request,
+    shared_quota_ready,
+)
 
 
 def _request(headers: list[tuple[bytes,bytes]] | None = None) -> Request:
