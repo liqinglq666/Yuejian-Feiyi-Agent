@@ -1,47 +1,46 @@
-# 广东非遗知识库规范
+# 知识库维护
 
-`data/` 下的数据分为两类：**可追溯的结构化非遗项目**和**辅助场景资料**。两类数据均可参与检索，但官方出处与网站编辑建议应区别对待。
+当前知识资料在 `data/` 目录下分两类：结构化非遗项目记录，以及用于路线、研学、创作的补充文档。两者都可检索，但仅来源核对过的项目资料可以作为相应名录事实的依据。
 
-## 结构化官方项目
+## 项目记录
 
-`data/heritage_records.json` 当前收录 12 条带精确国家级非遗项目页面的记录，`backend/data/heritage_records.json` 为 Vercel Service 部署镜像。
+`data/heritage_records.json` 当前有 12 条记录，分别保存项目名称、别名、城市、类别、名录编号、来源链接、核对日期和文化事实。`audiences`、`experience`、`notice` 则是产品编辑的适用人群、体验建议和出行提醒，不代表官方实际活动安排。
 
-单条记录字段：
-
-| 字段 | 内容 |
+| 字段 | 用途 |
 | --- | --- |
-| `id`、`name`、`aliases` | 唯一标识、正式名称、常见别名 |
-| `cities`、`category` | 地区与非遗类别 |
-| `registry_code` | 已经核对的名录编号 |
-| `source_name`、`source_url` | 来源单位与具体 HTTPS 项目页面 |
-| `verified_on` | 本项目实际核验该页面的日期，而非官方发布日期 |
-| `facts` | 可从可靠来源整理的项目文化事实 |
-| `audiences`、`experience` | 网站提出的适用人群与体验建议，**不等于官方活动信息** |
-| `notice` | 实际参访、课程、票务与演出需再确认的事项 |
+| `id` / `name` / `aliases` | 项目标识、名称和别名 |
+| `cities` / `category` | 城市与类别 |
+| `registry_code` | 经核对的名录编号 |
+| `source_name` / `source_url` | 机构与对应项目页面 |
+| `verified_on` | 本仓库核对资料的日期 |
+| `facts` | 经过整理的文化事实 |
+| `audiences` / `experience` / `notice` | 使用建议和注意事项 |
 
-新增记录前，先打开并核对来源页面。不得凭模型生成结果补充编号、人物、活动地点和核验日期；来源必须为明确项目页，不能把门户首页标成具体项目依据。增加条目后同步 `backend/data/`，补充对应的检索回归测试。
+来源要能明确对应到所写项目。不能仅凭名称推断项目编号、历史人物或活动地点。例如，**龙舟说唱**属于曲艺，不应被当作水上龙舟竞渡；两者名称相近但不是同一种活动。
 
-## Markdown / TXT 补充资料
+## 辅助资料
 
-`data/*.md` 与 `data/*.txt` 用于城市知识、研学设计和创作背景。Markdown 可以使用 Front Matter：
+`data/` 下的 Markdown、TXT 用于城市路线、研学和内容创作。Markdown 可以附带元数据：
 
 ```yaml
 ---
 title: 粤剧文化观察
 city: 广州
 category: 传统戏剧
-source_name: 已核实的文化资料来源
-source_url: https://www.ihchina.cn/
-updated_at: 2026-10-20
+source_name: 资料来源名称
+source_url: https://example.com/project-page
 ---
 ```
 
-示例地址用于展示字段格式，不代表该文档已经有项目级官方来源。实际编辑时请填写与正文事实对应的具体资料链接；无法核验则不要添加虚假的 `source_url`。
+示例 URL 仅用于说明字段；正式资料应填写实际核对过的具体页面。无来源时不要虚构链接或名录信息。尽量用自己的文字概括资料，避免复制大段原文。
 
-## 检索与使用边界
+## 更新流程
 
-检索器结合 BM25、中文字符 n-gram、元数据加权与去重，并加入主题相关性阈值。匹配当前问题的官方记录获得优先权；未核实的辅助资料不能自动视为已验证事实。
+新增或修改项目时，先检查具体项目页面及其字段，再同步修改 `backend/data/` 中的部署镜像。增加评测案例后运行：
 
-场馆开放、演出场次、票价、预约及实时交通具有时效性，生成内容应提示用户以官方最新信息为准。更多实现细节见 [结构化知识库升级](KNOWLEDGE_BASE_UPGRADE.md) 与 [Agent V3](AGENT_V3.md)。
+```bash
+python -m scripts.run_benchmark
+pytest
+```
 
-运行 `python -m scripts.run_benchmark` 验证当前检索回归。
+检索结果不包含实时场馆开放、票价、演出和预约信息；这些数据应让使用者在出行前确认。
