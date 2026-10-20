@@ -6,7 +6,7 @@ from fastapi.testclient import TestClient
 from starlette.requests import Request
 
 from api.main import app
-from core.quotas import _visitor_fingerprint, reserve_platform_request, shared_quota_ready
+from core.quotas import _redis_credentials, _visitor_fingerprint, reserve_platform_request, shared_quota_ready
 
 
 def _request(headers: list[tuple[bytes,bytes]] | None = None) -> Request:
@@ -17,6 +17,8 @@ def test_without_shared_redis_platform_is_disabled(monkeypatch: pytest.MonkeyPat
     monkeypatch.setenv("OPENAI_API_KEY", "only-for-test")
     monkeypatch.delenv("UPSTASH_REDIS_REST_URL", raising=False)
     monkeypatch.delenv("UPSTASH_REDIS_REST_TOKEN", raising=False)
+    monkeypatch.delenv("KV_REST_API_URL", raising=False)
+    monkeypatch.delenv("KV_REST_API_TOKEN", raising=False)
     assert not shared_quota_ready()
     assert TestClient(app).get("/v1/status").json()["platform_ready"] is False
     with pytest.raises(HTTPException) as exc:
@@ -71,3 +73,43 @@ def test_quota_fails_closed_on_storage_error(monkeypatch: pytest.MonkeyPatch) ->
     with pytest.raises(HTTPException) as exc:
         reserve_platform_request(_request())
     assert exc.value.status_code == 503
+
+
+def test_vercel_upstash_kv_env_aliases_work(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv("UPSTASH_REDIS_REST_URL", raising=False)
+    monkeypatch.delenv("UPSTASH_REDIS_REST_TOKEN", raising=False)
+    monkeypatch.setenv("KV_REST_API_URL", "https://demo.upstash.io")
+    monkeypatch.setenv("KV_REST_API_TOKEN", "kv-secret")
+    assert shared_quota_ready()
+    assert _redis_credentials() == ("https://demo.upstash.io", "kv-secret")
+
+
+def test_redis_credential_pairs_are_not_mixed(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("UPSTASH_REDIS_REST_URL", "https://different.upstash.io")
+    monkeypatch.delenv("UPSTASH_REDIS_REST_TOKEN", raising=False)
+    monkeypatch.setenv("KV_REST_API_URL", "https://demo.upstash.io")
+    monkeypatch.setenv("KV_REST_API_TOKEN", "kv-secret")
+    assert _redis_credentials() == ("https://demo.upstash.io", "kv-secret")
+    monkeypatch.delenv("KV_REST_API_TOKEN")
+    assert not shared_quota_ready()
+
+
+def test_vercel_kv_request_calls_shared_quota(monkeypatch: pytest.MonkeyPatch) -> None:
+    import httpx
+
+    monkeypatch.delenv("UPSTASH_REDIS_REST_URL", raising=False)
+    monkeypatch.delenv("UPSTASH_REDIS_REST_TOKEN", raising=False)
+    monkeypatch.setenv("KV_REST_API_URL", "https://demo.upstash.io")
+    monkeypatch.setenv("KV_REST_API_TOKEN", "kv-secret")
+
+    seen: list[httpx.Request] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen.append(request)
+        return httpx.Response(200, json={"result": 0})
+
+    original = httpx.Client
+    monkeypatch.setattr("core.quotas.httpx.Client", lambda **kwargs: original(transport=httpx.MockTransport(handler)))
+    reserve_platform_request(_request())
+    assert len(seen) == 1
+    assert seen[0].headers["authorization"] == "Bearer kv-secret"

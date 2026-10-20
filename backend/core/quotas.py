@@ -37,8 +37,25 @@ def _limit(name: str, default: int) -> int:
     except ValueError:
         return default
 
+def _redis_credentials() -> tuple[str, str]:
+    """Find a complete REST credential pair without mixing integration prefixes.
+
+    Vercel's Upstash marketplace commonly binds KV_REST_API_* variables;
+    standalone Upstash integrations may bind UPSTASH_REDIS_REST_* instead.
+    """
+    for url_key, token_key in (
+        ("UPSTASH_REDIS_REST_URL", "UPSTASH_REDIS_REST_TOKEN"),
+        ("KV_REST_API_URL", "KV_REST_API_TOKEN"),
+    ):
+        url = os.getenv(url_key, "").strip()
+        token = os.getenv(token_key, "").strip()
+        if url and token:
+            return url, token
+    return "", ""
+
+
 def shared_quota_ready() -> bool:
-    return bool(os.getenv("UPSTASH_REDIS_REST_URL", "").strip() and os.getenv("UPSTASH_REDIS_REST_TOKEN", "").strip())
+    return bool(all(_redis_credentials()))
 
 def _visitor_fingerprint(request: Request) -> str:
     # Vercel overwrites this header at its edge. Do not trust arbitrary
@@ -55,11 +72,11 @@ def _visitor_fingerprint(request: Request) -> str:
 def reserve_platform_request(request: Request) -> None:
     if not shared_quota_ready():
         raise HTTPException(status_code=503, detail="平台 AI 暂未开放。你可以在 AI 设置中使用自己的 API。")
-    endpoint = os.getenv("UPSTASH_REDIS_REST_URL", "").strip().rstrip("/")
+    endpoint, token = _redis_credentials()
+    endpoint = endpoint.rstrip("/")
     parsed = urlparse(endpoint)
     if parsed.scheme != "https" or not parsed.hostname or not parsed.hostname.endswith(".upstash.io") or parsed.username or parsed.password or parsed.query or parsed.fragment:
         raise HTTPException(status_code=503, detail="平台额度服务配置异常，请稍后重试。")
-    token = os.getenv("UPSTASH_REDIS_REST_TOKEN", "").strip()
     visitor = _visitor_fingerprint(request)
     now = int(time.time())
     date = datetime.fromtimestamp(now, tz=timezone.utc).strftime("%Y%m%d")

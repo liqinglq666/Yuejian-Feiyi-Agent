@@ -2,10 +2,17 @@
 
 网站采用 Vercel Services（Next.js + FastAPI）。平台 AI 共享额度由 Upstash Redis 原子计数保护，**Redis 未配置或不可用时平台调用关闭**，个人自备 API 仍可使用。
 
-在 Vercel 项目的 Storage/Marketplace 中安装 Upstash Redis，绑定 **yuejian-feiyi** 项目，确保 Production 环境具有以下两个值（可由集成自动注入）：
+在 Vercel 项目的 Storage/Marketplace 中安装 Upstash Redis，绑定 **yuejian-feiyi** 项目，确保 Production 环境具有以下**任意完整的一组**变量（可由集成自动注入，无需手动查看或复制密钥）：
 
 - `UPSTASH_REDIS_REST_URL`
 - `UPSTASH_REDIS_REST_TOKEN`（仅服务器端 Secret）
+
+**Vercel Upstash Marketplace 常用另一套变量名称，网站现在同样支持：**
+
+- `KV_REST_API_URL`
+- `KV_REST_API_TOKEN`（仅服务器端 Secret）
+
+后端优先使用完整的 `UPSTASH_REDIS_REST_*` 配对，找不到时使用完整的 `KV_REST_API_*` 配对，不会混用不同连接的 URL 和 Token。
 
 已有的 `OPENAI_API_KEY`、`OPENAI_BASE_URL`、`MODEL_NAME` 仍保留。
 
