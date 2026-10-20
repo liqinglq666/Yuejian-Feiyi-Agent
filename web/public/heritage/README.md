@@ -1,18 +1,12 @@
-# 粤见非遗视觉素材
+# 粤见非遗 · 网站插画
 
-目录：`web/public/heritage/`
+网站实际使用以下四张 WebP 插画：
 
-| 文件名 | 位置与用途 |
+| 文件名 | 页面用途 |
 | --- | --- |
-| `lingnan-festival-hero-desktop.webp` | 桌面首页主视觉 |
-| `lingnan-festival-hero-mobile.webp` | 移动端主视觉备选 |
-| `heritage-folk-procession.webp` | 文化灵感：潮汕民俗 |
-| `heritage-dragon-boat.webp` | 文化灵感：端午龙舟 |
-| `heritage-shadow-puppetry.webp` | 文化灵感：陆丰皮影 |
-| `heritage-studio-empty.webp` | 工作台的空状态／插画 |
-| `lingnan-roof-floral-corner.webp` | 岭南屋檐花卉局部装饰 |
-| `lingnan-floral-divider.webp` | 页脚装饰 |
+| `lingnan-festival-hero-desktop.webp` | 首页主视觉（桌面和移动端自适应裁切） |
+| `heritage-folk-procession.webp` | 英歌舞文化示例 |
+| `heritage-dragon-boat.webp` | 龙舟文化示例 |
+| `heritage-shadow-puppetry.webp` | 陆丰皮影文化示例 |
 
-图像为根据本项目视觉方向生成的独立插画，已转换为压缩 WebP；UI 不使用参考图上的现成文字、标志或水印。插画只代表文化主题，不代表活动、景点或演出已有实时预约信息。
-
-视觉原则：`#e72451` 玫红用于主按钮，`#fef97b` 浅黄用于少量强调，`#78c3fe` 天蓝用于装饰与辅助背景；正文保持深色和高对比度。网站真实功能仍为五种 AI 任务，不引入没有数据或 API 支撑的地图、订单、活动日历。
+视觉风格采用暖白背景、岭南青色交互控件及少量砖红点缀。插画只是文化主题展示，不意味着对应活动当前开放或可预约。
