@@ -166,7 +166,7 @@ def _generation_events(config, task: TaskRequest, revision: RevisionRequest | No
         last = ""
         began_at = time.monotonic()
         first_token_ms = None
-        last_sent_at = began_at
+        last_sent_at = began_at - 1.0
         for text, is_final in collect_stream_with_safe_fallback(
             config, messages, temperature=temperature
         ):
@@ -188,7 +188,7 @@ def _generation_events(config, task: TaskRequest, revision: RevisionRequest | No
                 })
             elif cleaned != last and now - last_sent_at >= 0.12:
                 # Send only appended text. A sanitized rewrite uses a snapshot.
-                if cleaned.startswith(last):
+                if last and cleaned.startswith(last):
                     yield _sse("delta", {"text": cleaned[len(last):]})
                 else:
                     yield _sse("snapshot", {"text": cleaned})
