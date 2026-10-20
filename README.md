@@ -4,7 +4,7 @@
 
 **在线体验：** https://yuejian-feiyi.vercel.app/
 
-![岭南文化插画](./assets/readme_hero_lingnan.png)
+![岭南文化插画](./web/public/heritage/lingnan-festival-hero-desktop.webp)
 
 ## 功能
 
@@ -26,7 +26,7 @@
 | `data/` | 非遗资料与来源记录 |
 | `backend/` | Vercel Backend Service 的独立部署镜像 |
 | `evaluation/`、`tests/`、`web/tests/` | 60 条检索评测、Python 和浏览器回归测试 |
-| `app.py` | 旧版 Streamlit 兼容入口，不属于当前网站 |
+| `services/scenarios.py` | V3 的场景专属策略与结果自检 |
 
 `backend/` 镜像目前服务于 Vercel 多服务部署，修改根目录的 Python 核心逻辑时需同步相应后端文件。
 
