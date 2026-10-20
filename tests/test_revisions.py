@@ -3,8 +3,6 @@ from core.revisions import plan_custom_revision, plan_quick_revision
 from services.prompt_builder import build_revision_messages
 
 
-
-
 def test_quick_content_conversion_updates_scene_and_task_type() -> None:
     request = TaskRequest(scene="游客路线", raw_request="广州非遗路线", duration="一天")
     plan = plan_quick_revision(request, "生成短视频脚本")
