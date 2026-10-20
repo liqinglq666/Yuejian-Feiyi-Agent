@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import {
-  ArrowLeft, ArrowRight, BookOpen, Check, ChevronDown, CircleHelp, Copy,
+  ArrowLeft, ArrowRight, ArrowUpRight, BookOpen, Check, ChevronDown, CircleHelp, Copy,
   Clock3, Compass, Download, FileText, GraduationCap, HeartHandshake, LoaderCircle,
   MapPin, Menu, MessageCircle, PencilLine, Plus, RefreshCw, Send, Settings2,
   ShieldCheck, X,
@@ -194,7 +194,7 @@ export function StudioApp() {
     if (kind === "revise" && !result) return;
     if (kind === "generate" && !request.raw_request.trim()) { setError("请先写下你的需求，或者使用示例。"); inputRef.current?.focus(); return; }
     if (model.mode === "user" && (!model.api_key.trim() || !model.base_url.trim() || !model.model_name.trim())) { setError("请先在 AI 服务设置中填写完整的个人 API 信息。"); setShowSettings(true); return; }
-    setBusy(true); setError(""); setNotice(""); setStream(""); setStage("正在准备你的方案…");
+    setBusy(true); setError(""); setNotice(""); setStream(""); setActiveTab("all"); setStage("正在准备你的方案…");
     const abortController = new AbortController();
     controller.current = abortController;
     const previous = result;
@@ -269,14 +269,14 @@ export function StudioApp() {
         </div>
       </div>
       <div className="studio-shell container">
-        <aside className={`studio-sidebar ${drawerOpen ? "sidebar-open" : ""}`}>
+        <aside id="studio-scenes" className={`studio-sidebar ${drawerOpen ? "sidebar-open" : ""}`}>
           <div className="sidebar-topline"><div className="sidebar-brand">粤见非遗</div><button aria-label="关闭菜单" type="button" onClick={() => setDrawerOpen(false)} className="sidebar-close"><X size={19}/></button></div>
           <h2 className="sidebar-heading">选择体验</h2>
           <div className="sidebar-section-label">体验类型</div>
           <div className="sidebar-scene-list">
             {SCENES.map((scene) => {
               const Icon = scene.icon;
-              return <button className={`sidebar-scene ${request.scene === scene.key ? "selected" : ""}`} key={scene.key} type="button" onClick={() => selectScene(scene.key)} disabled={busy}>
+              return <button className={`sidebar-scene ${request.scene === scene.key ? "selected" : ""}`} key={scene.key} type="button" onClick={() => selectScene(scene.key)} disabled={busy} aria-pressed={request.scene === scene.key}>
                 <span className="sidebar-scene-icon"><Icon size={19} strokeWidth={1.6}/></span>
                 <span className="sidebar-scene-text"><strong>{scene.name}</strong><small>{scene.desc}</small></span>
                 {request.scene === scene.key ? <span className="sidebar-selected-mark"><Check size={14} aria-hidden="true"/></span> : <ArrowRight className="sidebar-arrow" size={15}/>}
@@ -296,7 +296,7 @@ export function StudioApp() {
 
         <div className="studio-main">
           <div className="studio-heading"><div><h1>生成非遗体验方案</h1><p>选择类型、描述需求，即可开始。</p></div><button type="button" className="studio-new-button" onClick={startNew} disabled={busy}><Plus size={17} aria-hidden="true"/> 新方案</button></div>
-          <div className="mobile-scene-bar"><button type="button" onClick={() => setDrawerOpen(true)}><Menu size={17}/> {visibleScene.name} <ChevronDown size={15}/></button><button type="button" onClick={startNew}><Plus size={17}/> 新方案</button></div>
+          <div className="mobile-scene-bar"><button type="button" onClick={() => setDrawerOpen(true)} aria-expanded={drawerOpen} aria-controls="studio-scenes"><Menu size={17}/> {visibleScene.name} <ChevronDown size={15}/></button><button type="button" onClick={startNew}><Plus size={17}/> 新方案</button></div>
 
           <form className="composer-panel" aria-labelledby="composer-title" onSubmit={(event) => {event.preventDefault();void run("generate");}}>
             <div className="panel-heading">
@@ -313,7 +313,7 @@ export function StudioApp() {
                 <div className="inspiration-list">{EXAMPLES.map((example,index)=><button type="button" key={example.title} disabled={busy} onClick={() => {applyExample(index);inputRef.current?.focus();}}>{example.title}</button>)}</div>
                 <div className="interest-wrapper">
                   <button className="interest-toggle" type="button" onClick={() => setInterestsOpen(!interestsOpen)} aria-expanded={interestsOpen}>特别想体验的文化主题 <span>{request.interests.length ? `已选择 ${request.interests.length} 项` : "按需添加"} <ChevronDown size={16}/></span></button>
-                  {interestsOpen && <div className="interest-chips">{INTERESTS.map((interest)=><button type="button" disabled={busy} key={interest} className={request.interests.includes(interest) ? "active" : ""} onClick={() => patch({interests:request.interests.includes(interest) ? request.interests.filter((x) => x !== interest) : [...request.interests,interest]})}>{request.interests.includes(interest) && <Check size={12}/>} {interest}</button>)}</div>}
+                  {interestsOpen && <div className="interest-chips">{INTERESTS.map((interest)=><button type="button" disabled={busy} key={interest} aria-pressed={request.interests.includes(interest)} className={request.interests.includes(interest) ? "active" : ""} onClick={() => patch({interests:request.interests.includes(interest) ? request.interests.filter((x) => x !== interest) : [...request.interests,interest]})}>{request.interests.includes(interest) && <Check size={12}/>} {interest}</button>)}</div>}
                 </div>
               </div>
               <details className="composer-preferences">

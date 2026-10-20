@@ -289,6 +289,7 @@ input:focus-visible,textarea:focus-visible,select:focus-visible{outline:2px soli
  .sidebar-close{display:grid;place-items:center;width:43px;height:43px;border:1px solid var(--line);border-radius:8px;background:var(--surface-alt)}
  .mobile-side-overlay{display:block;position:fixed;inset:0;z-index:90;border:0;background:#0a2019a6;cursor:pointer}
  .mobile-scene-bar{display:flex;justify-content:space-between;gap:10px;margin-bottom:16px}
+ .studio-heading .studio-new-button{display:none}
  .mobile-scene-bar button{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:44px;background:#fff;border:1px solid var(--line);border-radius:var(--radius-sm);color:var(--forest);padding:8px 14px;font-size:13px}
  .studio-heading{margin-bottom:15px}
 }
