@@ -73,7 +73,8 @@ def test_quota_fails_closed_on_storage_error(monkeypatch: pytest.MonkeyPatch) ->
     import httpx
     def handler(request: httpx.Request) -> httpx.Response:
         return httpx.Response(503, json={"error":"unavailable"})
-    monkeypatch.setattr("core.quotas.httpx.Client", lambda **kw: httpx.Client(transport=httpx.MockTransport(handler)))
+    real_client = httpx.Client
+    monkeypatch.setattr("core.quotas.httpx.Client", lambda **kw: real_client(transport=httpx.MockTransport(handler)))
     with pytest.raises(HTTPException) as exc:
         reserve_platform_request(_request())
     assert exc.value.status_code == 503

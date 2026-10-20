@@ -33,6 +33,7 @@ export interface Plan {
 export interface AppStatus {
   service: string;
   platform_ready: boolean;
+  platform_quota_protected: boolean;
   scenes: Scene[];
   revision_presets: string[];
 }
