@@ -75,6 +75,8 @@ jobs:
         run: npm install --no-audit --no-fund
       - name: Install browser
         run: npx playwright install --with-deps chromium
+      - name: Build production frontend for browser checks
+        run: npm run build
       - name: Test 375px, 768px and 1440px flows
         run: npm run test:e2e
       - name: Upload Playwright traces on failure
