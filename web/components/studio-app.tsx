@@ -261,7 +261,7 @@ export function StudioApp() {
     <SiteHeader />
     <main className="studio-background" id="main-content">
       <div className="studio-top container">
-        <div className="studio-breadcrumb"><Link href="/"><ArrowLeft size={15}/> 返回首页</Link><span>/</span><span>智能文化工作台</span></div>
+        <div className="studio-breadcrumb"><Link href="/"><ArrowLeft size={15} aria-hidden="true"/> 首页</Link><span className="crumb-separator">/</span><span>AI 工作台</span></div>
         <div className="studio-top-actions">
           <span className={`studio-service-dot ${status?.platform_ready ? "is-live" : ""}`}/>
           <span className="studio-service-label">{model.mode === "user" ? "个人 API" : status === null ? "正在检查服务…" : status.platform_ready ? "平台服务可用" : "平台服务暂不可用"}</span>
@@ -270,8 +270,8 @@ export function StudioApp() {
       </div>
       <div className="studio-shell container">
         <aside className={`studio-sidebar ${drawerOpen ? "sidebar-open" : ""}`}>
-          <div className="sidebar-topline"><div className="eyebrow">YUEJIAN / CULTURE LAB</div><button aria-label="关闭菜单" type="button" onClick={() => setDrawerOpen(false)} className="sidebar-close"><X size={19}/></button></div>
-          <h2 className="sidebar-heading">工作台</h2>
+          <div className="sidebar-topline"><div className="sidebar-brand">粤见非遗</div><button aria-label="关闭菜单" type="button" onClick={() => setDrawerOpen(false)} className="sidebar-close"><X size={19}/></button></div>
+          <h2 className="sidebar-heading">选择体验</h2>
           <div className="sidebar-section-label">体验类型</div>
           <div className="sidebar-scene-list">
             {SCENES.map((scene) => {
@@ -279,44 +279,45 @@ export function StudioApp() {
               return <button className={`sidebar-scene ${request.scene === scene.key ? "selected" : ""}`} key={scene.key} type="button" onClick={() => selectScene(scene.key)} disabled={busy}>
                 <span className="sidebar-scene-icon"><Icon size={19} strokeWidth={1.6}/></span>
                 <span className="sidebar-scene-text"><strong>{scene.name}</strong><small>{scene.desc}</small></span>
-                {request.scene === scene.key ? <span className="sidebar-selected-mark"><Check size={14}/></span> : <ArrowRight className="sidebar-arrow" size={15}/>}
+                {request.scene === scene.key ? <span className="sidebar-selected-mark"><Check size={14} aria-hidden="true"/></span> : <ArrowRight className="sidebar-arrow" size={15}/>}
               </button>;
             })}
           </div>
           <div className="sidebar-library">
             <div className="sidebar-section-label">最近生成</div>
             {recents.length ? recents.map((plan) => <button type="button" key={plan.id} className="recent-plan" onClick={() => {
-              setResult(plan); setRequest(plan.request); setStream(""); setActiveTab("all"); setDrawerOpen(false);
-            }}><FileText size={17}/><span><strong>{plan.request.city !== "自动判断" ? plan.request.city : "非遗"} · {plan.request.scene}</strong><small>{plan.createdAt}</small></span></button>) : <p className="no-recents">还没有保存的文化提案。<br/>第一份方案将在生成后自动出现。</p>}
+              if (busy) return;
+              setResult(plan); setRequest(plan.request); setStream(""); setActiveTab("all"); setDrawerOpen(false); setError(""); setNotice("");
+              requestAnimationFrame(() => document.getElementById("proposal")?.scrollIntoView({behavior:"smooth",block:"start"}));
+            }}><FileText size={17}/><span><strong>{plan.request.city !== "自动判断" ? plan.request.city : "非遗"} · {plan.request.scene}</strong><small>{plan.createdAt}</small></span></button>) : <p className="no-recents">生成的方案会暂存在这个浏览器会话中。</p>}
           </div>
           
         </aside>
 
         <div className="studio-main">
-          <div className="studio-welcome ux-short">
-            <div><div className="eyebrow">AI 文化工作台</div><h1>把想法变成一份非遗体验方案</h1><p>选好体验类型，描述需求即可生成；其他选项都可以跳过。</p></div>
-          </div>
+          <div className="studio-heading"><div><h1>生成非遗体验方案</h1><p>选择类型、描述需求，即可开始。</p></div><button type="button" className="studio-new-button" onClick={startNew} disabled={busy}><Plus size={17} aria-hidden="true"/> 新方案</button></div>
           <div className="mobile-scene-bar"><button type="button" onClick={() => setDrawerOpen(true)}><Menu size={17}/> {visibleScene.name} <ChevronDown size={15}/></button><button type="button" onClick={startNew}><Plus size={17}/> 新方案</button></div>
 
-          <section className="composer-panel ux-compact" aria-labelledby="composer-title">
+          <form className="composer-panel" aria-labelledby="composer-title" onSubmit={(event) => {event.preventDefault();void run("generate");}}>
             <div className="panel-heading">
-              <div><h2 id="composer-title">你想了解或体验什么？</h2><p>简单写下想法，其他细节可稍后调整。</p></div>
+              <div><h2 id="composer-title">描述你的需求</h2><p>可以很简单，例如“广州一天的广绣与粤剧路线”。</p></div>
             </div>
             <div className="composer-grid">
               <div className="composer-primary">
-                <label className="field-head" htmlFor="request-input">你的需求 <small>{request.raw_request.length} / 1200</small></label>
-                <textarea id="request-input" rows={4} maxLength={1200} value={request.raw_request} disabled={busy}
-                  placeholder="例如：周末带孩子去佛山体验醒狮和陶塑，安排轻松的半天行程。"
-                  onChange={(event) => patch({raw_request:event.target.value})}/>
-                <div className="inspiration-caption"><Sparkles size={14}/> 快速填写示例</div>
-                <div className="inspiration-list">{EXAMPLES.map((example,index)=><button type="button" key={example.title} disabled={busy} onClick={() => applyExample(index)}>{example.title}<ArrowUpRight size={14}/></button>)}</div>
+                <label className="field-head" htmlFor="request-input">你的想法 <small>{request.raw_request.length}/1200</small></label>
+                <textarea ref={inputRef} id="request-input" name="request" autoComplete="off" aria-invalid={!!error} aria-describedby={error ? "studio-error" : undefined} rows={4} maxLength={1200} value={request.raw_request} disabled={busy}
+                  placeholder="例如：周末带孩子去佛山体验醒狮和陶塑，安排轻松的半天行程……"
+                  onChange={(event) => patch({raw_request:event.target.value})}
+                  onKeyDown={(event) => {if ((event.ctrlKey || event.metaKey) && event.key === "Enter") {event.preventDefault();void run("generate");}}}/>
+                <div className="inspiration-caption">试试这些示例</div>
+                <div className="inspiration-list">{EXAMPLES.map((example,index)=><button type="button" key={example.title} disabled={busy} onClick={() => {applyExample(index);inputRef.current?.focus();}}>{example.title}</button>)}</div>
                 <div className="interest-wrapper">
                   <button className="interest-toggle" type="button" onClick={() => setInterestsOpen(!interestsOpen)} aria-expanded={interestsOpen}>特别想体验的文化主题 <span>{request.interests.length ? `已选择 ${request.interests.length} 项` : "按需添加"} <ChevronDown size={16}/></span></button>
                   {interestsOpen && <div className="interest-chips">{INTERESTS.map((interest)=><button type="button" disabled={busy} key={interest} className={request.interests.includes(interest) ? "active" : ""} onClick={() => patch({interests:request.interests.includes(interest) ? request.interests.filter((x) => x !== interest) : [...request.interests,interest]})}>{request.interests.includes(interest) && <Check size={12}/>} {interest}</button>)}</div>}
                 </div>
               </div>
               <details className="composer-preferences">
-                <summary className="ux-preferences-toggle"><span><Settings2 size={17}/> 可选设置：城市、时长与风格</span><ChevronDown size={16}/></summary>
+                <summary className="ux-preferences-toggle"><span><Settings2 size={17} aria-hidden="true"/> 更多选项 <small>城市、时长、风格</small></span><ChevronDown size={16} aria-hidden="true"/></summary>
                 <div className="ux-preferences-fields">
                 <Choice label="探索城市" value={request.city} values={CITIES} onChange={(city) => patch({city})}/>
                 <Choice label="体验时长" value={request.duration} values={DURATIONS} onChange={(duration) => patch({duration})}/>
@@ -328,13 +329,15 @@ export function StudioApp() {
               </details>
             </div>
             <div className="composer-actions">
-              <button className="button button-muted" type="button" onClick={startNew} disabled={busy}><Plus size={16}/> 新建提案</button>
+              <span className="keyboard-hint">Ctrl / ⌘ + Enter 生成</span>
               {busy ? <button className="button button-stop" type="button" onClick={() => { controller.current?.abort(); setBusy(false); setStage("已取消生成"); }}><X size={17}/> 取消生成</button>
-                : <button className="button button-dark generate-button" type="button" onClick={() => void run("generate")} disabled={!request.raw_request.trim() || (model.mode === "auto" && status?.platform_ready === false)}>生成方案 <ArrowUpRight size={18}/></button>}
+                : <button className="button button-dark generate-button" type="submit" disabled={model.mode === "auto" && status?.platform_ready === false}>生成方案 <Send size={17} aria-hidden="true"/></button>}
             </div>
-          </section>
+            {model.mode === "auto" && status?.platform_ready === false && <div className="service-inline-notice" role="status">平台服务暂不可用，你可以在 <button type="button" onClick={() => setShowSettings(true)}>AI 设置</button> 中使用个人 API。</div>}
+            {error && <div className="studio-error" id="studio-error" role="alert"><CircleHelp size={17} aria-hidden="true"/><span>{error}</span><button type="button" onClick={() => setError("")} aria-label="关闭错误提示"><X size={17}/></button></div>}
+          </form>
 
-          <section className="output-panel ux-results" id="proposal" aria-labelledby="result-title">
+          {(busy || result) && <section className="output-panel ux-results" id="proposal" aria-labelledby="result-title">
             <div className="panel-heading output-heading">
               <div><h2 id="result-title">生成结果</h2></div>
               {result && <div className="result-ready"><Check size={14}/> 已生成</div>}
@@ -347,7 +350,7 @@ export function StudioApp() {
               <MarkdownDoc content={selectedContent || "暂无可展示的检索资料。"} />
               {!busy && result && <div className="result-downloads"><span>保存这份提案</span><div>{(["md","txt","docx"] as const).map((format)=><button disabled={downloadBusy} type="button" onClick={() => void download(format)} key={format}><Download size={15}/>{format === "docx" ? "Word" : format.toUpperCase()}</button>)}</div></div>}
             </div> : !busy ? <div className="ux-output-empty"><WandSparkles size={27}/><h3>等待你的第一个想法</h3><p>填写上方需求，生成结果会显示在这里。</p></div> : null}
-          </section>
+          </section>}
 
           {result && !busy && <section className="revision-panel ux-revision" aria-labelledby="revision-title"><div className="panel-heading"><div><h2 id="revision-title">调整这份方案</h2></div><RefreshCw size={21} strokeWidth={1.5}/></div><div className="revision-chips">{REVISIONS.map((item)=><button type="button" key={item} onClick={() => void run("revise",item)}>{item}<ArrowUpRight size={14}/></button>)}</div><div className="revision-compose"><textarea rows={2} maxLength={500} value={revision} onChange={(e) => setRevision(e.target.value)} placeholder="例如：减少景点数量、增加适合拍照的体验、加入更多岭南美食…" aria-label="自定义修改要求"/><button className="button button-dark" type="button" disabled={!revision.trim()} onClick={() => void run("revise")}><Send size={16}/> 提交修改</button></div>{result.revisions.length > 0 && <details className="revision-history"><summary>查看历史调整（{result.revisions.length} 次）</summary>{result.revisions.map((entry,i)=><p key={i}>{entry.createdAt} · {entry.instruction}</p>)}</details>}</section>}
           <div className="studio-bottom-disclaimer"><BookOpen size={17}/><p>方案由 AI 辅助生成，开放时间、票价、预约和交通信息请以官方渠道为准。</p></div>
