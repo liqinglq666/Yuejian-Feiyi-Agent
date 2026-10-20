@@ -79,7 +79,7 @@ for (const width of [375, 768, 1440]) {
     await page.getByRole("button", { name: /亲子体验/ }).first().click();
     await expect(page.getByRole("button", { name: /亲子体验/ }).first()).toHaveAttribute("aria-pressed", "true");
     await page.locator("#fast-request").fill(draftText);
-    await page.getByRole("button", { name: /前往生成/ }).click();
+    await page.getByRole("button", { name: /生成我的方案/ }).click();
     await expect(page).toHaveURL(/\/studio$/);
     await expect(page.locator("#request-input")).toHaveValue(draftText);
     await checkNoHorizontalOverflow(page);
