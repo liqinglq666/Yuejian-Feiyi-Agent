@@ -60,18 +60,22 @@ def _switch_top_nav_scene(scene: str) -> None:
 
 
 def _render_topbar() -> None:
-    brand_col, nav_col = st.columns([1.55, 0.95], vertical_alignment="center")
+    brand_col, nav_col = st.columns([1.35, 1.15], vertical_alignment="center")
     with brand_col:
         st.html(
             """
             <div class="topbar-left">
-                <div class="topbar-logo">粤</div>
-                <div>粤见非遗</div>
+                <div class="topbar-logo" aria-hidden="true">粤</div>
+                <div class="editorial-brand-copy">
+                    <span>粤见非遗</span>
+                    <span class="editorial-brand-sub">YUEJIAN · LINGNAN HERITAGE STUDIO</span>
+                </div>
             </div>
             """
         )
 
     with nav_col:
+        st.html('<div class="topbar-nav-label">EXPLORE / 探索体验</div>')
         columns = st.columns(len(TOP_NAV_SCENES), gap="small")
         current_scene = str(st.session_state.get("selected_scene", "游客路线"))
         for column, (label, scene) in zip(columns, TOP_NAV_SCENES, strict=True):
@@ -86,178 +90,39 @@ def _render_topbar() -> None:
                     args=(scene,),
                 )
 
-
 def render_topbar_and_hero() -> None:
     hero_uri = asset_data_uri("readme_hero_lingnan.png")
     _render_topbar()
     st.html(
         f"""
-        <style>
-        .hero-image-banner {{
-            position: relative;
-            min-height: 248px;
-            overflow: hidden;
-            border-radius: 22px;
-            margin: .42rem 0 .82rem;
-            background: #f7f0e7;
-            box-shadow: 0 12px 30px rgba(22, 50, 79, .085);
-            isolation: isolate;
-        }}
-        .hero-image-bg {{
-            position: absolute;
-            inset: 0;
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            object-position: 58% center;
-            transform: scale(1.11);
-            transform-origin: left center;
-            z-index: 0;
-        }}
-        .hero-image-banner::after {{
-            content: "";
-            position: absolute;
-            inset: 0;
-            z-index: 1;
-            background: linear-gradient(
-                90deg,
-                rgba(250, 247, 240, .99) 0%,
-                rgba(250, 247, 240, .945) 30%,
-                rgba(250, 247, 240, .70) 47%,
-                rgba(250, 247, 240, .035) 68%
-            );
-        }}
-        .hero-image-content {{
-            position: relative;
-            z-index: 2;
-            max-width: 50%;
-            padding: 1.22rem 1.65rem 1.15rem;
-        }}
-        .hero-image-kicker {{
-            display: inline-flex;
-            padding: .28rem .58rem;
-            color: #0f6f72;
-            background: rgba(255, 255, 255, .80);
-            border: 1px solid rgba(21, 154, 156, .13);
-            border-radius: 999px;
-            font-size: .72rem;
-            font-weight: 820;
-        }}
-        .hero-image-title {{
-            max-width: 620px;
-            margin: .48rem 0 .30rem;
-            color: #16324f !important;
-            font-size: 2.12rem;
-            line-height: 1.08;
-            font-weight: 940;
-            letter-spacing: .008em;
-        }}
-        .hero-image-subtitle {{
-            max-width: 570px;
-            color: #425f70;
-            font-size: .89rem;
-            line-height: 1.54;
-            font-weight: 610;
-        }}
-        .hero-image-chips {{
-            display: flex;
-            flex-wrap: wrap;
-            gap: .32rem;
-            margin-top: .56rem;
-        }}
-        .hero-image-chip {{
-            padding: .26rem .52rem;
-            color: #16324f;
-            background: rgba(255, 255, 255, .80);
-            border: 1px solid rgba(22, 50, 79, .075);
-            border-radius: 999px;
-            font-size: .68rem;
-            font-weight: 720;
-        }}
-        @media (max-width: 920px) {{
-            .hero-image-banner {{ min-height: 300px; border-radius: 18px; }}
-            .hero-image-bg {{
-                object-position: 68% center;
-                transform: scale(1.06);
-                transform-origin: 30% center;
-            }}
-            .hero-image-banner::after {{
-                background: linear-gradient(
-                    90deg,
-                    rgba(250, 247, 240, .99) 0%,
-                    rgba(250, 247, 240, .95) 58%,
-                    rgba(250, 247, 240, .42) 100%
-                );
-            }}
-            .hero-image-content {{ max-width: 100%; padding: 1.18rem .95rem; }}
-            .hero-image-title {{ max-width: 82%; font-size: 1.82rem; }}
-            .hero-image-subtitle {{ max-width: 80%; font-size: .84rem; }}
-        }}
-        @media (max-width: 560px) {{
-            .hero-image-banner {{
-                min-height: 294px;
-                border-radius: 16px;
-                margin: .28rem 0 .68rem;
-            }}
-            .hero-image-bg {{
-                object-position: 76% center;
-                transform: scale(1.03);
-                transform-origin: center center;
-            }}
-            .hero-image-banner::after {{
-                background: linear-gradient(
-                    90deg,
-                    rgba(250, 247, 240, .995) 0%,
-                    rgba(250, 247, 240, .975) 54%,
-                    rgba(250, 247, 240, .74) 78%,
-                    rgba(250, 247, 240, .34) 100%
-                );
-            }}
-            .hero-image-content {{ max-width: 100%; padding: .96rem .82rem; }}
-            .hero-image-kicker {{ font-size: .68rem; padding: .24rem .5rem; }}
-            .hero-image-title {{
-                max-width: 100%;
-                font-size: 1.54rem;
-                line-height: 1.12;
-                margin: .42rem 0 .26rem;
-                overflow-wrap: anywhere;
-            }}
-            .hero-image-subtitle {{ max-width: 92%; font-size: .81rem; line-height: 1.48; }}
-            .hero-image-chips {{ max-width: 94%; gap: .28rem; margin-top: .48rem; }}
-            .hero-image-chip {{ padding: .24rem .46rem; font-size: .65rem; }}
-        }}
-        @media (max-width: 380px) {{
-            .hero-image-banner {{ min-height: 282px; }}
-            .hero-image-title {{ font-size: 1.44rem; }}
-            .hero-image-subtitle {{ max-width: 96%; font-size: .79rem; }}
-            .hero-image-chip:nth-child(n+3) {{ display: none; }}
-        }}
-        </style>
-        <div class="hero-image-banner">
-            <img
-                class="hero-image-bg"
-                src="{hero_uri}"
-                alt="醒狮、粤剧、广绣、陶塑与岭南建筑组成的广东非遗插画"
-                loading="eager"
-                decoding="async"
-            />
-            <div class="hero-image-content">
-                <div class="hero-image-kicker">寻脉岭南 · 智游非遗</div>
-                <h1 class="hero-image-title">一句话，规划你的岭南非遗体验</h1>
-                <div class="hero-image-subtitle">
-                    说清楚去哪里、和谁、想体验什么，粤见非遗会为你生成可出发、可研学、可发布的完整方案。
-                </div>
-                <div class="hero-image-chips">
-                    <span class="hero-image-chip">城市文化路线</span>
-                    <span class="hero-image-chip">研学任务卡</span>
-                    <span class="hero-image-chip">亲子互动</span>
-                    <span class="hero-image-chip">图文与短视频</span>
+        <section class="editorial-hero" aria-label="粤见非遗，岭南文化体验">
+            <div class="editorial-hero-art">
+                <img src="{hero_uri}"
+                    alt="岭南非遗主题插画，包含醒狮、粤剧、广绣、陶塑与岭南建筑"
+                    loading="eager" decoding="async"/>
+            </div>
+            <div class="editorial-hero-content">
+                <div class="editorial-hero-eyebrow">LINGNAN · CULTURE IN MOTION</div>
+                <h1>遇见岭南，<br/><span>让非遗可感。</span></h1>
+                <p class="editorial-hero-desc">
+                    从一段城市漫游，到一场亲子研学。<br/>
+                    以文化为起点，用 AI 定制属于你的广东非遗体验。
+                </p>
+                <div class="editorial-hero-foot">
+                    <div class="editorial-hero-seal">粤<br/>见</div>
+                    <div class="editorial-hero-meta">
+                        <strong>一处入口，五种探索方式</strong><br/>
+                        智能路线 · 文化研学 · 亲子体验 · 创意表达
+                    </div>
                 </div>
             </div>
+        </section>
+        <div class="editorial-ribbon">
+            <div><span>01</span>选择场景 &nbsp; / &nbsp; <span>02</span>描述需求 &nbsp; / &nbsp; <span>03</span>获取方案</div>
+            <div>EXPLORE THE LIVING HERITAGE OF GUANGDONG</div>
         </div>
         """
     )
-
 
 def render_section_heading(kicker: str, title: str, copy: str) -> None:
     st.html(
@@ -269,7 +134,6 @@ def render_section_heading(kicker: str, title: str, copy: str) -> None:
         </div>
         """
     )
-
 
 def render_scene_note(scene: str) -> None:
     icon = SCENE_ICONS.get(scene, "🦁")
@@ -312,14 +176,18 @@ def render_request_summary(request: TaskRequest) -> None:
 def render_empty_state() -> None:
     st.html(
         """
-        <div class="empty-state">
-            <div class="empty-icon">🪭</div>
-            <div class="empty-title">你的岭南非遗方案会出现在这里</div>
-            <div class="empty-copy">先选择一个场景，再写下一句话需求。路线、任务卡、文案和来源都会自动整理好。</div>
-        </div>
+        <section class="empty-state">
+            <div class="empty-icon" aria-hidden="true">✦</div>
+            <div class="empty-title">下一段非遗故事，等你开启。</div>
+            <div class="empty-copy">选择上方场景，描述想去的城市、同行的人或感兴趣的技艺。这里将呈现一份兼具文化背景、行动建议与参考资料的专属体验方案。</div>
+            <div class="empty-features">
+                <div class="empty-feature"><span>01 / DISCOVER</span>城市文化路线<small>把非遗地标串成有节奏的探索旅程</small></div>
+                <div class="empty-feature"><span>02 / LEARN</span>研学与亲子体验<small>让传统技艺成为可以参与的课堂</small></div>
+                <div class="empty-feature"><span>03 / CREATE</span>文化内容创作<small>将所见所感转化为文字与视频灵感</small></div>
+            </div>
+        </section>
         """
     )
-
 
 def render_result_overview(request: TaskRequest) -> None:
     title = SCENE_PUBLIC_NAMES.get(request.scene, request.scene)
