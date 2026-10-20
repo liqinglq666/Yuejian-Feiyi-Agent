@@ -41,8 +41,52 @@ def test_fake_official_source_rejected(tmp_path):
     with pytest.raises(KnowledgeBaseError):
         get_index(tmp_path)
 def test_quality_checks_evidence_and_structure():
-    chunk=RetrievedChunk(chunk_id="a",title="粤剧",content="粤剧",source_path="data",source_url="https://www.ihchina.cn/project_details/13221/")
+    chunk=RetrievedChunk(chunk_id="a",title="粤剧",content="项目：粤剧（广府大戏）",source_path="data/heritage_records.json",source_url="https://www.ihchina.cn/project_details/13221/")
     report=inspect_answer("## 一句话认识\n## 文化背景\n## 核心看点\n## 如何体验\n## 核验提醒",TaskType.QA,RetrievalBundle(query="粤剧",chunks=(chunk,)))
     assert report["sections_complete"] and report["official_source_count"]==1
     empty=inspect_answer("## 测试",TaskType.QA,RetrievalBundle(query="x",chunks=()))
     assert empty["needs_fact_verification"] and not empty["sections_complete"]
+
+
+def test_unrelated_official_source_is_not_marked_evidence():
+    from services.quality import directly_supported_topic
+    result=RetrievalBundle(
+        query="佛山现代科技展览地点",
+        chunks=(
+            RetrievedChunk(
+                chunk_id="official",
+                title="粤剧",
+                content="项目：粤剧（广府大戏）",
+                source_path="data/heritage_records.json",
+                source_url="https://www.ihchina.cn/project_details/13221/",
+            ),
+        ),
+    )
+    assert not directly_supported_topic(result.chunks[0],result.query)
+    assert inspect_answer("## 核验提醒",TaskType.QA,result)["needs_fact_verification"]
+
+
+def test_sources_markdown_contains_clickable_project_link():
+    chunk=RetrievedChunk(
+        chunk_id="verified",
+        title="陆丰皮影戏",
+        content="项目：陆丰皮影戏",
+        source_path="data/heritage_records.json",
+        source_name="国家级名录",
+        source_url="https://www.ihchina.cn/project_details/13399/",
+    )
+    markdown=RetrievalBundle(query="陆丰皮影戏",chunks=(chunk,)).source_markdown()
+    assert "[陆丰皮影戏｜国家级名录](https://www.ihchina.cn/project_details/13399/)" in markdown
+
+
+def test_planner_injects_no_false_realtime_venues():
+    from core.models import TaskRequest
+    from services.planner import build_task_plan
+    from services.prompt_builder import build_initial_messages
+    request=TaskRequest(scene="游客路线",raw_request="安排佛山一日醒狮路线",city="佛山")
+    retrieved=RetrievalBundle(query=request.retrieval_query,chunks=())
+    plan=build_task_plan(request,retrieved)
+    assert "不猜测真实交通时间" in plan
+    assert "缺少官方项目记录" in plan
+    msgs=build_initial_messages(request,retrieved)
+    assert "【内部任务规划】" in msgs[-1]["content"]
