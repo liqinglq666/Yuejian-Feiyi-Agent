@@ -2,12 +2,11 @@ from __future__ import annotations
 
 import json
 
-from fastapi.testclient import TestClient
 import pytest
+from fastapi.testclient import TestClient
 
 from api.main import _generation_events, app
 from core.models import TaskRequest
-
 
 client = TestClient(app)
 
