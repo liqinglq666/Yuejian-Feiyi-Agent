@@ -53,6 +53,8 @@ app.add_middleware(
 _window: dict[str, deque[float]] = defaultdict(deque)
 _window_lock = threading.Lock()
 RATE_LIMIT = max(1, int(os.getenv("GENERATE_RATE_LIMIT_PER_MIN", "8")))
+EXPORT_RATE_LIMIT = max(1, int(os.getenv("EXPORT_RATE_LIMIT_PER_MIN", "25")))
+_EXPORT_WINDOW: dict[str, deque[float]] = defaultdict(deque)
 
 
 class TaskInput(BaseModel):
@@ -162,10 +164,16 @@ def _generation_events(config, task: TaskRequest, revision: RevisionRequest | No
         )
         yield _sse("stage", {"value": "writing", "label": "正在策划专属文化方案…"})
         last = ""
+        began_at = time.monotonic()
+        first_token_ms = None
+        last_sent_at = began_at
         for text, is_final in collect_stream_with_safe_fallback(
             config, messages, temperature=temperature
         ):
             cleaned = sanitize_model_output(text)
+            now = time.monotonic()
+            if cleaned.strip() and first_token_ms is None:
+                first_token_ms = round((now - began_at) * 1000)
             if is_final:
                 if not cleaned.strip():
                     raise ModelGatewayError("模型没有返回可用内容。")
@@ -173,13 +181,19 @@ def _generation_events(config, task: TaskRequest, revision: RevisionRequest | No
                     "answer": cleaned,
                     "sources": bundle.source_markdown(),
                     "request": task.to_dict(),
+                    "metrics": {
+                        "first_token_ms": first_token_ms,
+                        "total_ms": round((now - began_at) * 1000),
+                    },
                 })
-            else:
-                # Send complete snapshots, not raw deltas; sanitization may rewrite
-                # previous characters while streaming.
-                if cleaned != last:
+            elif cleaned != last and now - last_sent_at >= 0.12:
+                # Send only appended text. A sanitized rewrite uses a snapshot.
+                if cleaned.startswith(last):
+                    yield _sse("delta", {"text": cleaned[len(last):]})
+                else:
                     yield _sse("snapshot", {"text": cleaned})
-                    last = cleaned
+                last = cleaned
+                last_sent_at = now
     except (ValueError, ModelGatewayError, KnowledgeBaseError) as exc:
         yield _sse("failure", {"message": str(exc)})
     except Exception:
@@ -233,7 +247,18 @@ def revise(body: ReviseInput, request: Request) -> StreamingResponse:
 
 
 @app.post("/v1/export")
-def export(body: ExportInput) -> Response:
+def export(body: ExportInput, request: Request) -> Response:
+    # Export is free, but document creation still needs resource protection.
+    # This is a per-instance safeguard; API gateway/WAF provides global controls.
+    client_ip = request.client.host if request.client else "unknown"
+    now = time.monotonic()
+    with _window_lock:
+        queue = _EXPORT_WINDOW[client_ip]
+        while queue and now - queue[0] >= 60:
+            queue.popleft()
+        if len(queue) >= EXPORT_RATE_LIMIT:
+            raise HTTPException(status_code=429, detail="导出过于频繁，请稍后重试。")
+        queue.append(now)
     try:
         task = body.request.to_domain()
     except ValueError as exc:

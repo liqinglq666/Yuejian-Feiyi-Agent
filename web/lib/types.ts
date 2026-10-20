@@ -28,6 +28,7 @@ export interface Plan {
   sources: string;
   createdAt: string;
   revisions: { instruction: string; createdAt: string }[];
+  metrics?: { first_token_ms: number | null; total_ms: number };
 }
 
 export interface AppStatus {
@@ -41,7 +42,8 @@ export interface AppStatus {
 export type StreamEvent =
   | { type: "stage"; value: string; label: string }
   | { type: "snapshot"; text: string }
-  | { type: "complete"; answer: string; sources: string; request: TaskRequest }
+  | { type: "delta"; text: string }
+  | { type: "complete"; answer: string; sources: string; request: TaskRequest; metrics?: {first_token_ms:number|null;total_ms:number} }
   | { type: "failure"; message: string };
 
 export const CITIES = ["自动判断", "广州", "佛山", "潮州", "汕头", "深圳", "梅州", "江门", "珠海", "东莞", "肇庆", "惠州", "中山", "湛江", "茂名", "韶关", "清远", "河源", "阳江", "云浮", "揭阳", "汕尾"];

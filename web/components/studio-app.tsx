@@ -112,6 +112,7 @@ export function StudioApp() {
   });
   const [model, setModel] = useState<ModelOptions>(DEFAULT_MODEL);
   const [status, setStatus] = useState<AppStatus | null>(null);
+  const [statusError, setStatusError] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [interestsOpen, setInterestsOpen] = useState(false);
@@ -151,8 +152,22 @@ export function StudioApp() {
   }, [drawerOpen]);
 
   useEffect(() => {
-    fetch("/api/v1/status", { cache:"no-store" }).then((res) => res.ok ? res.json() : Promise.reject())
-      .then((value: AppStatus) => setStatus(value)).catch(() => setStatus(null));
+    const checkStatus = async () => {
+      for (let attempt = 0; attempt < 3; attempt++) {
+        try {
+          const response = await fetch("/api/v1/status", {cache:"no-store",signal:AbortSignal.timeout(6500)});
+          if (!response.ok) throw Error("status unavailable");
+          const info = await response.json() as AppStatus;
+          setStatus(info); setStatusError(false);
+          return;
+        } catch {
+          // Brief retries are safe: status never spends an AI quota.
+          if (attempt < 2) await new Promise((resolve) => setTimeout(resolve, 500 * (attempt + 1)));
+        }
+      }
+      setStatusError(true);
+    };
+    void checkStatus();
     // Defer hydration to a callback; initial render stays SSR-safe.
     queueMicrotask(() => {
       try {
@@ -236,6 +251,7 @@ export function StudioApp() {
         (event: StreamEvent) => {
           if (event.type === "stage") setStage(event.label);
           if (event.type === "snapshot") setStream(event.text);
+          if (event.type === "delta") setStream((value) => value + event.text);
           if (event.type === "failure") { setError(event.message); setStream(""); }
           if (event.type === "complete") {
             generated = true;
@@ -243,6 +259,7 @@ export function StudioApp() {
               id: kind === "revise" && previous ? previous.id : makeId(),
               request:event.request, answer:event.answer, sources:event.sources,
               createdAt:new Date().toLocaleString("zh-CN"),
+              metrics:event.metrics,
               revisions:kind === "revise" && previous
                 ? [...previous.revisions, {instruction:preset || revision, createdAt:new Date().toLocaleTimeString("zh-CN")}].slice(-10)
                 : [],
@@ -361,6 +378,7 @@ export function StudioApp() {
               {busy ? <button className="button button-stop" type="button" onClick={() => { controller.current?.abort(); setBusy(false); setStage("已取消生成"); }}><X size={17}/> 取消生成</button>
                 : <button id="generate-submit" className="button button-dark generate-button" type="submit" disabled={model.mode === "auto" && status?.platform_ready === false}>生成方案 <Send size={17} aria-hidden="true"/></button>}
             </div>
+            {statusError && <div className="service-inline-notice" role="status">连接状态检测暂时失败，请刷新重试；个人 API 仍可在设置中配置。</div>}
             {model.mode === "auto" && status?.platform_ready === false && <div className="service-inline-notice" role="status">平台服务暂不可用，你可以在 <button type="button" onClick={() => setShowSettings(true)}>AI 设置</button> 中使用个人 API。</div>}
             {error && <div className="studio-error" id="studio-error" role="alert"><CircleHelp size={17} aria-hidden="true"/><span>{error}</span><button type="button" onClick={() => setError("")} aria-label="关闭错误提示"><X size={17}/></button></div>}
           </form>
@@ -368,7 +386,7 @@ export function StudioApp() {
           {(busy || result) && <section className="output-panel ux-results" id="proposal" aria-labelledby="result-title">
             <div className="panel-heading output-heading">
               <div><h2 id="result-title">{busy ? "正在生成" : "生成结果"}</h2></div>
-              {result && !busy && <div className="result-ready"><Check size={14} aria-hidden="true"/> 已完成</div>}
+              {result && !busy && <div className="result-ready"><Check size={14} aria-hidden="true"/> 已完成{result.metrics && ` · 首字 ${(result.metrics.first_token_ms ?? 0)/1000}s / 总耗时 ${(result.metrics.total_ms/1000).toFixed(1)}s`}</div>}
             </div>
             {busy && <div className="stream-stage" role="status" aria-live="polite"><LoaderCircle className="spin" size={18} aria-hidden="true"/><div><strong>{stage}</strong><span>生成过程中可取消，内容将逐步显示。</span></div></div>}
             {shownAnswer ? <div className="result-view">

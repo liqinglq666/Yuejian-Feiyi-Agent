@@ -44,9 +44,10 @@ export async function streamProposal(
     const value = JSON.parse(payload) as Record<string, unknown>;
     if (kind === "stage") onEvent({ type: "stage", value: String(value.value), label: String(value.label) });
     if (kind === "snapshot") onEvent({ type: "snapshot", text: String(value.text) });
+    if (kind === "delta") onEvent({ type: "delta", text: String(value.text) });
     if (kind === "complete") {
       completed = true;
-      onEvent({ type: "complete", answer: String(value.answer), sources: String(value.sources), request: value.request as unknown as TaskRequest });
+      onEvent({ type: "complete", answer: String(value.answer), sources: String(value.sources), request: value.request as unknown as TaskRequest, metrics: value.metrics as {first_token_ms:number|null;total_ms:number}|undefined });
     }
     if (kind === "failure") {
       completed = true;
