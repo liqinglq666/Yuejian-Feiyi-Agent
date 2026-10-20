@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import json
 
-import pytest
 from fastapi.testclient import TestClient
+import pytest
 
 from api.main import _generation_events, app
 from core.models import TaskRequest

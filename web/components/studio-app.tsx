@@ -5,7 +5,7 @@ import { useSearchParams } from "next/navigation";
 import {
   ArrowLeft, ArrowRight, ArrowUpRight, BookOpen, Check, ChevronDown, CircleHelp,
   Clock3, Compass, Download, FileText, GraduationCap, HeartHandshake, LoaderCircle,
-  MapPin, Menu, MessageCircle, PencilLine, Play, Plus, RefreshCw, Send, Settings2,
+  MapPin, Menu, MessageCircle, PencilLine, Plus, RefreshCw, Send, Settings2,
   ShieldCheck, Sparkles, WandSparkles, X,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
@@ -80,7 +80,15 @@ function MarkdownDoc({ content }: { content: string }) {
 
 export function StudioApp() {
   const params = useSearchParams();
-  const [request, setRequest] = useState<TaskRequest>(DEFAULT_REQUEST);
+  const [request, setRequest] = useState<TaskRequest>(() => {
+    const selectedScene = params.get("scene");
+    const selectedCity = params.get("city");
+    return {
+      ...DEFAULT_REQUEST,
+      ...(isScene(selectedScene) ? { scene:selectedScene, task_type:selectedScene === "内容创作" ? "social" as const : null } : {}),
+      ...(selectedCity && CITIES.includes(selectedCity) ? { city:selectedCity } : {}),
+    };
+  });
   const [model, setModel] = useState<ModelOptions>(DEFAULT_MODEL);
   const [status, setStatus] = useState<AppStatus | null>(null);
   const [showSettings, setShowSettings] = useState(false);
@@ -99,26 +107,19 @@ export function StudioApp() {
   const controller = useRef<AbortController | null>(null);
 
   useEffect(() => {
-    const scene = params.get("scene");
-    const city = params.get("city");
-    setRequest((prev) => ({
-      ...prev,
-      ...(isScene(scene) ? { scene, task_type: scene === "内容创作" ? "social" : null } : {}),
-      ...(city && CITIES.includes(city) ? { city } : {}),
-    }));
-  }, [params]);
-
-  useEffect(() => {
     fetch("/api/v1/status", { cache:"no-store" }).then((res) => res.ok ? res.json() : Promise.reject())
       .then((value: AppStatus) => setStatus(value)).catch(() => setStatus(null));
-    try {
-      const saved = sessionStorage.getItem("yuejian-recent-plans-v2");
-      if (saved) {
-        const parsed = JSON.parse(saved) as Plan[];
-        if (Array.isArray(parsed)) setRecents(parsed.filter((plan) => plan && plan.id && plan.request && typeof plan.answer === "string").slice(0, MAX_RECENTS));
-      }
-    } catch { /* Browsers may block session storage. */ }
-    setHydrated(true);
+    // Defer hydration to a callback; initial render stays SSR-safe.
+    queueMicrotask(() => {
+      try {
+        const saved = sessionStorage.getItem("yuejian-recent-plans-v2");
+        if (saved) {
+          const parsed = JSON.parse(saved) as Plan[];
+          if (Array.isArray(parsed)) setRecents(parsed.filter((plan) => plan && plan.id && plan.request && typeof plan.answer === "string").slice(0, MAX_RECENTS));
+        }
+      } catch { /* Browsers may block session storage. */ }
+      setHydrated(true);
+    });
     return () => controller.current?.abort();
   }, []);
 
@@ -133,7 +134,7 @@ export function StudioApp() {
     patch({ scene, task_type: scene === "内容创作" ? "social" : null });
     setDrawerOpen(false);
   }
-  function useExample(index: number) {
+  function applyExample(index: number) {
     const item = EXAMPLES[index];
     setRequest({
       ...DEFAULT_REQUEST, scene:item.scene, raw_request:item.text, city:item.city,
@@ -267,7 +268,7 @@ export function StudioApp() {
                   placeholder="例如：这个周末想带孩子去佛山，看看醒狮，体验石湾陶塑。希望行程轻松、有趣，也能学到一些非遗知识…"
                   onChange={(event) => patch({raw_request:event.target.value})}/>
                 <div className="inspiration-caption"><Sparkles size={14}/> 试试这些文化灵感</div>
-                <div className="inspiration-list">{EXAMPLES.map((example,index)=><button type="button" key={example.title} disabled={busy} onClick={() => useExample(index)}>{example.title}<ArrowUpRight size={14}/></button>)}</div>
+                <div className="inspiration-list">{EXAMPLES.map((example,index)=><button type="button" key={example.title} disabled={busy} onClick={() => applyExample(index)}>{example.title}<ArrowUpRight size={14}/></button>)}</div>
                 <div className="interest-wrapper">
                   <button className="interest-toggle" type="button" onClick={() => setInterestsOpen(!interestsOpen)} aria-expanded={interestsOpen}>特别想体验的文化主题 <span>{request.interests.length ? `已选择 ${request.interests.length} 项` : "按需添加"} <ChevronDown size={16}/></span></button>
                   {interestsOpen && <div className="interest-chips">{INTERESTS.map((interest)=><button type="button" disabled={busy} key={interest} className={request.interests.includes(interest) ? "active" : ""} onClick={() => patch({interests:request.interests.includes(interest) ? request.interests.filter((x) => x !== interest) : [...request.interests,interest]})}>{request.interests.includes(interest) && <Check size={12}/>} {interest}</button>)}</div>}
