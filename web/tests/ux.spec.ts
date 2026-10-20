@@ -120,7 +120,7 @@ test("generation, editing, exporting and empty-field error", async ({ page }) =>
 
   const download = page.waitForEvent("download");
   await page.getByRole("button", { name: "Word" }).click();
-  await expect(await download).toHaveProperty("suggestedFilename", "yuejian-feiyi.docx");
+  expect((await download).suggestedFilename()).toBe("yuejian-feiyi.docx");
   await expect(page.getByRole("status").last()).toContainText("已开始下载 Word");
 
   await page.getByRole("button", { name: "更适合亲子" }).click();
