@@ -344,3 +344,19 @@ input:focus-visible,textarea:focus-visible,select:focus-visible{outline:2px soli
  html{scroll-behavior:auto}
  *,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}
 }
+
+/* Mobile task density: expose the primary form sooner, without shrinking tap areas */
+@media(max-width:540px){
+ .fast-heading{margin-bottom:20px}
+ .fast-heading h1{margin-bottom:8px}
+ .fast-scene-section{margin-bottom:19px}
+ .fast-task-grid{grid-template-columns:repeat(6,minmax(0,1fr))}
+ .fast-task{grid-column:span 2;min-height:92px;padding:12px 10px;gap:6px}
+ .fast-task:nth-child(4),.fast-task:nth-child(5){grid-column:span 3}
+ .fast-task:last-child{display:flex;min-height:92px}
+ .fast-task strong{font-size:13px}
+ .fast-task span{display:none}
+ .fast-task[aria-pressed=true]:after{right:9px;top:9px;width:6px;height:6px}
+ .fast-prompt-box textarea{min-height:112px}
+ .fast-request-section .fast-section-label{margin-bottom:11px}
+}

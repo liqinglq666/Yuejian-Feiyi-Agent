@@ -47,11 +47,9 @@ export default function HomePage() {
         <div className="container fast-workspace" id="start">
           <header className="fast-heading">
             <div>
-              <p className="fast-overline">粤见非遗 / 广东文化体验</p>
               <h1>找到适合你的非遗体验</h1>
-              <p className="fast-subhead">选一个方向，说说你的想法。路线、研学、亲子活动和内容创作，都能从这里开始。</p>
+              <p className="fast-subhead">选择体验类型，描述需求，就能生成路线、研学或文化创作方案。</p>
             </div>
-            <div className="fast-aside"><span>从想法到方案</span><strong>几分钟，认识一座城里的手艺。</strong></div>
           </header>
           <section aria-labelledby="fast-scene-heading" className="fast-scene-section">
             <h2 id="fast-scene-heading" className="fast-section-label">1. 选择体验方式</h2>
