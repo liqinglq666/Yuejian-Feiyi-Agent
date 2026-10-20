@@ -1,28 +1,23 @@
-# Yuejian Next.js / FastAPI Migration
+# Next.js / FastAPI Web
 
-## Migration strategy
+## 页面与 API
 
-The existing Streamlit app remains at `app.py` for backward compatibility. Production web entry is `web/`. The model, retrieval, prompts, validation, revision planner and exporters remain Python modules called from `api/main.py`.
+生产网站由 Next.js 前端和 FastAPI API 组成，采用 Vercel 多服务路由。现有首页包含五种文化任务入口、输入表单与岭南主题插画；工作台支持条件编辑、SSE 流式生成、修改、阅读与导出。
 
-## UI / UX system
+前端主要文件：`web/app/page.tsx`、`web/components/studio-app.tsx`、`web/lib/api.ts`。页面样式由 `web/app/globals.css` 和 `web/app/folk-art.css` 提供。素材位于 `web/public/heritage/`。
 
-- Visual narrative: archive-inspired museum site with mineral green, warm paper surfaces, cinnabar accent, elegant serif headings and generous whitespace.
-- Brand landing page: task-first composer with five scenario selectors, an editorial folk-art illustration, and three examples that populate the real task input.
-- Studio: five scene categories in a dedicated sidebar, textarea and guided sample prompts, city/time/identity/style/interest controls, SSE-generation status, markdown report tabs, historical plans, revision actions, export.
-- Mobile: collapsible sidebar, stacked composer, sticky-free compact navigation, scrollable results tabs, 390px layout breakpoint.
-- Accessibility: keyboard focus outlines, labelled form fields, semantic sections, aria live progress, alt description, reduced motion preferences.
+同源 API：
+- `GET /api/v1/status`
+- `POST /api/v1/generate`（stage、snapshot、delta、complete、failure）
+- `POST /api/v1/revise`
+- `POST /api/v1/export`（Markdown、TXT、DOCX）
 
-## Security and behavior
+## V3 业务
 
-- Request-specific BYOK secrets are never returned in responses, persisted in server/session storage or included in exports.
-- API payloads use Pydantic constraints; the established model gateway validates service URL to protect against local/private network SSRF.
-- SSE streams use same-origin Next rewrite, no browser cross-origin dependency.
-- Basic per-process rate limiting is deliberately scoped to preview use; use gateway-level/shared controls at scale.
-- React Markdown is rendered with default HTML escaping (`skipHtml`), not raw unsafe HTML rendering.
-- Existing source citations and factual safeguards remain within the Python prompt builder.
+后端从 `services/scenarios.py` 获取场景策略；初次生成和后续修改共用策略规则，但按任务提供不同的规划、保守处理要求和启发式结果提示。输入缺少城市、儿童年龄或学段时不会擅自猜测。
 
-## Operations
+## 部署与约束
 
-Vercel/Next app root: `web`. Python API deploy root: repository root. Static visual assets used by the website are in `web/public/heritage/`; the README artwork is in `assets/`. Unused legacy landing-page images were retired.
+`vercel.json` 将 `web/` 作为前端服务、`backend/` 作为 FastAPI 服务。根目录代码用于开发；后端镜像必须保持同步。
 
-For public production deployment, further recommended: identity, quotas, request-size gateway limits, shared rate limiting, observability, security headers and end-to-end tests against a staging AI gateway.
+实时场馆信息、交通时间、票务和开放时段没有可靠来源时应以核验建议代替确定性结论。平台 AI 的额度保护和用户 BYOK 域名安全策略仍在 FastAPI 中实现。真实模型性能需额外进行受控验证。

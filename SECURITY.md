@@ -1,40 +1,20 @@
 # Security Policy
 
-## 报告安全问题
+请不要在公开 Issue 共享 API Key、可利用漏洞或私人数据。请通过仓库维护者的私人联系方式报告安全问题。
 
-请不要通过公开 Issue 披露 API Key、可利用漏洞或用户隐私数据。请通过仓库所有者公开的安全联系方式进行私下报告。
+## 凭据和隐私
 
-报告应包含：
+- 平台模型密钥只能部署在服务端环境变量中，不能放在 `NEXT_PUBLIC_*`、前端 bundle、Git、日志、导出文件或公开截图。
+- 个人 BYOK Key 只保留在当前网页内存状态；由用户明确发起 HTTPS 请求时传入 FastAPI，不写入 localStorage、sessionStorage、Cookie、URL 或持久数据库。
+- 不要提交 `.env` 或其他秘密文件。泄漏后应在服务商处立即撤销并更换密钥；删除当前 Git 文件不会自动消除 Git 历史中的泄漏。
 
-- 受影响文件或功能
-- 复现步骤
-- 风险影响
-- 建议修复方式
+## 模型与网络
 
-## 密钥安全
+- 平台 AI 使用 `PLATFORM_API_ENABLED` 控制开关，使用 `LLM_ALLOWED_HOSTS` 约束服务商主机。
+- 生产 BYOK 使用默认可信 API 域名；额外域名须通过服务端 `BYOK_ALLOWED_HOSTS` 显式允许。
+- API 地址强制安全格式校验；网络层仍建议采用可信出站代理隔离，防止 SSRF。
+- 自动模式不会在平台不可用时改用用户的 Key 消耗个人额度。
 
-应用同时支持平台共享 API 与用户 BYOK，两类密钥必须严格隔离：
+## 风险和成本
 
-- 平台 API Key、Base URL 和模型名称只由项目维护者在服务端部署环境或 Streamlit Secrets 中配置
-- 平台密钥不得写入 `st.session_state`、前端 HTML、日志、URL、下载文件或公开仓库
-- 用户 BYOK 的 API Key 仅允许保存在当前 Streamlit Session State 中
-- 用户 Key 不得写入最近方案、数据库、浏览器持久化存储、导出文件、URL、日志或异常信息
-- “清除我的 API Key”必须立即清空当前会话中的个人 Key；关闭会话后不提供持久恢复
-- 不要提交 `.env` 或 `.streamlit/secrets.toml`
-- 发现密钥泄露后应立即在服务商控制台撤销并重新生成
-- Git 历史中的密钥需要通过历史清理工具移除，单纯删除当前文件不够
-
-## 模型路由
-
-- `自动`模式只会使用平台 API，不会在平台失效时静默切换并消耗用户自己的额度
-- 使用个人 API 必须由用户明确切换到“我的 API”
-- 平台共享服务可通过 `PLATFORM_API_ENABLED=false` 主动关闭，而不影响用户继续使用 BYOK
-- 测试个人 API 连接会产生一次很小的真实模型调用，应仅在用户主动点击时执行
-
-## 模型网关
-
-应用默认拒绝 HTTP、本机、内网、link-local、multicast、reserved 和 unspecified 地址，并拒绝 URL 中的账号密码、query 与 fragment。只有完全可信的本地开发环境才应设置 `ALLOW_INSECURE_LLM_HTTP=true`。
-
-生产环境建议设置 `LLM_ALLOWED_HOSTS`，只允许平台共享 API 访问预期模型服务域名。该平台白名单不用于限制用户选择不同的公网 OpenAI-compatible 服务，但用户 BYOK 仍必须通过 HTTPS 与地址安全检查。
-
-公网部署使用平台共享 API 时，还应在托管平台、反向代理或 API 网关增加访问控制、限流、预算告警和异常调用监控，避免匿名滥用消耗额度。
+平台共享调用受 Upstash Redis 额度约束；单实例速率限制不是分布式安全防护。公开站点仍应设置 WAF、合理预算、模型调用审计与异常告警。取消生成不保证已计费用能被退款。
