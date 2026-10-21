@@ -480,12 +480,6 @@ def retrieve(
     return RetrievalBundle(cleaned_query, tuple(selected), tuple(warnings))
 
 
-def load_knowledge_base(data_dir: Path = DEFAULT_DATA_DIR) -> str:
-    index = get_index(data_dir)
-    return "\n\n".join(
-        f"# 来源文件：{chunk.source_path}\n\n{chunk.content}" for chunk in index.chunks
-    )
-
 
 def retrieve_context(
     query: str,
