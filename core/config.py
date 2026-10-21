@@ -73,16 +73,6 @@ def model_service_ready(state: Mapping[str, Any] | None = None) -> bool:
     return platform_service_ready()
 
 
-def active_model_source(state: Mapping[str, Any] | None = None) -> str:
-    mode = str((state or {}).get("model_mode", "auto"))
-    if mode == "user":
-        return "user"
-    if mode == "platform":
-        return "platform"
-    if platform_service_ready():
-        return "platform"
-    return "none"
-
 
 def build_platform_model_config() -> ModelConfig:
     if not platform_api_enabled():
