@@ -1,5 +1,6 @@
 /* 粤见非遗 · shared UI foundations (岭南青 × 砖红 × 宣纸白) */
 :root {
+  color-scheme: light;
   --canvas: #FAF7F1;
   --surface: #FFFEFB;
   --surface-alt: #F3F6F4;
