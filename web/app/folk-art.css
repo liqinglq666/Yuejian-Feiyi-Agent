@@ -160,8 +160,6 @@ body{background:var(--folk-paper);color:var(--folk-ink)}
 .composer-model-note{color:#778A82}
 .button-dark{background:var(--forest);border-radius:7px;box-shadow:none}
 .button-dark:hover{background:var(--forest-hover)}
-.button-muted{background:#F2F5F1;border:1px solid #E0E8E1;color:#44695D}
-.button-muted:hover{background:#E6EFEB}
 .result-summary{border-color:#DDE7E1;background:#F6F8F4}
 .result-summary-badge{background:#E4F1EC;border-color:#C9E0D8;color:#386E60}
 .result-tabs button.active{border-bottom-color:#39736A;color:#245E55}
