@@ -2,30 +2,21 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import {
-  ArrowLeft, ArrowRight, ArrowUpRight, BookOpen, Check, ChevronDown, CircleHelp, Copy,
-  Clock3, Compass, Download, FileText, GraduationCap, HeartHandshake, LoaderCircle,
-  MapPin, Menu, MessageCircle, PencilLine, Plus, RefreshCw, Send, Settings2,
-  ShieldCheck, X,
-} from "lucide-react";
-import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
+import { ArrowLeft, BookOpen, Check, ChevronDown, CircleHelp, Menu, Plus, Send, Settings2, ShieldCheck, X } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { SiteHeader } from "@/components/site-header";
+import { SCENES } from "@/components/studio-data";
+import { Choice, ModelSettings } from "@/components/studio-controls";
+import { StudioSidebar } from "@/components/studio-sidebar";
+import { StudioResults } from "@/components/studio-results";
 import { exportProposal, splitSections, streamProposal } from "@/lib/api";
 import {
   CITIES, DEFAULT_MODEL, DEFAULT_REQUEST, DURATIONS, IDENTITIES, INTERESTS,
-  MODEL_PROVIDERS, STYLES,
+  STYLES,
   type AppStatus, type ModelOptions, type Plan, type Scene, type StreamEvent, type TaskRequest,
 } from "@/lib/types";
 
-const SCENES = [
-  { key:"游客路线", name:"城市漫游", desc:"从街巷走进传统", icon:Compass },
-  { key:"学生研学", name:"文化研学", desc:"带着问题去观察", icon:GraduationCap },
-  { key:"亲子体验", name:"亲子体验", desc:"让孩子亲手感知", icon:HeartHandshake },
-  { key:"内容创作", name:"内容创作", desc:"传播鲜活的文化", icon:PencilLine },
-  { key:"非遗问答", name:"非遗问答", desc:"听见技艺背后故事", icon:MessageCircle },
-] as const;
+
 
 const EXAMPLES = [
   { title:"广州 · 一日非遗漫游", scene:"游客路线" as Scene, city:"广州", duration:"一天", identity:"外地游客", text:"我第一次来广州，有一天时间，想体验岭南非遗文化，适合拍照并且路线轻松。", interests:["粤剧","岭南建筑"] },
@@ -34,68 +25,10 @@ const EXAMPLES = [
   { title:"潮汕 · 英歌舞图文", scene:"内容创作" as Scene, city:"汕头", duration:"不限", identity:"内容创作者", text:"帮我写一篇适合小红书发布的潮汕英歌舞图文，语言生动，附上配图建议和标签。", interests:["拍照"] },
 ];
 const MAX_RECENTS = 3;
-const REVISIONS = ["压缩成半天", "更适合亲子", "生成小红书文案", "生成短视频脚本", "加研学记录表"];
 const isScene = (text: string | null): text is Scene => !!text && SCENES.some((scene) => scene.key === text);
 const makeId = () => typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : String(Date.now());
 
-function Choice({ label, value, values, onChange }: {
-  label: string; value: string; values: readonly string[]; onChange: (value: string) => void;
-}) {
-  return <label className="field"><span>{label}</span><span className="select-wrap">
-    <select value={value} onChange={(event) => onChange(event.target.value)}>
-      {values.map((item) => <option key={item} value={item}>{item}</option>)}
-    </select><ChevronDown size={16} aria-hidden="true"/>
-  </span></label>;
-}
 
-function ModelSettings({ model, setModel, onClose, platformReady }: {
-  model: ModelOptions; setModel: (model: ModelOptions) => void; onClose: () => void; platformReady?: boolean;
-}) {
-  const patch = (values: Partial<ModelOptions>) => setModel({ ...model, ...values });
-  const closeButtonRef = useRef<HTMLButtonElement>(null);
-  const dialogRef = useRef<HTMLElement>(null);
-  useEffect(() => {
-    const previous = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-    closeButtonRef.current?.focus();
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") { event.preventDefault(); onClose(); return; }
-      if (event.key !== "Tab" || !dialogRef.current) return;
-      const items = Array.from(dialogRef.current.querySelectorAll<HTMLElement>(
-        'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
-      ));
-      if (!items.length) return;
-      const first = items[0], last = items[items.length - 1];
-      if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
-      else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
-    };
-    document.addEventListener("keydown", onKey);
-    return () => { document.removeEventListener("keydown", onKey); previous?.focus(); };
-  }, [onClose]);
-  return <div className="modal-backdrop" onMouseDown={(event) => {if (event.target === event.currentTarget) onClose();}}>
-    <section ref={dialogRef} className="settings-dialog" role="dialog" aria-modal="true" aria-labelledby="settings-title" onMouseDown={(event) => event.stopPropagation()}>
-      <div className="dialog-heading"><h2 id="settings-title">AI 服务设置</h2><button ref={closeButtonRef} type="button" className="icon-btn" onClick={onClose} aria-label="关闭设置"><X size={20}/></button></div>
-      <p className="settings-description">优先使用平台服务，也可以自行连接 API。</p>
-      <div className="settings-segments" role="group" aria-label="AI 模型来源">
-        <button type="button" className={model.mode === "auto" ? "selected" : ""} onClick={() => patch({ mode:"auto" })}>平台服务</button>
-        <button type="button" className={model.mode === "user" ? "selected" : ""} onClick={() => patch({ mode:"user" })}>使用我的 API</button>
-      </div>
-      {model.mode === "auto" ? <div className={`service-notice ${platformReady ? "service-ok" : "service-warn"}`}><ShieldCheck size={19}/><div><strong>{platformReady ? "平台服务已就绪" : "平台免费额度暂未开放"}</strong><p>{platformReady ? "可直接返回工作台生成方案。" : "平台额度保护尚未启用，暂不能使用共享模型。你可以使用自己的 API。"}</p></div></div> : <>
-        <Choice label="服务商" value={model.provider} values={Object.keys(MODEL_PROVIDERS)} onChange={(provider) => patch({ provider, ...MODEL_PROVIDERS[provider as keyof typeof MODEL_PROVIDERS] })}/>
-        <label className="field"><span>API Key（仅保留在当前页面）</span><input type="password" name="private_api_key" autoComplete="new-password" spellCheck={false} value={model.api_key} placeholder="sk-••••••••••" onChange={(e) => patch({ api_key:e.target.value })}/></label>
-        <label className="field"><span>Base URL</span><input name="private_base_url" type="url" autoComplete="off" spellCheck={false} value={model.base_url} placeholder="https://api.example.com/v1" onChange={(e) => patch({ base_url:e.target.value })}/></label>
-        <label className="field"><span>模型名称</span><input name="private_model_name" autoComplete="off" spellCheck={false} value={model.model_name} placeholder="模型 ID" onChange={(e) => patch({ model_name:e.target.value })}/></label>
-        <button className="clear-key" type="button" onClick={() => patch({ api_key:"", mode:"auto" })}>清除 API Key 并返回平台服务</button>
-      </>}
-      <label className="field"><span>生成语言灵活度 <b>{model.temperature.toFixed(2)}</b></span><input type="range" min=".1" max="1" step=".05" value={model.temperature} onChange={(e) => patch({temperature:Number(e.target.value)})}/></label>
-      <div className="settings-security"><ShieldCheck size={17} aria-hidden="true"/> 个人 API Key 不会存入浏览器本地存储。</div>
-      <button className="button button-dark settings-done" type="button" onClick={onClose}>完成设置 <Check size={17}/></button>
-    </section>
-  </div>;
-}
-
-const MarkdownDoc = memo(function MarkdownDoc({ content }: { content: string }) {
-  return <div className="markdown-document"><ReactMarkdown remarkPlugins={[remarkGfm]} skipHtml>{content}</ReactMarkdown></div>;
-});
 
 export function StudioApp() {
   const params = useSearchParams();
@@ -245,6 +178,13 @@ export function StudioApp() {
     setRevision(""); setActiveTab("all"); setDrawerOpen(false); setNotice("");
     requestAnimationFrame(() => inputRef.current?.focus());
   }
+  function restorePlan(plan: Plan) {
+    if (busy) return;
+    setResult(plan); setRequest(plan.request); setStream(""); setActiveTab("all");
+    setDrawerOpen(false); setError(""); setNotice("");
+    requestAnimationFrame(() => document.getElementById("proposal")?.scrollIntoView({behavior:"smooth",block:"start"}));
+  }
+
   function savePlan(plan: Plan) {
     setRecents((prev) => [plan, ...prev.filter((entry) => entry.id !== plan.id)].slice(0, MAX_RECENTS));
     setResult(plan);
@@ -333,30 +273,11 @@ export function StudioApp() {
         </div>
       </div>
       <div className="studio-shell container">
-        <aside ref={sidebarRef} id="studio-scenes" className={`studio-sidebar ${drawerOpen ? "sidebar-open" : ""}`}>
-          <div className="sidebar-topline"><div className="sidebar-brand">粤见非遗</div><button ref={sidebarCloseRef} aria-label="关闭菜单" type="button" onClick={() => setDrawerOpen(false)} className="sidebar-close"><X size={19}/></button></div>
-          <h2 className="sidebar-heading">选择体验</h2>
-          <div className="sidebar-section-label">体验类型</div>
-          <div className="sidebar-scene-list">
-            {SCENES.map((scene) => {
-              const Icon = scene.icon;
-              return <button className={`sidebar-scene ${request.scene === scene.key ? "selected" : ""}`} key={scene.key} type="button" onClick={() => selectScene(scene.key)} disabled={busy} aria-pressed={request.scene === scene.key}>
-                <span className="sidebar-scene-icon"><Icon size={19} strokeWidth={1.6}/></span>
-                <span className="sidebar-scene-text"><strong>{scene.name}</strong><small>{scene.desc}</small></span>
-                {request.scene === scene.key ? <span className="sidebar-selected-mark"><Check size={14} aria-hidden="true"/></span> : <ArrowRight className="sidebar-arrow" size={15}/>}
-              </button>;
-            })}
-          </div>
-          <div className="sidebar-library">
-            <div className="sidebar-section-label">最近生成</div>
-            {recents.length ? recents.map((plan) => <button type="button" key={plan.id} className="recent-plan" onClick={() => {
-              if (busy) return;
-              setResult(plan); setRequest(plan.request); setStream(""); setActiveTab("all"); setDrawerOpen(false); setError(""); setNotice("");
-              requestAnimationFrame(() => document.getElementById("proposal")?.scrollIntoView({behavior:"smooth",block:"start"}));
-            }}><FileText size={17}/><span><strong>{plan.request.city !== "自动判断" ? plan.request.city : "非遗"} · {plan.request.scene}</strong><small>{plan.createdAt}</small></span></button>) : <p className="no-recents">生成的方案会暂存在这个浏览器会话中。</p>}
-          </div>
-          
-        </aside>
+        <StudioSidebar
+          drawerOpen={drawerOpen} busy={busy} request={request} recents={recents}
+          sidebarRef={sidebarRef} sidebarCloseRef={sidebarCloseRef}
+          onClose={() => setDrawerOpen(false)} onSceneChange={selectScene} onRestore={restorePlan}
+        />
 
         <div className="studio-main">
           <div className="studio-heading"><div><h1>生成非遗体验方案</h1><p>选择体验类型、描述需求，即可开始。</p></div><div className="studio-heading__art" aria-hidden="true"/><button type="button" className="studio-new-button" onClick={startNew} disabled={busy}><Plus size={17} aria-hidden="true"/> 新方案</button></div>
@@ -402,21 +323,15 @@ export function StudioApp() {
             {error && <div className="studio-error" id="studio-error" role="alert"><CircleHelp size={17} aria-hidden="true"/><span>{error}</span><button type="button" onClick={() => setError("")} aria-label="关闭错误提示"><X size={17}/></button></div>}
           </form>
 
-          {(busy || result) && <section className="output-panel ux-results" id="proposal" aria-labelledby="result-title">
-            <div className="panel-heading output-heading">
-              <div><h2 id="result-title">{busy ? "正在生成" : "生成结果"}</h2></div>
-              {result && !busy && <div className="result-ready"><Check size={14} aria-hidden="true"/> 已完成{result.metrics && ` · 首字 ${(result.metrics.first_token_ms ?? 0)/1000}s / 总耗时 ${(result.metrics.total_ms/1000).toFixed(1)}s`}</div>}
-            </div>
-            {busy && <div className="stream-stage" role="status" aria-live="polite"><LoaderCircle className="spin" size={18} aria-hidden="true"/><div><strong>{stage}</strong><span>生成过程中可取消，内容将逐步显示。</span></div></div>}
-            {shownAnswer ? <div className="result-view">
-              <div className="result-summary"><div className="result-summary-badge">{busy ? request.scene : result?.request.scene || request.scene}</div><div className="result-summary-text"><h3>{busy ? request.raw_request : result?.request.raw_request || request.raw_request}</h3><p><MapPin size={14}/>{result?.request.city || request.city}<span>·</span><Clock3 size={14}/>{result?.request.duration || request.duration}<span>·</span>{result?.request.identity || request.identity}</p></div></div>
-              <div className="result-tabs" role="group" aria-label="结果内容导航"><button aria-pressed={activeTab === "all"} className={activeTab === "all" ? "active" : ""} onClick={() => setActiveTab("all")} type="button">完整方案</button>{sections.slice(0,5).map((section,index)=><button key={index} type="button" aria-pressed={activeTab === String(index)} className={activeTab === String(index) ? "active" : ""} onClick={() => setActiveTab(String(index))}>{section.title}</button>)}<button type="button" aria-pressed={activeTab === "sources"} className={activeTab === "sources" ? "active" : ""} onClick={() => setActiveTab("sources")}>资料来源</button></div>
-              <MarkdownDoc content={selectedContent || "暂无可展示的检索资料。"} />
-              {!busy && result && <div className="result-downloads"><span>保存结果</span><div><button type="button" onClick={() => void copyResult()}><Copy size={15} aria-hidden="true"/>复制正文</button>{(["docx","md","txt"] as const).map((format)=><button disabled={downloadBusy} type="button" onClick={() => void download(format)} key={format}><Download size={15} aria-hidden="true"/>{format === "docx" ? "Word" : format.toUpperCase()}</button>)}</div></div>}
-            </div> : busy ? <div className="result-skeleton" aria-hidden="true"><span/><span/><span/><span/></div> : null}
-          </section>}
-
-          {result && !busy && <section className="revision-panel ux-revision" aria-labelledby="revision-title"><div className="panel-heading"><div><h2 id="revision-title">调整这份方案</h2></div><RefreshCw size={21} strokeWidth={1.5}/></div><div className="revision-chips">{REVISIONS.map((item)=><button type="button" key={item} onClick={() => void run("revise",item)}>{item}<ArrowUpRight size={14}/></button>)}</div><div className="revision-compose"><textarea rows={2} maxLength={500} value={revision} onChange={(e) => setRevision(e.target.value)} placeholder="例如：减少景点数量、增加适合拍照的体验、加入更多岭南美食…" aria-label="自定义修改要求"/><button className="button button-dark" type="button" disabled={!revision.trim()} onClick={() => void run("revise")}><Send size={16}/> 提交修改</button></div>{result.revisions.length > 0 && <details className="revision-history"><summary>查看历史调整（{result.revisions.length} 次）</summary>{result.revisions.map((entry,i)=><p key={i}>{entry.createdAt} · {entry.instruction}</p>)}</details>}</section>}
+          <StudioResults
+            busy={busy} result={result} request={request} stage={stage}
+            shownAnswer={shownAnswer} selectedContent={selectedContent} sections={sections}
+            activeTab={activeTab} onSelectTab={setActiveTab} downloadBusy={downloadBusy}
+            onCopy={copyResult} onDownload={download} revision={revision}
+            onRevisionChange={setRevision}
+            onQuickRevision={(preset) => run("revise", preset)}
+            onSubmitRevision={() => run("revise")}
+          />
           <div className="studio-bottom-disclaimer"><BookOpen size={16} aria-hidden="true"/><p>内容由 AI 辅助生成。开放时间、预约与票价请以官方信息为准。</p></div>
           <p className="studio-notice" role="status" aria-live="polite">{notice}</p>
         </div>

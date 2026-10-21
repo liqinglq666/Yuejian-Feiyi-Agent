@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import "./folk-art.css";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://yuejian-feiyi.vercel.app"),
