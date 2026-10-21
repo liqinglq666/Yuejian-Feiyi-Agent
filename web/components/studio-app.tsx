@@ -20,11 +20,11 @@ import {
 } from "@/lib/types";
 
 const SCENES = [
-  { key:"游客路线", name:"城市漫游", desc:"从街巷走进传统", icon:Compass, en:"CITY WALK" },
-  { key:"学生研学", name:"文化研学", desc:"带着问题去观察", icon:GraduationCap, en:"STUDY" },
-  { key:"亲子体验", name:"亲子体验", desc:"让孩子亲手感知", icon:HeartHandshake, en:"FAMILY" },
-  { key:"内容创作", name:"内容创作", desc:"传播鲜活的文化", icon:PencilLine, en:"CREATION" },
-  { key:"非遗问答", name:"非遗问答", desc:"听见技艺背后故事", icon:MessageCircle, en:"DISCOVER" },
+  { key:"游客路线", name:"城市漫游", desc:"从街巷走进传统", icon:Compass },
+  { key:"学生研学", name:"文化研学", desc:"带着问题去观察", icon:GraduationCap },
+  { key:"亲子体验", name:"亲子体验", desc:"让孩子亲手感知", icon:HeartHandshake },
+  { key:"内容创作", name:"内容创作", desc:"传播鲜活的文化", icon:PencilLine },
+  { key:"非遗问答", name:"非遗问答", desc:"听见技艺背后故事", icon:MessageCircle },
 ] as const;
 
 const EXAMPLES = [
@@ -260,7 +260,6 @@ export function StudioApp() {
     const abortController = new AbortController();
     controller.current = abortController;
     const previous = result;
-    let generated = false;
     try {
       await streamProposal(
         kind,
@@ -274,7 +273,6 @@ export function StudioApp() {
           if (event.type === "delta") flushStream(event.text);
           if (event.type === "failure") { setError(event.message); resetStream(); }
           if (event.type === "complete") {
-            generated = true;
             const plan: Plan = {
               id: kind === "revise" && previous ? previous.id : makeId(),
               request:event.request, answer:event.answer, sources:event.sources,
@@ -293,9 +291,6 @@ export function StudioApp() {
         },
         abortController.signal,
       );
-      if (!generated) {
-        // An error event has already populated the human-readable status.
-      }
     } catch (err) {
       if (!abortController.signal.aborted) setError(err instanceof Error ? err.message : "请求失败，请稍后重试。");
     } finally {
