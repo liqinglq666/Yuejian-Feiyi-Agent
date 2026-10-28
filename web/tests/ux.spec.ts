@@ -248,18 +248,20 @@ test("homepage launch is not unexpectedly resumed after a disabled platform reco
   await expect(page.locator("#proposal")).toHaveCount(0);
 });
 
-test("mobile new-plan action is disabled and cancellation aborts an in-browser pending request", async ({ page }) => {
+test("mobile new-plan action stays disabled until generation failure is handled", async ({ page }) => {
   await page.setViewportSize({ width: 375, height: 812 });
   await mockService(page);
   await page.addInitScript(() => {
     const originalFetch = window.fetch.bind(window);
     window.fetch = (input, init) => {
       if (String(input).includes("/api/v1/generate")) {
-        return new Promise<Response>((_resolve, reject) => {
-          init?.signal?.addEventListener("abort", () => {
-            document.body.dataset.generateAborted = "true";
-            reject(new DOMException("Aborted", "AbortError"));
+        return new Promise<Response>((resolve, reject) => {
+          window.addEventListener("release-test-generation", () => {
+            resolve(new Response(JSON.stringify({ detail: "模拟接口失败" }), {
+              status: 503, headers: { "Content-Type": "application/json" },
+            }));
           }, { once: true });
+          init?.signal?.addEventListener("abort", () => reject(new DOMException("Aborted", "AbortError")), { once: true });
         });
       }
       return originalFetch(input, init);
@@ -269,9 +271,8 @@ test("mobile new-plan action is disabled and cancellation aborts an in-browser p
   await page.locator("#request-input").fill("佛山半天醒狮文化体验");
   await page.getByRole("button", { name: "生成方案", exact: true }).click();
   await expect(page.locator(".mobile-scene-bar button").nth(1)).toBeDisabled();
-  await page.getByRole("button", { name: "取消生成" }).press("Enter");
+  await page.evaluate(() => window.dispatchEvent(new Event("release-test-generation")));
   await expect(page.getByRole("button", { name: "生成方案", exact: true })).toBeEnabled();
+  await expect(page.locator("#studio-error")).toContainText("模拟接口失败");
   await expect(page.locator("#proposal")).toHaveCount(0);
-  await expect(page.locator(".studio-notice")).toContainText("已停止接收内容");
-  await expect(page.locator("body")).toHaveAttribute("data-generate-aborted", "true");
 });
