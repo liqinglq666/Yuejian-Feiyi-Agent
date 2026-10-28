@@ -269,7 +269,7 @@ test("mobile new-plan action is disabled and cancellation aborts an in-browser p
   await page.locator("#request-input").fill("佛山半天醒狮文化体验");
   await page.getByRole("button", { name: "生成方案", exact: true }).click();
   await expect(page.locator(".mobile-scene-bar button").nth(1)).toBeDisabled();
-  await page.getByRole("button", { name: "取消生成" }).click();
+  await page.getByRole("button", { name: "取消生成" }).press("Enter");
   await expect(page.getByRole("button", { name: "生成方案", exact: true })).toBeEnabled();
   await expect(page.locator("#proposal")).toHaveCount(0);
   await expect(page.locator(".studio-notice")).toContainText("已停止接收内容");
