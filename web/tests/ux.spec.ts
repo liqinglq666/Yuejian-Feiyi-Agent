@@ -251,18 +251,28 @@ test("homepage launch is not unexpectedly resumed after a disabled platform reco
 test("mobile new-plan action is disabled during a pending request and cancel recovers", async ({ page }) => {
   await page.setViewportSize({ width: 375, height: 812 });
   await mockService(page);
+  let signalRequestStarted: () => void = () => {};
+  let releaseResponse: () => void = () => {};
+  const requestStarted = new Promise<void>((resolve) => { signalRequestStarted = resolve; });
+  const release = new Promise<void>((resolve) => { releaseResponse = resolve; });
   await page.route("**/api/v1/generate", async (route) => {
-    await new Promise((resolve) => setTimeout(resolve, 2000));
+    signalRequestStarted();
+    await release;
     try {
       await route.fulfill({ status: 503, contentType: "application/json", body: '{"detail":"delayed request"}' });
-    } catch { /* Aborting the browser request can dispose of the route. */ }
+    } catch { /* The browser may already have aborted this request. */ }
   });
-  await page.goto("/studio");
-  await page.locator("#request-input").fill("佛山半天醒狮文化体验");
-  await page.getByRole("button", { name: "生成方案", exact: true }).click();
-  await expect(page.locator(".mobile-scene-bar button").nth(1)).toBeDisabled();
-  await page.getByRole("button", { name: "取消生成" }).click();
-  await expect(page.getByRole("button", { name: "生成方案", exact: true })).toBeEnabled();
-  await expect(page.locator("#proposal")).toHaveCount(0);
-  await expect(page.locator(".studio-notice")).toContainText("已停止接收内容");
+  try {
+    await page.goto("/studio");
+    await page.locator("#request-input").fill("佛山半天醒狮文化体验");
+    await page.getByRole("button", { name: "生成方案", exact: true }).click();
+    await requestStarted;
+    await expect(page.locator(".mobile-scene-bar button").nth(1)).toBeDisabled();
+    await page.getByRole("button", { name: "取消生成" }).click();
+    await expect(page.getByRole("button", { name: "生成方案", exact: true })).toBeEnabled();
+    await expect(page.locator("#proposal")).toHaveCount(0);
+    await expect(page.locator(".studio-notice")).toContainText("已停止接收内容");
+  } finally {
+    releaseResponse();
+  }
 });
