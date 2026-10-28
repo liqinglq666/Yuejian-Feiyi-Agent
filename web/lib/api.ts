@@ -25,7 +25,7 @@ export async function streamProposal(
     method: "POST",
     headers: { "Content-Type": "application/json" },
     cache: "no-store",
-    body: JSON.stringify({ request, model, ...(revise ?? {}) }),
+    body: JSON.stringify({ request, model: model.mode === "auto" ? { ...model, api_key:"" } : model, ...(revise ?? {}) }),
     signal,
   });
   if (!response.ok) throw new Error(await errorMessage(response));
