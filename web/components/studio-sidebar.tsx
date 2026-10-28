@@ -34,7 +34,7 @@ export function StudioSidebar({ drawerOpen, busy, request, recents, sidebarRef, 
           </div>
           <div className="sidebar-library">
             <div className="sidebar-section-label">最近生成</div>
-            {recents.length ? recents.map((plan) => <button type="button" key={plan.id} className="recent-plan" onClick={() => onRestore(plan)}><FileText size={17}/><span><strong>{plan.request.city !== "自动判断" ? plan.request.city : "非遗"} · {plan.request.scene}</strong><small>{plan.createdAt}</small></span></button>) : <p className="no-recents">生成的方案会暂存在这个浏览器会话中。</p>}
+            {recents.length ? recents.map((plan) => <button type="button" key={plan.id} className="recent-plan" disabled={busy} onClick={() => onRestore(plan)}><FileText size={17}/><span><strong>{plan.request.city !== "自动判断" ? plan.request.city : "非遗"} · {plan.request.scene}</strong><small>{plan.createdAt}</small></span></button>) : <p className="no-recents">生成的方案会暂存在这个浏览器会话中。</p>}
           </div>
           
         </aside>
