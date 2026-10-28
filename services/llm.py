@@ -22,7 +22,7 @@ _DASHSCOPE_THINKING_MODEL_PREFIXES = (
     "qwen3",
     "deepseek-v4",
 )
-_DEEPSEEK_THINKING_MODEL_PREFIXES = ("deepseek-v4",)
+_DEEPSEEK_THINKING_MODEL_PREFIXES = ("deepseek-v4", "deepseek-flash")
 _DNS_CACHE_TTL_SECONDS = 60.0
 
 
@@ -247,7 +247,7 @@ def stream_chat(
     messages: list[dict[str, str]],
     *,
     temperature: float = 0.62,
-    max_tokens: int = 1600,
+    max_tokens: int = 3000,
 ) -> Generator[str, None, None]:
     stream = None
     try:
@@ -260,12 +260,18 @@ def stream_chat(
                 stream=True,
             )
         )
+        truncated = False
         for chunk in stream:
             if not chunk.choices:
                 continue
-            delta = chunk.choices[0].delta
+            choice = chunk.choices[0]
+            if choice.finish_reason == "length":
+                truncated = True
+            delta = choice.delta
             if delta and delta.content:
                 yield delta.content
+        if truncated:
+            raise ModelGatewayError("模型输出达到长度限制，结果不完整。请精简需求后重试。")
     except Exception as exc:
         raise _public_error(exc, config=config, streaming=True) from exc
     finally:
@@ -284,7 +290,7 @@ def complete_chat(
     messages: list[dict[str, str]],
     *,
     temperature: float = 0.62,
-    max_tokens: int = 1600,
+    max_tokens: int = 3000,
 ) -> str:
     try:
         response = build_client(config).chat.completions.create(
@@ -296,6 +302,8 @@ def complete_chat(
                 stream=False,
             )
         )
+        if response.choices[0].finish_reason == "length":
+            raise ModelGatewayError("模型输出达到长度限制，结果不完整。请精简需求后重试。")
         answer = response.choices[0].message.content
         if not answer:
             raise ModelGatewayError("模型返回内容为空。")
@@ -324,7 +332,7 @@ def collect_stream_with_safe_fallback(
     messages: list[dict[str, str]],
     *,
     temperature: float,
-    max_tokens: int = 1600,
+    max_tokens: int = 3000,
 ) -> Iterable[tuple[str, bool]]:
     """Yield `(text, is_final)` and avoid duplicate calls for hard failures.
 

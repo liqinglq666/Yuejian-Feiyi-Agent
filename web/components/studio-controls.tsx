@@ -43,7 +43,7 @@ export function ModelSettings({ model, setModel, onClose, platformReady }: {
       <div className="dialog-heading"><h2 id="settings-title">AI 服务设置</h2><button ref={closeButtonRef} type="button" className="icon-btn" onClick={onClose} aria-label="关闭设置"><X size={20}/></button></div>
       <p className="settings-description">优先使用平台服务，也可以自行连接 API。</p>
       <div className="settings-segments" role="group" aria-label="AI 模型来源">
-        <button type="button" className={model.mode === "auto" ? "selected" : ""} onClick={() => patch({ mode:"auto" })}>平台服务</button>
+        <button type="button" className={model.mode === "auto" ? "selected" : ""} onClick={() => patch({ mode:"auto", api_key:"" })}>平台服务</button>
         <button type="button" className={model.mode === "user" ? "selected" : ""} onClick={() => patch({ mode:"user" })}>使用我的 API</button>
       </div>
       {model.mode === "auto" ? <div className={`service-notice ${platformReady ? "service-ok" : "service-warn"}`}><ShieldCheck size={19}/><div><strong>{platformReady ? "平台服务已就绪" : "平台免费额度暂未开放"}</strong><p>{platformReady ? "可直接返回工作台生成方案。" : "平台额度保护尚未启用，暂不能使用共享模型。你可以使用自己的 API。"}</p></div></div> : <>
@@ -62,5 +62,13 @@ export function ModelSettings({ model, setModel, onClose, platformReady }: {
 }
 
 export const MarkdownDoc = memo(function MarkdownDoc({ content }: { content: string }) {
-  return <div className="markdown-document"><ReactMarkdown remarkPlugins={[remarkGfm]} skipHtml>{content}</ReactMarkdown></div>;
+  return <div className="markdown-document"><ReactMarkdown
+    remarkPlugins={[remarkGfm]} skipHtml
+    components={{
+      a: ({ href, children }) => {
+        const trustedUrl = href?.startsWith("https://") ? href : undefined;
+        return <a href={trustedUrl} target={trustedUrl ? "_blank" : undefined} rel={trustedUrl ? "noopener noreferrer" : undefined}>{children}</a>;
+      },
+    }}
+  >{content}</ReactMarkdown></div>;
 });

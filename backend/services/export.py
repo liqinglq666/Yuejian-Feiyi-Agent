@@ -6,6 +6,9 @@ from io import BytesIO
 
 from docx import Document
 from docx.document import Document as DocumentObject
+from docx.opc.constants import RELATIONSHIP_TYPE as RT
+from docx.oxml import OxmlElement
+from docx.oxml.ns import qn
 
 from core.models import TaskRequest
 
@@ -122,6 +125,27 @@ def _append_answer(document: DocumentObject, answer: str) -> None:
         index += 1
 
 
+def _append_external_link(paragraph, title: str, url: str) -> None:
+    """Add a clickable, explicit external citation to a Word paragraph."""
+    relation_id = paragraph.part.relate_to(url, RT.HYPERLINK, is_external=True)
+    hyperlink = OxmlElement("w:hyperlink")
+    hyperlink.set(qn("r:id"), relation_id)
+    run = OxmlElement("w:r")
+    properties = OxmlElement("w:rPr")
+    color = OxmlElement("w:color")
+    color.set(qn("w:val"), "245E55")
+    properties.append(color)
+    underline = OxmlElement("w:u")
+    underline.set(qn("w:val"), "single")
+    properties.append(underline)
+    run.append(properties)
+    text = OxmlElement("w:t")
+    text.text = title
+    run.append(text)
+    hyperlink.append(run)
+    paragraph._p.append(hyperlink)
+
+
 def build_docx(request: TaskRequest, answer: str, sources: str = "") -> bytes:
     document = Document()
     document.add_heading("粤见非遗生成结果", level=0)
@@ -136,10 +160,12 @@ def build_docx(request: TaskRequest, answer: str, sources: str = "") -> bytes:
         for line in sources.splitlines():
             stripped = line.strip()
             if stripped.startswith("- "):
-                document.add_paragraph(
-                    _clean_inline_markdown(stripped[2:]),
-                    style="List Bullet",
-                )
+                citation = re.fullmatch(r"- \[(.+?)\]\((https://[^\s)]+)\)", stripped)
+                if citation:
+                    paragraph = document.add_paragraph(style="List Bullet")
+                    _append_external_link(paragraph, citation.group(1), citation.group(2))
+                else:
+                    document.add_paragraph(_clean_inline_markdown(stripped[2:]), style="List Bullet")
 
     buffer = BytesIO()
     document.save(buffer)

@@ -289,3 +289,112 @@ test("all five scenes have an example, including heritage Q&A", async ({ page })
   await expect(page.locator(".sidebar-scene").filter({ hasText: "非遗问答" })).toHaveAttribute("aria-pressed", "true");
 });
 
+
+
+test("switching scenes resets incompatible example, identity and style", async ({ page }) => {
+  await mockService(page);
+  await page.goto("/studio");
+  await page.getByRole("button", { name: "佛山 · 周末亲子手作" }).click();
+  await expect(page.locator("#request-input")).toHaveValue(/周末带孩子/);
+  await expect(page.getByLabel("同行身份")).toHaveValue("亲子家庭");
+
+  await page.locator(".sidebar-scene").filter({ hasText: "文化研学" }).click();
+  await expect(page.locator("#request-input")).toHaveValue("");
+  await expect(page.getByLabel("同行身份")).toHaveValue("学生研学");
+  await expect(page.getByLabel("方案风格")).toHaveValue("研学报告");
+
+  await page.locator("#request-input").fill("粤绣有哪些针法？");
+  await page.locator(".sidebar-scene").filter({ hasText: "非遗问答" }).click();
+  await expect(page.locator("#request-input")).toHaveValue("粤绣有哪些针法？");
+  await expect(page.getByLabel("同行身份")).toHaveValue("自动匹配");
+  await expect(page.getByLabel("方案风格")).toHaveValue("专业讲解");
+  let taskType: string | null = null;
+  page.on("request", (request) => {
+    if (request.url().includes("/api/v1/generate")) {
+      taskType = (request.postDataJSON() as {request: {task_type: string}}).request.task_type;
+    }
+  });
+  await page.getByRole("button", { name: "生成方案", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "生成结果" })).toBeVisible();
+  expect(taskType).toBe("qa");
+});
+
+test("six sections are all accessible from the result navigation", async ({ page }) => {
+  await mockService(page);
+  await page.route("**/api/v1/generate", async (route) => {
+    const request = (route.request().postDataJSON() as {request: RequestInput}).request;
+    const names = ["视频定位", "3 秒钩子", "60 秒分镜表", "旁白与字幕", "拍摄建议", "标题与标签"];
+    const answer = names.map((name, index) => `## ${name}\n\n内容 ${index + 1}`).join("\n\n");
+    await route.fulfill({
+      status: 200, contentType: "text/event-stream; charset=utf-8",
+      body: "event: complete\ndata: " + JSON.stringify({answer, sources: "", request}) + "\n\n",
+    });
+  });
+  await page.goto("/studio");
+  await page.locator("#request-input").fill("拍一条潮州非遗短视频");
+  await page.getByRole("button", { name: "生成方案", exact: true }).click();
+  await expect(page.locator(".result-tabs button")).toHaveCount(8);
+  await page.getByRole("button", { name: "标题与标签", exact: true }).click();
+  await expect(page.locator(".markdown-document")).toContainText("内容 6");
+});
+
+test("official source links open in a safe new tab", async ({ page }) => {
+  await mockService(page);
+  await page.route("**/api/v1/generate", async (route) => {
+    const request = (route.request().postDataJSON() as {request: RequestInput}).request;
+    await route.fulfill({
+      status: 200, contentType: "text/event-stream; charset=utf-8",
+      body: "event: complete\ndata: " + JSON.stringify({
+        answer: "## 一句话认识\n广绣是传统美术。",
+        sources: "### 本次检索资料\n- [官方项目名录](https://www.ihchina.cn/project_details/13983/)",
+        request,
+      }) + "\n\n",
+    });
+  });
+  await page.goto("/studio");
+  await page.locator("#request-input").fill("介绍广绣");
+  await page.getByRole("button", { name: "生成方案", exact: true }).click();
+  await page.getByRole("button", { name: "资料来源" }).click();
+  const link = page.getByRole("link", { name: "官方项目名录" });
+  await expect(link).toHaveAttribute("href", "https://www.ihchina.cn/project_details/13983/");
+  await expect(link).toHaveAttribute("target", "_blank");
+  await expect(link).toHaveAttribute("rel", "noopener noreferrer");
+});
+
+test("platform mode removes private API key before generation", async ({ page }) => {
+  await mockService(page);
+  await page.goto("/studio");
+  await page.getByRole("button", { name: "AI 设置" }).first().click();
+  await page.getByRole("button", { name: "使用我的 API" }).click();
+  await page.locator('input[name="private_api_key"]').fill("test-private-key");
+  await page.getByRole("button", { name: "平台服务", exact: true }).click();
+  await page.getByRole("button", { name: "使用我的 API" }).click();
+  await expect(page.locator('input[name="private_api_key"]')).toHaveValue("");
+  await page.getByRole("button", { name: "平台服务", exact: true }).click();
+  await page.getByRole("button", { name: "完成设置" }).click();
+
+  let sentKey: string | null = null;
+  page.on("request", (request) => {
+    if (request.url().includes("/api/v1/generate")) {
+      sentKey = (request.postDataJSON() as {model:{api_key:string}}).model.api_key;
+    }
+  });
+  await page.locator("#request-input").fill("广州非遗一日游");
+  await page.getByRole("button", { name: "生成方案", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "生成结果" })).toBeVisible();
+  expect(sentKey).toBe("");
+});
+
+test("storage-blocked homepage handoff still auto-starts after a user click", async ({ page }) => {
+  await mockService(page);
+  await page.addInitScript(() => {
+    Storage.prototype.setItem = function () { throw new DOMException("Storage disabled", "SecurityError"); };
+  });
+  await page.goto("/");
+  await page.getByRole("button", { name: "非遗问答" }).click();
+  await page.locator("#fast-request").fill("广绣有哪些针法？");
+  await page.getByRole("button", { name: /生成我的方案/ }).click();
+  await expect(page).toHaveURL(/\/studio\?scene=/);
+  await expect(page.locator("#request-input")).toHaveValue("广绣有哪些针法？");
+  await expect(page.getByRole("heading", { name: "生成结果" })).toBeVisible();
+});

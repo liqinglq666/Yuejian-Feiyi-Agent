@@ -73,7 +73,7 @@ export const DEFAULT_MODEL: ModelOptions = {
 };
 export const MODEL_PROVIDERS = {
   "阿里云百炼": { base_url:"https://dashscope.aliyuncs.com/compatible-mode/v1", model_name:"qwen3.7-flash" },
-  "DeepSeek": { base_url:"https://api.deepseek.com", model_name:"deepseek-v4-flash" },
+  "DeepSeek": { base_url:"https://api.deepseek.com", model_name:"deepseek-flash" },
   "OpenAI": { base_url:"https://api.openai.com/v1", model_name:"gpt-5" },
   "自定义 OpenAI-compatible": { base_url:"", model_name:"" },
 };

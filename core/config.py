@@ -20,7 +20,7 @@ PROVIDER_PRESETS: dict[str, dict[str, str]] = {
     },
     "DeepSeek": {
         "base_url": "https://api.deepseek.com",
-        "model_name": "deepseek-v4-flash",
+        "model_name": "deepseek-flash",
     },
     "OpenAI": {
         "base_url": "https://api.openai.com/v1",
@@ -107,7 +107,7 @@ def _user_thinking_preference(
     if (
         provider == "DeepSeek"
         and host == "api.deepseek.com"
-        and model_name.lower().startswith("deepseek-v4")
+        and model_name.lower().startswith(("deepseek-v4", "deepseek-flash"))
     ):
         return False
     return None

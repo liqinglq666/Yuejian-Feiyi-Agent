@@ -126,3 +126,55 @@ def test_empty_stream_can_fallback_once(monkeypatch: pytest.MonkeyPatch) -> None
 
     assert result == [("fallback answer", True)]
     assert calls["complete"] == 1
+
+def test_deepseek_flash_current_preset_disables_thinking() -> None:
+    config = build_user_model_config({
+        "user_provider": "DeepSeek",
+        "user_api_key": "secret",
+        "user_base_url": "https://api.deepseek.com",
+        "user_model_name": "deepseek-flash",
+    })
+    kwargs = llm._completion_request_kwargs(
+        config, [{"role": "user", "content": "hello"}],
+        temperature=0.62, max_tokens=3000, stream=True,
+    )
+    assert config.thinking_enabled is False
+    assert kwargs["extra_body"] == {"thinking": {"type": "disabled"}}
+
+
+def test_stream_length_limit_is_not_mistaken_for_success(monkeypatch: pytest.MonkeyPatch) -> None:
+    from types import SimpleNamespace
+
+    config = ModelConfig(
+        api_key="secret", base_url="https://api.example.com/v1",
+        model_name="example-model", credential_source="user",
+    )
+    events = [
+        SimpleNamespace(choices=[SimpleNamespace(delta=SimpleNamespace(content="部分方案"), finish_reason=None)]),
+        SimpleNamespace(choices=[SimpleNamespace(delta=SimpleNamespace(content=None), finish_reason="length")]),
+    ]
+    monkeypatch.setattr(llm, "build_client", lambda unused: SimpleNamespace(
+        chat=SimpleNamespace(completions=SimpleNamespace(create=lambda **kwargs: iter(events)))
+    ))
+    monkeypatch.setattr(llm, "complete_chat", lambda *a, **kw: pytest.fail("truncated stream must not retry and spend API quota"))
+    with pytest.raises(llm.ModelGatewayError, match="结果不完整"):
+        list(llm.collect_stream_with_safe_fallback(
+            config, [{"role": "user", "content": "test"}], temperature=0.62,
+        ))
+
+
+def test_nonstream_length_limit_is_not_accepted(monkeypatch: pytest.MonkeyPatch) -> None:
+    from types import SimpleNamespace
+
+    config = ModelConfig(
+        api_key="secret", base_url="https://api.example.com/v1",
+        model_name="example-model", credential_source="user",
+    )
+    response = SimpleNamespace(choices=[
+        SimpleNamespace(finish_reason="length", message=SimpleNamespace(content="不完整"))
+    ])
+    monkeypatch.setattr(llm, "build_client", lambda unused: SimpleNamespace(
+        chat=SimpleNamespace(completions=SimpleNamespace(create=lambda **kwargs: response))
+    ))
+    with pytest.raises(llm.ModelGatewayError, match="结果不完整"):
+        llm.complete_chat(config, [{"role": "user", "content": "test"}])
