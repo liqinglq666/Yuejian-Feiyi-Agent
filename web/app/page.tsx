@@ -69,14 +69,14 @@ export default function HomePage() {
       scene,
       city,
       raw_request: prompt.trim(),
-      task_type:scene === "内容创作" ? "social" : null,
+      task_type:scene === "内容创作" ? "social" : scene === "非遗问答" ? "qa" : null,
     };
     try {
       sessionStorage.setItem("yuejian-launch-draft", JSON.stringify(draft));
       sessionStorage.setItem("yuejian-start-immediately", "1");
       router.push("/studio");
     } catch {
-      const query = new URLSearchParams({ scene, city, prompt:prompt.trim() });
+      const query = new URLSearchParams({ scene, city, prompt:prompt.trim(), autostart:"1" });
       router.push("/studio?" + query.toString());
     }
   }
