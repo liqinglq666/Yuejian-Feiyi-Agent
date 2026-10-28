@@ -62,6 +62,7 @@ export function StudioApp() {
   const [revision, setRevision] = useState("");
   const [downloadBusy, setDownloadBusy] = useState(false);
   const [notice, setNotice] = useState("");
+  const [cancelled, setCancelled] = useState(false);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const sidebarRef = useRef<HTMLElement>(null);
   const sidebarCloseRef = useRef<HTMLButtonElement>(null);
@@ -186,14 +187,14 @@ export function StudioApp() {
     if ((request.raw_request.trim() || result) && !window.confirm("开始新方案？当前编辑内容将清空，已生成的方案仍可在最近记录中查看。")) return;
     controller.current?.abort();
     pendingHomepageLaunch.current = false;
-    setBusy(false); setRequest(DEFAULT_REQUEST); setResult(null); setStaleResult(false); setRunRequest(null); resetStream(); setError("");
+    setBusy(false); setRequest(DEFAULT_REQUEST); setResult(null); setStaleResult(false); setRunRequest(null); setCancelled(false); resetStream(); setError("");
     setRevision(""); setActiveTab("all"); setDrawerOpen(false); setNotice("");
     requestAnimationFrame(() => inputRef.current?.focus());
   }
   function restorePlan(plan: Plan) {
     if (busy) return;
     setResult(plan); setStaleResult(false); setRunRequest(null); setRequest(plan.request); resetStream(); setActiveTab("all");
-    setDrawerOpen(false); setError(""); setNotice("");
+    setDrawerOpen(false); setError(""); setNotice(""); setCancelled(false);
     requestAnimationFrame(() => document.getElementById("proposal")?.scrollIntoView({behavior:"smooth",block:"start"}));
   }
 
@@ -209,7 +210,7 @@ export function StudioApp() {
     if (kind === "revise" && !result) return;
     if (kind === "generate" && !request.raw_request.trim()) { setError("请先写下你的需求，或者使用示例。"); inputRef.current?.focus(); return; }
     if (model.mode === "user" && (!model.api_key.trim() || !model.base_url.trim() || !model.model_name.trim())) { setError("请先在 AI 服务设置中填写完整的个人 API 信息。"); setShowSettings(true); return; }
-    setBusy(true); setError(""); setNotice(""); resetStream(); setActiveTab("all"); setStage("正在准备你的方案…");
+    setBusy(true); setError(""); setNotice(""); setCancelled(false); resetStream(); setActiveTab("all"); setStage("正在准备你的方案…");
     const abortController = new AbortController();
     controller.current = abortController;
     const previous = result;
@@ -331,7 +332,7 @@ export function StudioApp() {
             </div>
             <div className="composer-actions">
               <span className="keyboard-hint">Ctrl / ⌘ + Enter 生成</span>
-              {busy ? <button className="button button-stop" type="button" onClick={() => { controller.current?.abort(); controller.current = null; resetStream(); setRunRequest(null); setBusy(false); setStage("已取消生成"); setNotice("已停止接收内容；模型服务端可能已产生部分用量。"); }}><X size={17}/> 取消生成</button>
+              {busy ? <button className="button button-stop" type="button" onClick={() => { controller.current?.abort(); controller.current = null; resetStream(); setRunRequest(null); setBusy(false); setCancelled(true); setStage("已取消生成"); setNotice("已停止接收内容；模型服务端可能已产生部分用量。"); }}><X size={17}/> 取消生成</button>
                 : <button id="generate-submit" className="button button-dark generate-button" type="submit" disabled={model.mode === "auto" && status?.platform_ready === false}>生成方案 <Send size={17} aria-hidden="true"/></button>}
             </div>
             {statusError && <div className="service-inline-notice" role="status">连接状态检测暂时失败，草稿会保留。<button type="button" onClick={() => void refreshStatus()}>重新检查连接</button></div>}
@@ -349,7 +350,7 @@ export function StudioApp() {
             onSubmitRevision={() => run("revise")}
           />
           <div className="studio-bottom-disclaimer"><BookOpen size={16} aria-hidden="true"/><p>内容由 AI 辅助生成。开放时间、预约与票价请以官方信息为准。</p></div>
-          <p className="studio-notice" role="status" aria-live="polite">{notice}</p>
+          <p className="studio-notice" role="status" aria-live="polite">{notice || (cancelled ? "已停止接收内容；模型服务端可能已产生部分用量。" : "")}</p>
         </div>
       </div>
     </main>
