@@ -67,7 +67,7 @@ export function StudioApp() {
   const sidebarRef = useRef<HTMLElement>(null);
   const sidebarCloseRef = useRef<HTMLButtonElement>(null);
   const controller = useRef<AbortController | null>(null);
-  const pendingHomepageLaunch = useRef(false);
+  const pendingHomepageLaunch = useRef(params.get("autostart") === "1" && isScene(params.get("scene")) && !!params.get("prompt")?.trim());
   const closeSettings = useCallback(() => setShowSettings(false), []);
   const pendingStream = useRef("");
   const streamTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -171,7 +171,20 @@ export function StudioApp() {
 
   function patch(fields: Partial<TaskRequest>) { setRequest((prev) => ({ ...prev, ...fields })); }
   function selectScene(scene: Scene) {
-    patch({ scene, task_type: scene === "内容创作" ? "social" : scene === "非遗问答" ? "qa" : null });
+    setRequest((prev) => {
+      if (prev.scene === scene) return prev;
+      const oldExample = EXAMPLES.some((item) => item.scene === prev.scene && item.text === prev.raw_request);
+      const identity = scene === "学生研学" ? "学生研学" : scene === "亲子体验" ? "亲子家庭"
+        : scene === "内容创作" ? "内容创作者" : "自动匹配";
+      const output_style = scene === "学生研学" ? "研学报告" : scene === "非遗问答" ? "专业讲解" : "清晰实用";
+      return {
+        ...prev, scene, identity, output_style,
+        task_type: scene === "内容创作" ? "social" : scene === "非遗问答" ? "qa" : null,
+        // Switching scenarios should not silently carry an unrelated example.
+        raw_request: oldExample ? "" : prev.raw_request,
+        interests: oldExample ? [] : prev.interests,
+      };
+    });
     setDrawerOpen(false);
   }
   function applyExample(index: number) {
