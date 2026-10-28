@@ -6,9 +6,9 @@ from io import BytesIO
 
 from docx import Document
 from docx.document import Document as DocumentObject
+from docx.opc.constants import RELATIONSHIP_TYPE as RT
 from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
-from docx.opc.constants import RELATIONSHIP_TYPE as RT
 
 from core.models import TaskRequest
 
