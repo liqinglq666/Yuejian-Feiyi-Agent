@@ -276,3 +276,16 @@ test("mobile new-plan action stays disabled until generation failure is handled"
   await expect(page.locator("#studio-error")).toContainText("模拟接口失败");
   await expect(page.locator("#proposal")).toHaveCount(0);
 });
+
+test("all five scenes have an example, including heritage Q&A", async ({ page }) => {
+  await mockService(page);
+  await page.goto("/studio");
+  const examples = page.locator(".inspiration-list button");
+  await expect(examples).toHaveCount(5);
+  await page.locator(".sidebar-scene").filter({ hasText: "非遗问答" }).click();
+  await expect(page.locator(".sidebar-scene").filter({ hasText: "非遗问答" })).toHaveAttribute("aria-pressed", "true");
+  await page.getByRole("button", { name: "广绣 · 针法入门问答" }).click();
+  await expect(page.locator("#request-input")).toHaveValue(/广绣有哪些典型针法/);
+  await expect(page.locator(".sidebar-scene").filter({ hasText: "非遗问答" })).toHaveAttribute("aria-pressed", "true");
+});
+

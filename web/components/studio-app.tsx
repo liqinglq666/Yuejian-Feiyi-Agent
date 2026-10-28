@@ -23,6 +23,7 @@ const EXAMPLES = [
   { title:"佛山 · 周末亲子手作", scene:"亲子体验" as Scene, city:"佛山", duration:"周末", identity:"亲子家庭", text:"周末带孩子去佛山，想体验醒狮和石湾陶塑，节奏轻松一点。", interests:["醒狮","陶塑"] },
   { title:"校园 · 研学观察记录", scene:"学生研学" as Scene, city:"自动判断", duration:"一天", identity:"学生研学", text:"我是高中生，要做一份广东非遗研学报告，请围绕粤剧、醒狮和广绣设计任务卡和观察记录表。", interests:["粤剧","醒狮","广绣"] },
   { title:"潮汕 · 英歌舞图文", scene:"内容创作" as Scene, city:"汕头", duration:"不限", identity:"内容创作者", text:"帮我写一篇适合小红书发布的潮汕英歌舞图文，语言生动，附上配图建议和标签。", interests:["拍照"] },
+  { title:"广绣 · 针法入门问答", scene:"非遗问答" as Scene, city:"广州", duration:"不限", identity:"自动匹配", text:"广绣有哪些典型针法？各有什么特点？第一次接触广绣的人应该怎样入门？请用通俗语言讲解，并说明可靠的信息来源。", interests:["广绣"] },
 ];
 const MAX_RECENTS = 3;
 const isScene = (text: string | null): text is Scene => !!text && SCENES.some((scene) => scene.key === text);
@@ -38,7 +39,7 @@ export function StudioApp() {
     const selectedPrompt = params.get("prompt");
     return {
       ...DEFAULT_REQUEST,
-      ...(isScene(selectedScene) ? { scene:selectedScene, task_type:selectedScene === "内容创作" ? "social" as const : null } : {}),
+      ...(isScene(selectedScene) ? { scene:selectedScene, task_type:selectedScene === "内容创作" ? "social" as const : selectedScene === "非遗问答" ? "qa" as const : null } : {}),
       ...(selectedCity && CITIES.includes(selectedCity) ? { city:selectedCity } : {}),
       ...(selectedPrompt ? { raw_request:selectedPrompt.slice(0,1200) } : {}),
     };
@@ -170,7 +171,7 @@ export function StudioApp() {
 
   function patch(fields: Partial<TaskRequest>) { setRequest((prev) => ({ ...prev, ...fields })); }
   function selectScene(scene: Scene) {
-    patch({ scene, task_type: scene === "内容创作" ? "social" : null });
+    patch({ scene, task_type: scene === "内容创作" ? "social" : scene === "非遗问答" ? "qa" : null });
     setDrawerOpen(false);
   }
   function applyExample(index: number) {
@@ -178,7 +179,7 @@ export function StudioApp() {
     setRequest({
       ...DEFAULT_REQUEST, scene:item.scene, raw_request:item.text, city:item.city,
       duration:item.duration, identity:item.identity, interests:item.interests,
-      task_type: item.scene === "内容创作" ? "social" : null,
+      task_type: item.scene === "内容创作" ? "social" : item.scene === "非遗问答" ? "qa" : null,
     });
     setError("");
   }
