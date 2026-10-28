@@ -181,3 +181,88 @@ test("CRLF SSE frames are accepted by the real browser event parser", async ({ p
   await page.getByRole("button",{name:"生成方案",exact:true}).click();
   await expect(page.getByText("粤剧源自岭南传统戏剧。")).toBeVisible();
 });
+
+
+test("studio CTA focuses the composer instead of navigating to the same page", async ({ page }) => {
+  await mockService(page);
+  await page.goto("/studio");
+  await page.getByRole("link", { name: /开始体验/ }).click();
+  await expect(page.locator("#request-input")).toBeFocused();
+});
+
+test("failed regeneration keeps previous result clearly labeled", async ({ page }) => {
+  await mockService(page);
+  await page.goto("/studio");
+  await page.locator("#request-input").fill("广州的一日非遗文化路线");
+  await page.getByRole("button", { name: "生成方案", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "生成结果" })).toBeVisible();
+
+  await page.route("**/api/v1/generate", (route) =>
+    route.fulfill({ status: 503, contentType: "application/json", body: JSON.stringify({ detail: "平台服务暂时中断" }) }),
+  );
+  await page.locator("#request-input").fill("为潮州安排新的文化行程");
+  await page.getByRole("button", { name: "生成方案", exact: true }).click();
+  await expect(page.locator("#studio-error")).toContainText("平台服务暂时中断");
+  await expect(page.getByRole("heading", { name: "上次成功的方案" })).toBeVisible();
+  await expect(page.locator("#proposal")).toContainText("本次生成没有完成");
+  await expect(page.locator("#proposal")).toContainText("非遗路线推荐：体验醒狮与陶塑。");
+  await expect(page.locator("#proposal")).not.toContainText("为潮州安排新的文化行程");
+});
+
+test("stream failure is reported without presenting an unfinished proposal", async ({ page }) => {
+  await mockService(page);
+  await page.route("**/api/v1/generate", (route) =>
+    route.fulfill({
+      status: 200, contentType: "text/event-stream; charset=utf-8",
+      body: 'event: snapshot\\ndata: {"text":"## 未完成的方案"}\\n\\nevent: failure\\ndata: {"message":"模型生成中途失败"}\\n\\n',
+    }),
+  );
+  await page.goto("/studio");
+  await page.locator("#request-input").fill("广州一天了解粤剧");
+  await page.getByRole("button", { name: "生成方案", exact: true }).click();
+  await expect(page.locator("#studio-error")).toContainText("模型生成中途失败");
+  await expect(page.locator("#proposal")).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "生成方案", exact: true })).toBeEnabled();
+});
+
+test("homepage launch is not unexpectedly resumed after a disabled platform recovers", async ({ page }) => {
+  let ready = false;
+  let generationCalls = 0;
+  await page.route("**/api/v1/status", (route) =>
+    route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ ...getStatus, platform_ready: ready }) }),
+  );
+  await page.route("**/api/v1/generate", (route) => {
+    generationCalls += 1;
+    return route.fulfill({ status: 500, body: "unexpected generation" });
+  });
+  await page.goto("/");
+  await page.locator("#fast-request").fill("规划一条广州非遗路线");
+  await page.getByRole("button", { name: /生成我的方案/ }).click();
+  await expect(page).toHaveURL(/\\/studio$/);
+  await expect(page.locator("#request-input")).toHaveValue("规划一条广州非遗路线");
+  await expect(page.locator(".studio-notice")).toContainText("需求已保留");
+  ready = true;
+  await page.getByRole("button", { name: "重新检查状态" }).click();
+  await expect(page.getByText("平台服务可用")).toBeVisible();
+  expect(generationCalls).toBe(0);
+  await expect(page.locator("#proposal")).toHaveCount(0);
+});
+
+test("mobile new-plan action is disabled during a pending request and cancel recovers", async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 812 });
+  await mockService(page);
+  await page.route("**/api/v1/generate", async (route) => {
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+    try {
+      await route.fulfill({ status: 503, contentType: "application/json", body: '{"detail":"delayed request"}' });
+    } catch { /* Aborting the browser request can dispose of the route. */ }
+  });
+  await page.goto("/studio");
+  await page.locator("#request-input").fill("佛山半天醒狮文化体验");
+  await page.getByRole("button", { name: "生成方案", exact: true }).click();
+  await expect(page.locator(".mobile-scene-bar button").nth(1)).toBeDisabled();
+  await page.getByRole("button", { name: "取消生成" }).click();
+  await expect(page.getByRole("button", { name: "生成方案", exact: true })).toBeEnabled();
+  await expect(page.locator("#proposal")).toHaveCount(0);
+  await expect(page.locator(".studio-notice")).toContainText("已停止接收内容");
+});
