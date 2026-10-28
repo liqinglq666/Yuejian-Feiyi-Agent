@@ -47,10 +47,11 @@ export function ModelSettings({ model, setModel, onClose, platformReady }: {
         <button type="button" className={model.mode === "user" ? "selected" : ""} onClick={() => patch({ mode:"user" })}>使用我的 API</button>
       </div>
       {model.mode === "auto" ? <div className={`service-notice ${platformReady ? "service-ok" : "service-warn"}`}><ShieldCheck size={19}/><div><strong>{platformReady ? "平台服务已就绪" : "平台免费额度暂未开放"}</strong><p>{platformReady ? "可直接返回工作台生成方案。" : "平台额度保护尚未启用，暂不能使用共享模型。你可以使用自己的 API。"}</p></div></div> : <>
-        <Choice label="服务商" value={model.provider} values={Object.keys(MODEL_PROVIDERS)} onChange={(provider) => patch({ provider, ...MODEL_PROVIDERS[provider as keyof typeof MODEL_PROVIDERS] })}/>
+        <Choice label="服务商" value={model.provider} values={Object.keys(MODEL_PROVIDERS)} onChange={(provider) => patch({ provider, api_key:"", ...MODEL_PROVIDERS[provider as keyof typeof MODEL_PROVIDERS] })}/>
         <label className="field"><span>API Key（仅保留在当前页面）</span><input type="password" name="private_api_key" autoComplete="new-password" spellCheck={false} value={model.api_key} placeholder="sk-••••••••••" onChange={(e) => patch({ api_key:e.target.value })}/></label>
         <label className="field"><span>Base URL</span><input name="private_base_url" type="url" autoComplete="off" spellCheck={false} value={model.base_url} placeholder="https://api.example.com/v1" onChange={(e) => patch({ base_url:e.target.value })}/></label>
         <label className="field"><span>模型名称</span><input name="private_model_name" autoComplete="off" spellCheck={false} value={model.model_name} placeholder="模型 ID" onChange={(e) => patch({ model_name:e.target.value })}/></label>
+        {model.provider === "自定义 OpenAI-compatible" && <p className="settings-description">为保护服务安全，线上站点只接受已配置的可信 API 域名；其他服务需由站点管理员加入允许列表。</p>}
         <button className="clear-key" type="button" onClick={() => patch({ api_key:"", mode:"auto" })}>清除 API Key 并返回平台服务</button>
       </>}
       <label className="field"><span>生成语言灵活度 <b>{model.temperature.toFixed(2)}</b></span><input type="range" min=".1" max="1" step=".05" value={model.temperature} onChange={(e) => patch({temperature:Number(e.target.value)})}/></label>
