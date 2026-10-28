@@ -257,6 +257,19 @@ export function StudioApp() {
     }
   }
 
+  function cancelGeneration() {
+    const active = controller.current;
+    controller.current = null;
+    resetStream();
+    setRunRequest(null);
+    setBusy(false);
+    setStage("已取消生成");
+    setNotice("已停止接收内容；模型服务端可能已产生部分用量。");
+    // Settle UI state first; the pending network operation must not keep the
+    // cancel button or mobile controls locked while abort is dispatched.
+    window.setTimeout(() => active?.abort(), 0);
+  }
+
   async function download(format: "md" | "txt" | "docx") {
     if (!result || downloadBusy) return;
     setDownloadBusy(true); setError(""); setNotice("");
@@ -331,7 +344,7 @@ export function StudioApp() {
             </div>
             <div className="composer-actions">
               <span className="keyboard-hint">Ctrl / ⌘ + Enter 生成</span>
-              {busy ? <button className="button button-stop" type="button" onClick={() => { controller.current?.abort(); controller.current = null; resetStream(); setRunRequest(null); setBusy(false); setStage("已取消生成"); setNotice("已停止接收内容；模型服务端可能已产生部分用量。"); }}><X size={17}/> 取消生成</button>
+              {busy ? <button className="button button-stop" type="button" onClick={cancelGeneration}><X size={17}/> 取消生成</button>
                 : <button id="generate-submit" className="button button-dark generate-button" type="submit" disabled={model.mode === "auto" && status?.platform_ready === false}>生成方案 <Send size={17} aria-hidden="true"/></button>}
             </div>
             {statusError && <div className="service-inline-notice" role="status">连接状态检测暂时失败，草稿会保留。<button type="button" onClick={() => void refreshStatus()}>重新检查连接</button></div>}
