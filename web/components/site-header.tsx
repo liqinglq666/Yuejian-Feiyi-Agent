@@ -21,7 +21,7 @@ export function SiteHeader(){
       <nav className={"main-nav"+(open?" is-open":"")} id="site-main-nav" aria-label="主导航">
         <Link href="/" className={pathname==="/"?"nav-active":""} onClick={()=>setOpen(false)}>首页</Link>
         <Link href="/studio" className={pathname==="/studio"?"nav-active":""} onClick={()=>setOpen(false)}>AI 工作台</Link>
-        <Link href={pathname==="/"?"/#create":"/studio"} className="nav-cta" onClick={()=>setOpen(false)}>开始体验 <ArrowUpRight size={16} aria-hidden="true"/></Link>
+        <Link href={pathname==="/"?"/#create":"/studio#request-input"} className="nav-cta" onClick={(event)=>{setOpen(false);if(pathname==="/studio"){event.preventDefault();const input=document.getElementById("request-input");input?.scrollIntoView({behavior:"smooth",block:"center"});input?.focus({preventScroll:true});}}}>开始体验 <ArrowUpRight size={16} aria-hidden="true"/></Link>
       </nav>
       <button ref={menuRef} type="button" className="nav-menu-toggle" aria-controls="site-main-nav" aria-expanded={open} aria-label={open?"关闭菜单":"打开菜单"} onClick={()=>setOpen(!open)}>{open?<X size={22}/>:<Menu size={22}/>}</button>
     </div>
