@@ -150,13 +150,13 @@ export function StudioApp() {
     if (!hydrated || !pendingHomepageLaunch.current) return;
     if (statusError) {
       pendingHomepageLaunch.current = false;
-      setNotice("服务状态暂时无法核实，需求已保留。请重新检查连接后手动生成。");
+      queueMicrotask(() => setNotice("服务状态暂时无法核实，需求已保留。请重新检查连接后手动生成。"));
       return;
     }
     if (!status) return;
     pendingHomepageLaunch.current = false;
     if (!status.platform_ready) {
-      setNotice("平台服务暂不可用，需求已保留。你可以在 AI 设置中连接个人 API。");
+      queueMicrotask(() => setNotice("平台服务暂不可用，需求已保留。你可以在 AI 设置中连接个人 API。"));
       return;
     }
     queueMicrotask(() => document.getElementById("generate-submit")?.click());
