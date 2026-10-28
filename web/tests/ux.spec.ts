@@ -214,7 +214,7 @@ test("stream failure is reported without presenting an unfinished proposal", asy
   await page.route("**/api/v1/generate", (route) =>
     route.fulfill({
       status: 200, contentType: "text/event-stream; charset=utf-8",
-      body: 'event: snapshot\\ndata: {"text":"## 未完成的方案"}\\n\\nevent: failure\\ndata: {"message":"模型生成中途失败"}\\n\\n',
+      body: 'event: snapshot\ndata: {"text":"## 未完成的方案"}\n\nevent: failure\ndata: {"message":"模型生成中途失败"}\n\n',
     }),
   );
   await page.goto("/studio");
@@ -238,7 +238,7 @@ test("homepage launch is not unexpectedly resumed after a disabled platform reco
   await page.goto("/");
   await page.locator("#fast-request").fill("规划一条广州非遗路线");
   await page.getByRole("button", { name: /生成我的方案/ }).click();
-  await expect(page).toHaveURL(/\\/studio$/);
+  await expect(page).toHaveURL(/\/studio$/);
   await expect(page.locator("#request-input")).toHaveValue("规划一条广州非遗路线");
   await expect(page.locator(".studio-notice")).toContainText("需求已保留");
   ready = true;
