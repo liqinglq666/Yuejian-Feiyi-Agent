@@ -7,6 +7,7 @@ const REVISIONS = ["压缩成半天", "更适合亲子", "生成小红书文案"
 
 type Props = {
   busy: boolean;
+  staleResult: boolean;
   result: Plan | null;
   request: TaskRequest;
   stage: string;
@@ -24,18 +25,20 @@ type Props = {
   onSubmitRevision: () => void | Promise<void>;
 };
 
-export function StudioResults({ busy, result, request, stage, shownAnswer, selectedContent, sections, activeTab, onSelectTab, downloadBusy, onCopy, onDownload, revision, onRevisionChange, onQuickRevision, onSubmitRevision }: Props) {
+export function StudioResults({ busy, staleResult, result, request, stage, shownAnswer, selectedContent, sections, activeTab, onSelectTab, downloadBusy, onCopy, onDownload, revision, onRevisionChange, onQuickRevision, onSubmitRevision }: Props) {
+  const displayRequest = busy ? request : result?.request ?? request;
   return (
     <>
 {(busy || result) && <section className="output-panel ux-results" id="proposal" aria-labelledby="result-title">
             <div className="panel-heading output-heading">
-              <div><h2 id="result-title">{busy ? "正在生成" : "生成结果"}</h2></div>
-              {result && !busy && <div className="result-ready"><Check size={14} aria-hidden="true"/> 已完成{result.metrics && ` · 首字 ${(result.metrics.first_token_ms ?? 0)/1000}s / 总耗时 ${(result.metrics.total_ms/1000).toFixed(1)}s`}</div>}
+              <div><h2 id="result-title">{busy ? "正在生成" : staleResult ? "上次成功的方案" : "生成结果"}</h2></div>
+              {result && !busy && <div className="result-ready"><Check size={14} aria-hidden="true"/> {staleResult ? "上次已完成" : "已完成"}{result.metrics && ` · 首字 ${result.metrics.first_token_ms === null || result.metrics.first_token_ms === undefined ? "—" : `${(result.metrics.first_token_ms/1000).toFixed(1)}s`} / 总耗时 ${(result.metrics.total_ms/1000).toFixed(1)}s`}</div>}
             </div>
+            {staleResult && !busy && <p className="service-inline-notice" role="status">本次生成没有完成，下面保留的是之前成功生成的方案。你可以修改需求后重新生成。</p>}
             {busy && <div className="stream-stage" role="status" aria-live="polite"><LoaderCircle className="spin" size={18} aria-hidden="true"/><div><strong>{stage}</strong><span>生成过程中可取消，内容将逐步显示。</span></div></div>}
             {shownAnswer ? <div className="result-view">
-              <div className="result-summary"><div className="result-summary-badge">{busy ? request.scene : result?.request.scene || request.scene}</div><div className="result-summary-text"><h3>{busy ? request.raw_request : result?.request.raw_request || request.raw_request}</h3><p><MapPin size={14}/>{result?.request.city || request.city}<span>·</span><Clock3 size={14}/>{result?.request.duration || request.duration}<span>·</span>{result?.request.identity || request.identity}</p></div></div>
-              <div className="result-tabs" role="group" aria-label="结果内容导航"><button aria-pressed={activeTab === "all"} className={activeTab === "all" ? "active" : ""} onClick={() => onSelectTab("all")} type="button">完整方案</button>{sections.slice(0,5).map((section,index)=><button key={index} type="button" aria-pressed={activeTab === String(index)} className={activeTab === String(index) ? "active" : ""} onClick={() => onSelectTab(String(index))}>{section.title}</button>)}<button type="button" aria-pressed={activeTab === "sources"} className={activeTab === "sources" ? "active" : ""} onClick={() => onSelectTab("sources")}>资料来源</button></div>
+              <div className="result-summary"><div className="result-summary-badge">{displayRequest.scene}</div><div className="result-summary-text"><h3>{displayRequest.raw_request}</h3><p><MapPin size={14}/>{displayRequest.city}<span>·</span><Clock3 size={14}/>{displayRequest.duration}<span>·</span>{displayRequest.identity}</p></div></div>
+              <div className="result-tabs" role="group" aria-label="结果内容导航"><button aria-pressed={activeTab === "all"} className={activeTab === "all" ? "active" : ""} onClick={() => onSelectTab("all")} type="button">完整方案</button>{sections.slice(0,5).map((section,index)=><button key={index} type="button" aria-pressed={activeTab === String(index)} className={activeTab === String(index) ? "active" : ""} onClick={() => onSelectTab(String(index))}>{section.title}</button>)}{!busy && result && <button type="button" aria-pressed={activeTab === "sources"} className={activeTab === "sources" ? "active" : ""} onClick={() => onSelectTab("sources")}>资料来源</button>}</div>
               <MarkdownDoc content={selectedContent || "暂无可展示的检索资料。"} />
               {!busy && result && <div className="result-downloads"><span>保存结果</span><div><button type="button" onClick={() => void onCopy()}><Copy size={15} aria-hidden="true"/>复制正文</button>{(["docx","md","txt"] as const).map((format)=><button disabled={downloadBusy} type="button" onClick={() => void onDownload(format)} key={format}><Download size={15} aria-hidden="true"/>{format === "docx" ? "Word" : format.toUpperCase()}</button>)}</div></div>}
             </div> : busy ? <div className="result-skeleton" aria-hidden="true"><span/><span/><span/><span/></div> : null}
