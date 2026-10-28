@@ -285,7 +285,7 @@ test("all five scenes have an example, including heritage Q&A", async ({ page })
   await page.locator(".sidebar-scene").filter({ hasText: "非遗问答" }).click();
   await expect(page.locator(".sidebar-scene").filter({ hasText: "非遗问答" })).toHaveAttribute("aria-pressed", "true");
   await page.getByRole("button", { name: "广绣 · 针法入门问答" }).click();
-  await expect(page.locator("#request-input")).toContainText("广绣有哪些典型针法");
+  await expect(page.locator("#request-input")).toHaveValue(/广绣有哪些典型针法/);
   await expect(page.locator(".sidebar-scene").filter({ hasText: "非遗问答" })).toHaveAttribute("aria-pressed", "true");
 });
 
