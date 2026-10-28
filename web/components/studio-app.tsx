@@ -50,6 +50,8 @@ export function StudioApp() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [interestsOpen, setInterestsOpen] = useState(false);
   const [result, setResult] = useState<Plan | null>(null);
+  const [staleResult, setStaleResult] = useState(false);
+  const [runRequest, setRunRequest] = useState<TaskRequest | null>(null);
   const [recents, setRecents] = useState<Plan[]>([]);
   const [hydrated, setHydrated] = useState(false);
   const [stream, setStream] = useState("");
@@ -121,12 +123,13 @@ export function StudioApp() {
     queueMicrotask(() => {
       try {
         const draft = sessionStorage.getItem("yuejian-launch-draft");
-        pendingHomepageLaunch.current = sessionStorage.getItem("yuejian-start-immediately") === "1";
+        const launchRequested = sessionStorage.getItem("yuejian-start-immediately") === "1";
         sessionStorage.removeItem("yuejian-start-immediately");
         if (draft) {
           sessionStorage.removeItem("yuejian-launch-draft");
           const selected = JSON.parse(draft) as TaskRequest;
-          if (isScene(selected.scene) && typeof selected.raw_request === "string" && selected.raw_request.length <= 1200) {
+          if (isScene(selected.scene) && typeof selected.raw_request === "string" && selected.raw_request.trim() && selected.raw_request.length <= 1200) {
+            pendingHomepageLaunch.current = launchRequested;
             setRequest({ ...DEFAULT_REQUEST, ...selected, city:CITIES.includes(selected.city) ? selected.city : "自动判断" });
           }
         }
@@ -144,11 +147,20 @@ export function StudioApp() {
   }, [refreshStatus]);
 
   useEffect(() => {
-    if (!hydrated || !status || !pendingHomepageLaunch.current) return;
-    if (!status.platform_ready) return;
+    if (!hydrated || !pendingHomepageLaunch.current) return;
+    if (statusError) {
+      pendingHomepageLaunch.current = false;
+      setNotice("服务状态暂时无法核实，需求已保留。请重新检查连接后手动生成。");
+      return;
+    }
+    if (!status) return;
     pendingHomepageLaunch.current = false;
+    if (!status.platform_ready) {
+      setNotice("平台服务暂不可用，需求已保留。你可以在 AI 设置中连接个人 API。");
+      return;
+    }
     queueMicrotask(() => document.getElementById("generate-submit")?.click());
-  }, [hydrated, status]);
+  }, [hydrated, status, statusError]);
 
   useEffect(() => {
     if (!hydrated) return;
@@ -174,13 +186,13 @@ export function StudioApp() {
     if ((request.raw_request.trim() || result) && !window.confirm("开始新方案？当前编辑内容将清空，已生成的方案仍可在最近记录中查看。")) return;
     controller.current?.abort();
     pendingHomepageLaunch.current = false;
-    setBusy(false); setRequest(DEFAULT_REQUEST); setResult(null); resetStream(); setError("");
+    setBusy(false); setRequest(DEFAULT_REQUEST); setResult(null); setStaleResult(false); setRunRequest(null); resetStream(); setError("");
     setRevision(""); setActiveTab("all"); setDrawerOpen(false); setNotice("");
     requestAnimationFrame(() => inputRef.current?.focus());
   }
   function restorePlan(plan: Plan) {
     if (busy) return;
-    setResult(plan); setRequest(plan.request); setStream(""); setActiveTab("all");
+    setResult(plan); setStaleResult(false); setRunRequest(null); setRequest(plan.request); resetStream(); setActiveTab("all");
     setDrawerOpen(false); setError(""); setNotice("");
     requestAnimationFrame(() => document.getElementById("proposal")?.scrollIntoView({behavior:"smooth",block:"start"}));
   }
@@ -188,6 +200,7 @@ export function StudioApp() {
   function savePlan(plan: Plan) {
     setRecents((prev) => [plan, ...prev.filter((entry) => entry.id !== plan.id)].slice(0, MAX_RECENTS));
     setResult(plan);
+    setStaleResult(false);
   }
 
   async function run(kind: "generate" | "revise", preset?: string) {
@@ -200,6 +213,8 @@ export function StudioApp() {
     const abortController = new AbortController();
     controller.current = abortController;
     const previous = result;
+    setStaleResult(kind === "generate" && previous !== null);
+    setRunRequest(kind === "revise" && previous ? previous.request : request);
     try {
       await streamProposal(
         kind,
@@ -236,6 +251,7 @@ export function StudioApp() {
     } finally {
       if (controller.current === abortController) {
         setBusy(false);
+        setRunRequest(null);
         controller.current = null;
       }
     }
@@ -258,7 +274,7 @@ export function StudioApp() {
   const shownAnswer = busy ? stream : result?.answer ?? "";
   const sections = useMemo(() => splitSections(shownAnswer), [shownAnswer]);
   const selectedContent = activeTab === "all" ? shownAnswer
-    : activeTab === "sources" ? result?.sources ?? "" : sections[Number(activeTab)]?.content ?? shownAnswer;
+    : activeTab === "sources" ? (busy ? "" : result?.sources ?? "") : sections[Number(activeTab)]?.content ?? shownAnswer;
   const visibleScene = SCENES.find((item) => item.key === request.scene) ?? SCENES[0];
 
   return <>
@@ -281,7 +297,7 @@ export function StudioApp() {
 
         <div className="studio-main">
           <div className="studio-heading"><div><h1>生成非遗体验方案</h1><p>选择体验类型、描述需求，即可开始。</p></div><div className="studio-heading__art" aria-hidden="true"/><button type="button" className="studio-new-button" onClick={startNew} disabled={busy}><Plus size={17} aria-hidden="true"/> 新方案</button></div>
-          <div className="mobile-scene-bar"><button type="button" onClick={() => setDrawerOpen(true)} aria-expanded={drawerOpen} aria-controls="studio-scenes"><Menu size={17}/> {visibleScene.name} <ChevronDown size={15}/></button><button type="button" onClick={startNew}><Plus size={17}/> 新方案</button></div>
+          <div className="mobile-scene-bar"><button type="button" onClick={() => setDrawerOpen(true)} aria-expanded={drawerOpen} aria-controls="studio-scenes"><Menu size={17}/> {visibleScene.name} <ChevronDown size={15}/></button><button type="button" onClick={startNew} disabled={busy}><Plus size={17}/> 新方案</button></div>
 
           <form className="composer-panel" aria-labelledby="composer-title" onSubmit={(event) => {event.preventDefault();void run("generate");}}>
             <div className="panel-heading">
@@ -315,7 +331,7 @@ export function StudioApp() {
             </div>
             <div className="composer-actions">
               <span className="keyboard-hint">Ctrl / ⌘ + Enter 生成</span>
-              {busy ? <button className="button button-stop" type="button" onClick={() => { controller.current?.abort(); resetStream(); setBusy(false); setStage("已取消生成"); setNotice("已停止接收内容；模型服务端可能已产生部分用量。"); }}><X size={17}/> 取消生成</button>
+              {busy ? <button className="button button-stop" type="button" onClick={() => { controller.current?.abort(); controller.current = null; resetStream(); setRunRequest(null); setBusy(false); setStage("已取消生成"); setNotice("已停止接收内容；模型服务端可能已产生部分用量。"); }}><X size={17}/> 取消生成</button>
                 : <button id="generate-submit" className="button button-dark generate-button" type="submit" disabled={model.mode === "auto" && status?.platform_ready === false}>生成方案 <Send size={17} aria-hidden="true"/></button>}
             </div>
             {statusError && <div className="service-inline-notice" role="status">连接状态检测暂时失败，草稿会保留。<button type="button" onClick={() => void refreshStatus()}>重新检查连接</button></div>}
@@ -324,7 +340,7 @@ export function StudioApp() {
           </form>
 
           <StudioResults
-            busy={busy} result={result} request={request} stage={stage}
+            busy={busy} staleResult={staleResult} result={result} request={busy ? runRequest ?? request : request} stage={stage}
             shownAnswer={shownAnswer} selectedContent={selectedContent} sections={sections}
             activeTab={activeTab} onSelectTab={setActiveTab} downloadBusy={downloadBusy}
             onCopy={copyResult} onDownload={download} revision={revision}
