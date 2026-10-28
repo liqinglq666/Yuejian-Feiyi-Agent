@@ -68,3 +68,21 @@ def test_docx_export_strips_inline_markdown_inside_tables() -> None:
 
     assert document.tables[0].cell(1, 0).text == "观察"
     assert document.tables[0].cell(1, 1).text == "记录 纹样"
+
+
+def test_docx_export_preserves_clickable_official_source_urls() -> None:
+    from zipfile import ZipFile
+
+    request = TaskRequest(scene="非遗问答", raw_request="介绍广绣")
+    sources = (
+        "### 本次检索资料\n"
+        "- [广绣｜国家级非遗名录](https://www.ihchina.cn/project_details/13983/)\n"
+    )
+    data = build_docx(request, "## 一句话认识\n广绣。", sources)
+    with ZipFile(BytesIO(data)) as archive:
+        rels = archive.read("word/_rels/document.xml.rels").decode("utf-8")
+        document = archive.read("word/document.xml").decode("utf-8")
+    assert "https://www.ihchina.cn/project_details/13983/" in rels
+    assert "TargetMode=\"External\"" in rels
+    assert "广绣｜国家级非遗名录" in document
+    assert "<w:hyperlink" in document
